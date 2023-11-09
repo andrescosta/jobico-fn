@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+import "common_messages.proto";
+
+option go_package = "/types";
+
+service Control {
+	rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
+  rpc AddEvents (AddEventRequest) returns (AddEventReply) {}
+	rpc AddProcessor (AddProcessorRequest) returns (AddProcessorReply) {}
+  rpc GetProcessors (GetProcessorsRequest) returns (GetProcessorsReply) {}
+}
+  
+
+message Event {
+  string id = 1;
+  string schema = 2;
+}
+
+message ProcessorDefinition {
+  Event event = 1;
+  string package = 2;
+}
+
+message GetEventRequest {
+	repeated Event events = 1;
+}
+  
+message GetEventReply {
+	Result result = 1;
+	repeated Event events = 2;
+}
+
+message AddEventRequest {
+	repeated Event event = 1;
+}
+  
+message AddEventReply {
+	Result result = 2;
+}
+
+message AddProcessorRequest {
+	repeated ProcessorDefinition definition = 1;
+}
+  
+message AddProcessorReply {
+	Result result = 1;
+}
+
+message GetProcessorsRequest {
+	repeated ProcessorDefinition definitions = 1;
+}
+  
+message GetProcessorsReply {
+	repeated ProcessorDefinition definitions = 1;
+}

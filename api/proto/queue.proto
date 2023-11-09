@@ -1,0 +1,39 @@
+
+syntax = "proto3";
+
+import "common_messages.proto";
+
+option go_package = "/types";
+
+service Queue {
+	// Sends a greeting
+	rpc queue (QueueRequest) returns (QueueReply) {}
+  rpc dequeue (DequeueRequest) returns (DequeueReply) {}
+}
+  
+  // The request message containing the user's name.
+  message QueueRequest {
+	  repeated QueueItem items = 1;
+  }
+  
+  // The response message containing the greetings
+  message QueueReply {
+	  Result result = 1;
+  }
+
+  message DequeueRequest {
+	  repeated QueueItem items = 1;
+  }
+  
+  // The response message containing the greetings
+  message DequeueReply {
+    repeated QueueItem items = 1;
+	  Result result = 2;
+  }
+
+  message QueueItem {
+    string id = 1;
+    repeated string data = 2;
+  }
+
+  
