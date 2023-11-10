@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "/types";
+
+message QueueId {
+    string name = 1;
+} 
+
+message MerchantId{
+    string id = 1;
+}
