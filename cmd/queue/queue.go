@@ -19,32 +19,43 @@ var (
 
 type server struct {
 	pb.UnimplementedQueueServer
-	myqueue queue.Queue[*pb.QueueItem]
 }
 
 func (s *server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.QueueReply, error) {
-	ret := pb.QueueReply{
-		Result: &pb.Result{
-			Code: "0",
-		},
+	id := queue.Id{
+		Name:     in.QueueId.Name,
+		Merchant: in.MerchantId.Id,
+	}
+	myqueue, err := queue.GetQueue[*pb.QueueItem](id)
+	if err != nil {
+		panic(fmt.Sprintf("Error creating directory: %v", err))
 	}
 	for _, i := range in.Items {
-		s.myqueue.Add(i)
+		myqueue.Add(i)
 	}
+
+	ret := pb.QueueReply{}
 
 	return &ret, nil
 }
 
 func (s *server) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
-	i, _ := s.myqueue.Remove()
-	var iqs []*pb.QueueItem
-	if i == nil {
-		return &pb.DequeueReply{
-			Result: &pb.Result{Message: "Empty"},
-		}, nil
-
+	id := queue.Id{
+		Name:     in.QueueId.Name,
+		Merchant: in.MerchantId.Id,
 	}
-	iqs = append(iqs, i)
+	myqueue, err := queue.GetQueue[*pb.QueueItem](id)
+	if err != nil {
+		panic(fmt.Sprintf("Error creating directory: %v", err))
+	}
+	i, err := myqueue.Remove()
+	if err != nil {
+		return nil, err
+	}
+	var iqs []*pb.QueueItem
+	if i != nil {
+		iqs = append(iqs, i)
+	}
 	return &pb.DequeueReply{
 		Items: iqs,
 	}, nil
@@ -57,9 +68,8 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	server := server{
-		myqueue: queue.GetDefault[*pb.QueueItem](),
-	}
+
+	server := server{}
 	pb.RegisterQueueServer(s, &server)
 	reflection.Register(s)
 	log.Printf("server listening at %v", lis.Addr())

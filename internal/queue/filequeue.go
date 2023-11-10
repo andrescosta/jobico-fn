@@ -12,17 +12,32 @@ import (
 const (
 	preffix = "qdata"
 	suffix  = ".q"
+	dir     = "data"
 )
+
+var queuesMap sync.Map
+
+func GetFileBasedQueue[T any](id Id) *FileBasedQueue[T] {
+	directory := queueDirectory(dir, id)
+	queue, ok := queuesMap.Load(directory)
+	if !ok {
+		newQueue := &FileBasedQueue[T]{directory: directory}
+		queue, _ = queuesMap.LoadOrStore(directory, newQueue)
+	}
+	return queue.(*FileBasedQueue[T])
+
+}
 
 type FileBasedQueue[T any] struct {
 	directory string
 	mutex     sync.Mutex
 }
 
-func NewDefaultFileBasedQueue[T any]() *FileBasedQueue[T] {
+// aka Poor man queue
+func NewDefaultFileBasedQueue[T any]() (*FileBasedQueue[T], error) {
 	return &FileBasedQueue[T]{
-		directory: ".",
-	}
+		directory: dir,
+	}, nil
 }
 
 func (f *FileBasedQueue[T]) Add(data T) error {
@@ -34,6 +49,7 @@ func (f *FileBasedQueue[T]) Remove() (T, error) {
 }
 
 func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
+	// sync the access to the "queue"
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	bdata, filename, err := utils.GetOldestFile(f.directory, preffix, suffix)
@@ -50,6 +66,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	var data T
 	if err = decoder.Decode(&data); err != nil {
 		var d T
+		utils.RenameFile(*filename, *filename+".error")
 		return d, errors.Join(errors.New("Error encoding"), err)
 	}
 	utils.RemoveFile(*filename)
@@ -68,4 +85,8 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 		return err
 	}
 	return nil
+}
+
+func queueDirectory(directory string, id Id) string {
+	return utils.BuildFullPath([]string{directory, id.Merchant, id.Name})
 }

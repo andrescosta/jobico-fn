@@ -1,9 +1,8 @@
-
 syntax = "proto3";
 
-import "common_messages.proto";
-
 option go_package = "/types";
+
+import "ids.proto";
 
 service Queue {
 	// Sends a greeting
@@ -13,27 +12,27 @@ service Queue {
   
   // The request message containing the user's name.
   message QueueRequest {
-	  repeated QueueItem items = 1;
+    QueueId queueId = 1;
+    MerchantId merchantId=2;
+	  repeated QueueItem items = 3;
   }
   
   // The response message containing the greetings
   message QueueReply {
-	  Result result = 1;
   }
 
   message DequeueRequest {
-	  repeated QueueItem items = 1;
+    QueueId queueId = 1;
+    MerchantId merchantId=2;
+	  repeated QueueItem items = 3;
   }
   
   // The response message containing the greetings
   message DequeueReply {
     repeated QueueItem items = 1;
-	  Result result = 2;
   }
 
   message QueueItem {
     string id = 1;
     repeated string data = 2;
   }
-
-  

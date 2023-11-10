@@ -1,13 +1,11 @@
 syntax = "proto3";
 
-import "common_messages.proto";
-
 option go_package = "/types";
 
 service Control {
-	rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
+  rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
   rpc AddEvents (AddEventRequest) returns (AddEventReply) {}
-	rpc AddProcessor (AddProcessorRequest) returns (AddProcessorReply) {}
+  rpc AddProcessor (AddProcessorRequest) returns (AddProcessorReply) {}
   rpc GetProcessors (GetProcessorsRequest) returns (GetProcessorsReply) {}
 }
   
@@ -27,8 +25,7 @@ message GetEventRequest {
 }
   
 message GetEventReply {
-	Result result = 1;
-	repeated Event events = 2;
+	repeated Event events = 1;
 }
 
 message AddEventRequest {
@@ -36,7 +33,6 @@ message AddEventRequest {
 }
   
 message AddEventReply {
-	Result result = 2;
 }
 
 message AddProcessorRequest {
@@ -44,7 +40,6 @@ message AddProcessorRequest {
 }
   
 message AddProcessorReply {
-	Result result = 1;
 }
 
 message GetProcessorsRequest {

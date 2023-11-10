@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-option go_package = "/types";
-
-
-message Result {
-    string code = 1;
-    string message = 2; 
-}
