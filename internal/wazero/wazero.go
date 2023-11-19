@@ -3,36 +3,33 @@ package wazero
 import (
 	"bytes"
 	"context"
-	"log"
 	"os"
 
+	"github.com/rs/zerolog"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
 
-func InvokeWasmModule(modname string, wasmPath string, env map[string]string) (string, error) {
-	ctx := context.Background()
+func InvokeWasmModule(ctx context.Context, modname string, wasmPath string, env map[string]string) (string, error) {
+	logger := zerolog.Ctx(ctx)
 
 	r := wazero.NewRuntime(ctx)
 	defer r.Close(ctx)
 	wasi_snapshot_preview1.MustInstantiate(ctx, r)
 
-	// Instantiate the wasm runtime, setting up exported functions from the host
-	// that the wasm module can use for logging purposes.
 	_, err := r.NewHostModuleBuilder("env").
 		NewFunctionBuilder().
 		WithFunc(func(v uint32) {
-			log.Printf("[%v]: %v", modname, v)
+			logger.Debug().Msgf("[%v]: %v", modname, v)
 		}).
 		Export("log_i32").
 		NewFunctionBuilder().
 		WithFunc(func(ctx context.Context, mod api.Module, ptr uint32, len uint32) {
-			// Read the string from the module's exported memory.
 			if bytes, ok := mod.Memory().Read(ptr, len); ok {
-				log.Printf("[%v]: %v", modname, string(bytes))
+				logger.Debug().Msgf("[%v]: %v", modname, string(bytes))
 			} else {
-				log.Printf("[%v]: log_string: unable to read wasm memory", modname)
+				logger.Debug().Msgf("[%v]: log_string: unable to read wasm memory", modname)
 			}
 		}).
 		Export("log_string").

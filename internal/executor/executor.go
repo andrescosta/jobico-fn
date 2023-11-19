@@ -73,7 +73,7 @@ func executor(ctx context.Context, merchant string, queue string, w *sync.WaitGr
 				logger.Err(err)
 			} else {
 				for _, ds := range d {
-					if err = execute(ds); err != nil {
+					if err = execute(ctx, ds); err != nil {
 						logger.Err(err)
 					}
 				}
@@ -116,14 +116,14 @@ func query(ctx context.Context, merchant string, queue string) ([]string, error)
 	return ret, nil
 }
 
-func execute(data string) error {
+func execute(ctx context.Context, data string) error {
 	mod := "goenv"
 	modpath := fmt.Sprintf("target/%v.wasm", mod)
 	log.Printf("loading module %v", modpath)
 	var env map[string]string
 	env = make(map[string]string)
 	env["data"] = data
-	out, err := wazero.InvokeWasmModule(mod, modpath, env)
+	out, err := wazero.InvokeWasmModule(ctx, mod, modpath, env)
 	if err != nil {
 
 		return errors.Join(err, fmt.Errorf("error loading module %s", modpath))
