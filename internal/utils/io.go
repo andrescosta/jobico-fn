@@ -3,7 +3,6 @@ package utils
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io/fs"
 	"math/rand"
 	"os"
@@ -45,6 +44,22 @@ func WriteToFile(file string, data []byte) error {
 	return nil
 }
 
+/*func GetDirectoriesEntry(path os.DirEntry) ([]os.DirEntry, error) {
+return GetDirectories(
+}*/
+
+func GetSubDirectories(path string) ([]string, error) {
+	dires, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	dirs := make([]string, 0)
+	for _, d := range dires {
+		dirs = append(dirs, d.Name())
+	}
+	return dirs, nil
+}
+
 func getFilesSorted(path string, preffix, suffix string) ([]os.DirEntry, error) {
 	var files []fs.DirEntry
 
@@ -54,7 +69,6 @@ func getFilesSorted(path string, preffix, suffix string) ([]os.DirEntry, error) 
 
 	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 		if strings.HasPrefix(d.Name(), preffix) && strings.HasSuffix(d.Name(), suffix) {
@@ -124,22 +138,13 @@ func CreateDirIfNotExist(directory string) error {
 }
 
 func BuildFullPath(directories []string) string {
-	path := ""
-	sep := string(os.PathSeparator)
-	for _, v := range directories {
-		path += v + sep
-	}
-	return path
+	return filepath.Join(directories...)
 }
 
 func BuildFullPathWithFile(directories []string, file string) string {
-	return BuildFullPath(directories) + file
+	return filepath.Join(BuildFullPath(directories), file)
 }
 
 func BuildPathWithFile(path, file string) string {
-	if strings.HasSuffix(path, string(os.PathSeparator)) {
-		return path + file
-	} else {
-		return BuildFullPathWithFile([]string{path}, file)
-	}
+	return filepath.Join(path, file)
 }
