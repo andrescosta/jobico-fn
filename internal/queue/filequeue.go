@@ -12,13 +12,18 @@ import (
 const (
 	preffix = "qdata"
 	suffix  = ".q"
-	dir     = "data"
+	DIR     = "data"
 )
 
 var queuesMap sync.Map
 
+type FileBasedQueue[T any] struct {
+	directory string
+	mutex     sync.Mutex
+}
+
 func GetFileBasedQueue[T any](id Id) *FileBasedQueue[T] {
-	directory := queueDirectory(dir, id)
+	directory := queueDirectory(DIR, id)
 	queue, ok := queuesMap.Load(directory)
 	if !ok {
 		newQueue := &FileBasedQueue[T]{directory: directory}
@@ -28,15 +33,10 @@ func GetFileBasedQueue[T any](id Id) *FileBasedQueue[T] {
 
 }
 
-type FileBasedQueue[T any] struct {
-	directory string
-	mutex     sync.Mutex
-}
-
 // aka Poor man queue
 func NewDefaultFileBasedQueue[T any]() (*FileBasedQueue[T], error) {
 	return &FileBasedQueue[T]{
-		directory: dir,
+		directory: DIR,
 	}, nil
 }
 
@@ -67,7 +67,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	if err = decoder.Decode(&data); err != nil {
 		var d T
 		utils.RenameFile(*filename, *filename+".error")
-		return d, errors.Join(errors.New("Error encoding"), err)
+		return d, errors.Join(errors.New("Error decoding"), err)
 	}
 	utils.RemoveFile(*filename)
 	return data, nil

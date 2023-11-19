@@ -2,7 +2,7 @@ syntax = "proto3";
 
 option go_package = "/types";
 
-import "ids.proto";
+import "common.proto";
 
 service Queue {
 	// Sends a greeting
@@ -10,6 +10,8 @@ service Queue {
   rpc dequeue (DequeueRequest) returns (DequeueReply) {}
 }
   
+
+  // Idea: add loadtype, and it will processed by any queue that supports that loadtype.
   // The request message containing the user's name.
   message QueueRequest {
     QueueId queueId = 1;
@@ -33,6 +35,5 @@ service Queue {
   }
 
   message QueueItem {
-    string id = 1;
-    repeated string data = 2;
+    string data = 2;
   }
