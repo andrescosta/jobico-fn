@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 
-	"github.com/andrescosta/workflew/internal/executor"
-	"github.com/andrescosta/workflew/internal/queue"
-	"github.com/andrescosta/workflew/internal/service"
+	"github.com/andrescosta/workflew/srv/internal/executor"
+	"github.com/andrescosta/workflew/srv/internal/queue"
+	"github.com/andrescosta/workflew/srv/pkg/service"
 )
 
 func main() {

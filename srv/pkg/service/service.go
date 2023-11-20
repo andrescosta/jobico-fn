@@ -5,8 +5,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-chi/httplog"
-	"github.com/joho/godotenv"
+	"github.com/andrescosta/workflew/srv/pkg/config"
+	"github.com/andrescosta/workflew/srv/pkg/log"
 )
 
 type Service func(context.Context) error
@@ -14,13 +14,12 @@ type Service func(context.Context) error
 func Start(service Service) {
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
-	logger := httplog.NewLogger("listener-log", httplog.Options{
-		JSON: true,
-	})
+	err := config.LoadEnvVariables()
+
+	logger := log.NewUsingEnv()
 
 	ctx = logger.WithContext(ctx)
 
-	err := godotenv.Load()
 	if err != nil {
 		logger.Fatal().Msg("Error loading .env file")
 	}

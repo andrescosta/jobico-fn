@@ -6,7 +6,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/andrescosta/workflew/internal/utils"
+	"github.com/andrescosta/workflew/srv/pkg/io"
 )
 
 const (
@@ -52,7 +52,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	// sync the access to the "queue"
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	bdata, filename, err := utils.GetOldestFile(f.directory, preffix, suffix)
+	bdata, filename, err := io.GetOldestFile(f.directory, preffix, suffix)
 	if err != nil {
 		var d T
 		return d, errors.Join(errors.New("Error removing file"), err)
@@ -66,10 +66,10 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	var data T
 	if err = decoder.Decode(&data); err != nil {
 		var d T
-		utils.RenameFile(*filename, *filename+".error")
+		io.RenameFile(*filename, *filename+".error")
 		return d, errors.Join(errors.New("Error decoding"), err)
 	}
-	utils.RemoveFile(*filename)
+	io.RemoveFile(*filename)
 	return data, nil
 }
 
@@ -80,7 +80,7 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 	if err != nil {
 		return errors.Join(errors.New("Error encoding"), err)
 	}
-	err = utils.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes())
+	err = io.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes())
 	if err != nil {
 		return err
 	}
@@ -88,5 +88,5 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 }
 
 func queueDirectory(directory string, id Id) string {
-	return utils.BuildFullPath([]string{directory, id.Merchant, id.Name})
+	return io.BuildFullPath([]string{directory, id.Merchant, id.Name})
 }
