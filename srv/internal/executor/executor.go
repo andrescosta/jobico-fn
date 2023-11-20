@@ -9,7 +9,7 @@ import (
 	"time"
 
 	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/srv/internal/wazero"
+	"github.com/andrescosta/workflew/srv/internal/wasi"
 	"github.com/andrescosta/workflew/srv/pkg/io"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
@@ -19,6 +19,7 @@ import (
 type Queue struct {
 	MerchantId string
 	QueueId    string
+	Func       string
 }
 
 func getQueues(path string) ([]*Queue, error) {
@@ -33,6 +34,7 @@ func getQueues(path string) ([]*Queue, error) {
 			queues = append(queues, &Queue{
 				MerchantId: merchant,
 				QueueId:    q,
+				Func:       "greet",
 			})
 		}
 	}
@@ -46,9 +48,14 @@ func StartExecutors(ctx context.Context, path string) error {
 		return err
 	}
 	var w sync.WaitGroup
+	runtime, err := wasi.NewWasmRuntime(ctx, ".\\", []string{"greet"})
+	defer runtime.Close(ctx)
+	if err != nil {
+		return err
+	}
 	for _, q := range qs {
 		w.Add(1)
-		go executor(ctx, q.MerchantId, q.QueueId, &w)
+		go executor(ctx, q.MerchantId, q.QueueId, q.Func, runtime, &w)
 	}
 	logger.Info().Msg("Workers started")
 	w.Wait()
@@ -56,7 +63,7 @@ func StartExecutors(ctx context.Context, path string) error {
 	return nil
 }
 
-func executor(ctx context.Context, merchant string, queue string, w *sync.WaitGroup) {
+func executor(ctx context.Context, merchant string, queue string, wasmFunc string, runtime *wasi.WasmRuntime, w *sync.WaitGroup) {
 	defer w.Done()
 	logger := zerolog.Ctx(ctx)
 	ticker := time.NewTicker(5 * time.Second)
@@ -72,7 +79,7 @@ func executor(ctx context.Context, merchant string, queue string, w *sync.WaitGr
 				logger.Err(err)
 			} else {
 				for _, ds := range d {
-					if err = execute(ctx, ds); err != nil {
+					if err = execute(ctx, ds, wasmFunc, runtime); err != nil {
 						logger.Debug().Msg(err.Error())
 						logger.Err(err)
 					}
@@ -116,10 +123,10 @@ func query(ctx context.Context, merchant string, queue string) ([]string, error)
 	return ret, nil
 }
 
-func execute(ctx context.Context, data string) error {
+func execute(ctx context.Context, data string, wasmFunc string, runtime *wasi.WasmRuntime) error {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
-	out, err := wazero.InvokeModule(ctx, mod, data)
+	out, err := runtime.Event(ctx, wasmFunc, data) //wasi.InvokeModule(ctx, mod, data)
 	if err != nil {
 		return errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}
