@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 	"time"
 
 	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/internal/utils"
-	"github.com/andrescosta/workflew/internal/wazero"
+	"github.com/andrescosta/workflew/srv/internal/io"
+	"github.com/andrescosta/workflew/srv/internal/wazero"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,13 +22,13 @@ type Queue struct {
 }
 
 func getQueues(path string) ([]*Queue, error) {
-	mechants, err := utils.GetSubDirectories(path)
+	mechants, err := io.GetSubDirectories(path)
 	queues := make([]*Queue, 0)
 	if err != nil {
 		return nil, err
 	}
 	for _, merchant := range mechants {
-		qs, _ := utils.GetSubDirectories(utils.BuildFullPath([]string{path, merchant}))
+		qs, _ := io.GetSubDirectories(io.BuildFullPath([]string{path, merchant}))
 		for _, q := range qs {
 			queues = append(queues, &Queue{
 				MerchantId: merchant,
@@ -118,12 +117,12 @@ func query(ctx context.Context, merchant string, queue string) ([]string, error)
 
 func execute(ctx context.Context, data string) error {
 	mod := "goenv"
+	logger := zerolog.Ctx(ctx)
 	modpath := fmt.Sprintf("target/%v.wasm", mod)
-	log.Printf("loading module %v", modpath)
+	logger.Debug().Msgf("loading module %v", modpath)
 	var env map[string]string
 	env = make(map[string]string)
-	env["data"] = data
-	out, err := wazero.InvokeWasmModule(ctx, mod, modpath, env)
+	out, err := wazero.InvokeWasmModule(ctx, mod, modpath, env, data)
 	if err != nil {
 
 		return errors.Join(err, fmt.Errorf("error loading module %s", modpath))

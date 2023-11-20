@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/andrescosta/workflew/internal/listener"
-	"github.com/andrescosta/workflew/internal/server"
-	"github.com/andrescosta/workflew/internal/service"
+	"github.com/andrescosta/workflew/srv/internal/listener"
+	"github.com/andrescosta/workflew/srv/internal/server"
+	"github.com/andrescosta/workflew/srv/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog"

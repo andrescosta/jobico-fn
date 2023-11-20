@@ -1,0 +1,4 @@
+- Worklets will be able to log strings
+- Worklets will get only one invocation parameter of type string data (likely a json)
+- Worklets will return the execution result as int 
+- The Worklet entry point is called exec
