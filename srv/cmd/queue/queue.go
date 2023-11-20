@@ -7,8 +7,8 @@ import (
 
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/andrescosta/workflew/srv/internal/queue"
-	"github.com/andrescosta/workflew/srv/internal/server"
-	"github.com/andrescosta/workflew/srv/internal/service"
+	"github.com/andrescosta/workflew/srv/pkg/server"
+	"github.com/andrescosta/workflew/srv/pkg/service"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

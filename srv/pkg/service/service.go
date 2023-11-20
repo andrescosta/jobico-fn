@@ -5,8 +5,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/andrescosta/workflew/srv/internal/config"
-	"github.com/andrescosta/workflew/srv/internal/log"
+	"github.com/andrescosta/workflew/srv/pkg/config"
+	"github.com/andrescosta/workflew/srv/pkg/log"
 )
 
 type Service func(context.Context) error

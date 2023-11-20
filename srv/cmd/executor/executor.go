@@ -5,7 +5,7 @@ import (
 
 	"github.com/andrescosta/workflew/srv/internal/executor"
 	"github.com/andrescosta/workflew/srv/internal/queue"
-	"github.com/andrescosta/workflew/srv/internal/service"
+	"github.com/andrescosta/workflew/srv/pkg/service"
 )
 
 func main() {

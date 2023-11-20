@@ -9,8 +9,8 @@ import (
 	"time"
 
 	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/srv/internal/io"
 	"github.com/andrescosta/workflew/srv/internal/wazero"
+	"github.com/andrescosta/workflew/srv/pkg/io"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

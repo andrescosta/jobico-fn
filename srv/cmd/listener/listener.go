@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/andrescosta/workflew/srv/internal/listener"
-	"github.com/andrescosta/workflew/srv/internal/server"
-	"github.com/andrescosta/workflew/srv/internal/service"
+	"github.com/andrescosta/workflew/srv/pkg/server"
+	"github.com/andrescosta/workflew/srv/pkg/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog"

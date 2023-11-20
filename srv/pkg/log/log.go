@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/andrescosta/workflew/srv/internal/env"
+	"github.com/andrescosta/workflew/srv/pkg/env"
 	"github.com/rs/zerolog"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
