@@ -12,12 +12,8 @@ import (
 //go:wasmimport env log_i32
 func logInt(i int32)
 
-//go:wasmimport env log_string
-func logString(s string)
-
 func main() {
 	logInt(42)
-	logString("testtttt")
 	fmt.Println("goenv environment:")
 
 	for _, e := range os.Environ() {

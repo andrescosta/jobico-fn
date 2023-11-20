@@ -73,6 +73,7 @@ func executor(ctx context.Context, merchant string, queue string, w *sync.WaitGr
 			} else {
 				for _, ds := range d {
 					if err = execute(ctx, ds); err != nil {
+						logger.Debug().Msg(err.Error())
 						logger.Err(err)
 					}
 				}
@@ -118,15 +119,10 @@ func query(ctx context.Context, merchant string, queue string) ([]string, error)
 func execute(ctx context.Context, data string) error {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
-	modpath := fmt.Sprintf("target/%v.wasm", mod)
-	logger.Debug().Msgf("loading module %v", modpath)
-	var env map[string]string
-	env = make(map[string]string)
-	out, err := wazero.InvokeWasmModule(ctx, mod, modpath, env, data)
+	out, err := wazero.InvokeModule(ctx, mod, data)
 	if err != nil {
-
-		return errors.Join(err, fmt.Errorf("error loading module %s", modpath))
+		return errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}
-	fmt.Println(out)
+	logger.Debug().Msg(out)
 	return nil
 }
