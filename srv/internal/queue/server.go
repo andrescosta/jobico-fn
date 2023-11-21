@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	pb "github.com/andrescosta/workflew/api/types"
+	pb "github.com/andrescosta/workflew/api"
 )
 
 type Server struct {

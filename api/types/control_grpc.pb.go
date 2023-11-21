@@ -24,8 +24,10 @@ const _ = grpc.SupportPackageIsVersion7
 type ControlClient interface {
 	GetEvents(ctx context.Context, in *GetEventRequest, opts ...grpc.CallOption) (*GetEventReply, error)
 	AddEvents(ctx context.Context, in *AddEventRequest, opts ...grpc.CallOption) (*AddEventReply, error)
-	AddProcessor(ctx context.Context, in *AddProcessorRequest, opts ...grpc.CallOption) (*AddProcessorReply, error)
-	GetProcessors(ctx context.Context, in *GetProcessorsRequest, opts ...grpc.CallOption) (*GetProcessorsReply, error)
+	AddExecutor(ctx context.Context, in *AddExecutorRequest, opts ...grpc.CallOption) (*AddExecutorReply, error)
+	GetExecutors(ctx context.Context, in *GetExecutorsRequest, opts ...grpc.CallOption) (*GetExecutorsReply, error)
+	GetQueues(ctx context.Context, in *GetQueuesDefRequest, opts ...grpc.CallOption) (*GetQueuesDefReply, error)
+	AddQueues(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error)
 }
 
 type controlClient struct {
@@ -54,18 +56,36 @@ func (c *controlClient) AddEvents(ctx context.Context, in *AddEventRequest, opts
 	return out, nil
 }
 
-func (c *controlClient) AddProcessor(ctx context.Context, in *AddProcessorRequest, opts ...grpc.CallOption) (*AddProcessorReply, error) {
-	out := new(AddProcessorReply)
-	err := c.cc.Invoke(ctx, "/Control/AddProcessor", in, out, opts...)
+func (c *controlClient) AddExecutor(ctx context.Context, in *AddExecutorRequest, opts ...grpc.CallOption) (*AddExecutorReply, error) {
+	out := new(AddExecutorReply)
+	err := c.cc.Invoke(ctx, "/Control/AddExecutor", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) GetProcessors(ctx context.Context, in *GetProcessorsRequest, opts ...grpc.CallOption) (*GetProcessorsReply, error) {
-	out := new(GetProcessorsReply)
-	err := c.cc.Invoke(ctx, "/Control/GetProcessors", in, out, opts...)
+func (c *controlClient) GetExecutors(ctx context.Context, in *GetExecutorsRequest, opts ...grpc.CallOption) (*GetExecutorsReply, error) {
+	out := new(GetExecutorsReply)
+	err := c.cc.Invoke(ctx, "/Control/GetExecutors", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlClient) GetQueues(ctx context.Context, in *GetQueuesDefRequest, opts ...grpc.CallOption) (*GetQueuesDefReply, error) {
+	out := new(GetQueuesDefReply)
+	err := c.cc.Invoke(ctx, "/Control/GetQueues", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlClient) AddQueues(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error) {
+	out := new(AddQueueDefReply)
+	err := c.cc.Invoke(ctx, "/Control/AddQueues", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +98,10 @@ func (c *controlClient) GetProcessors(ctx context.Context, in *GetProcessorsRequ
 type ControlServer interface {
 	GetEvents(context.Context, *GetEventRequest) (*GetEventReply, error)
 	AddEvents(context.Context, *AddEventRequest) (*AddEventReply, error)
-	AddProcessor(context.Context, *AddProcessorRequest) (*AddProcessorReply, error)
-	GetProcessors(context.Context, *GetProcessorsRequest) (*GetProcessorsReply, error)
+	AddExecutor(context.Context, *AddExecutorRequest) (*AddExecutorReply, error)
+	GetExecutors(context.Context, *GetExecutorsRequest) (*GetExecutorsReply, error)
+	GetQueues(context.Context, *GetQueuesDefRequest) (*GetQueuesDefReply, error)
+	AddQueues(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error)
 	mustEmbedUnimplementedControlServer()
 }
 
@@ -93,11 +115,17 @@ func (UnimplementedControlServer) GetEvents(context.Context, *GetEventRequest) (
 func (UnimplementedControlServer) AddEvents(context.Context, *AddEventRequest) (*AddEventReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddEvents not implemented")
 }
-func (UnimplementedControlServer) AddProcessor(context.Context, *AddProcessorRequest) (*AddProcessorReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddProcessor not implemented")
+func (UnimplementedControlServer) AddExecutor(context.Context, *AddExecutorRequest) (*AddExecutorReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddExecutor not implemented")
 }
-func (UnimplementedControlServer) GetProcessors(context.Context, *GetProcessorsRequest) (*GetProcessorsReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProcessors not implemented")
+func (UnimplementedControlServer) GetExecutors(context.Context, *GetExecutorsRequest) (*GetExecutorsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetExecutors not implemented")
+}
+func (UnimplementedControlServer) GetQueues(context.Context, *GetQueuesDefRequest) (*GetQueuesDefReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetQueues not implemented")
+}
+func (UnimplementedControlServer) AddQueues(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddQueues not implemented")
 }
 func (UnimplementedControlServer) mustEmbedUnimplementedControlServer() {}
 
@@ -148,38 +176,74 @@ func _Control_AddEvents_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_AddProcessor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddProcessorRequest)
+func _Control_AddExecutor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddExecutorRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).AddProcessor(ctx, in)
+		return srv.(ControlServer).AddExecutor(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Control/AddProcessor",
+		FullMethod: "/Control/AddExecutor",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).AddProcessor(ctx, req.(*AddProcessorRequest))
+		return srv.(ControlServer).AddExecutor(ctx, req.(*AddExecutorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_GetProcessors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetProcessorsRequest)
+func _Control_GetExecutors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExecutorsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).GetProcessors(ctx, in)
+		return srv.(ControlServer).GetExecutors(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Control/GetProcessors",
+		FullMethod: "/Control/GetExecutors",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetProcessors(ctx, req.(*GetProcessorsRequest))
+		return srv.(ControlServer).GetExecutors(ctx, req.(*GetExecutorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Control_GetQueues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetQueuesDefRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).GetQueues(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Control/GetQueues",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).GetQueues(ctx, req.(*GetQueuesDefRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Control_AddQueues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddQueueDefRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).AddQueues(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Control/AddQueues",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).AddQueues(ctx, req.(*AddQueueDefRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -200,12 +264,20 @@ var Control_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Control_AddEvents_Handler,
 		},
 		{
-			MethodName: "AddProcessor",
-			Handler:    _Control_AddProcessor_Handler,
+			MethodName: "AddExecutor",
+			Handler:    _Control_AddExecutor_Handler,
 		},
 		{
-			MethodName: "GetProcessors",
-			Handler:    _Control_GetProcessors_Handler,
+			MethodName: "GetExecutors",
+			Handler:    _Control_GetExecutors_Handler,
+		},
+		{
+			MethodName: "GetQueues",
+			Handler:    _Control_GetQueues_Handler,
+		},
+		{
+			MethodName: "AddQueues",
+			Handler:    _Control_AddQueues_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

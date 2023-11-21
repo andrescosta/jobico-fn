@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/andrescosta/workflew/api/types"
+	"github.com/andrescosta/goico/pkg/io"
+	pb "github.com/andrescosta/workflew/api"
 	"github.com/andrescosta/workflew/srv/internal/wasi"
-	"github.com/andrescosta/workflew/srv/pkg/io"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

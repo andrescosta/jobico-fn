@@ -6,6 +6,18 @@ message QueueId {
     string name = 1;
 } 
 
+message QueueDef {
+    QueueId queueId = 1;
+    MerchantId merchantId=2;
+    Executor executor=3;
+}
+
+message Executor {
+    string id = 1;
+    string type = 2;
+    string script = 3;
+}
+
 message MerchantId{
     string id = 1;
 }
