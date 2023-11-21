@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/andrescosta/goico/pkg/io"
-	pb "github.com/andrescosta/workflew/api"
+	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/andrescosta/workflew/srv/internal/wasi"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"

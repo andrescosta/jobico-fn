@@ -31,6 +31,19 @@ message AddQueueDefReply {
   QueueDef queues = 1;  
 }
 
+message QueueDef {
+  string ID  = 1; 
+  QueueId queueId = 2;
+  MerchantId merchantId=3;
+  Executor executor=4;
+}
+
+message Executor {
+  string id = 1;
+  string type = 2;
+  string script = 3;
+}
+
 
 message Event {
   string id = 1;

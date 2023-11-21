@@ -7,7 +7,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/server"
 	"github.com/andrescosta/goico/pkg/service"
-	pb "github.com/andrescosta/workflew/api"
+	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/andrescosta/workflew/srv/internal/queue"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
