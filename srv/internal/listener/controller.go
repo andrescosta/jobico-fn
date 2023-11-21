@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/andrescosta/workflew/api/types"
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog"
@@ -33,7 +32,7 @@ func (rr Controller) Get(w http.ResponseWriter, r *http.Request) {
 
 func (c Controller) Post(w http.ResponseWriter, r *http.Request) {
 
-	event := types.MerchantData{}
+	event := pb.MerchantData{}
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		c.logError("Failed to decode request body:", err, r)
 		http.Error(w, "Failed to decode request body", http.StatusBadRequest)

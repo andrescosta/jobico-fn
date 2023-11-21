@@ -6,7 +6,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/andrescosta/workflew/srv/pkg/io"
+	"github.com/andrescosta/goico/pkg/io"
 )
 
 const (

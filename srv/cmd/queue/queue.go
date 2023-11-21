@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/andrescosta/goico/pkg/server"
+	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/andrescosta/workflew/srv/internal/queue"
-	"github.com/andrescosta/workflew/srv/pkg/server"
-	"github.com/andrescosta/workflew/srv/pkg/service"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

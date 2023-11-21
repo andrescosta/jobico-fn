@@ -2,20 +2,55 @@ syntax = "proto3";
 
 option go_package = "/types";
 
+import "common.proto";
+
 service Control {
   rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
   rpc AddEvents (AddEventRequest) returns (AddEventReply) {}
-  rpc AddProcessor (AddProcessorRequest) returns (AddProcessorReply) {}
-  rpc GetProcessors (GetProcessorsRequest) returns (GetProcessorsReply) {}
+  rpc AddExecutor (AddExecutorRequest) returns (AddExecutorReply) {}
+  rpc GetExecutors (GetExecutorsRequest) returns (GetExecutorsReply) {}
+  rpc GetQueues(GetQueuesDefRequest) returns (GetQueuesDefReply){}
+  rpc AddQueues(AddQueueDefRequest) returns (AddQueueDefReply){}
 }
-  
+
+message GetQueuesDefRequest {
+  optional QueueId queueId = 1;
+  optional MerchantId merchantId=2;
+
+}
+
+message GetQueuesDefReply {
+  repeated QueueDef queues = 1;
+}
+
+message AddQueueDefRequest {
+  QueueDef queues = 1;
+}
+
+message AddQueueDefReply {
+  QueueDef queues = 1;  
+}
+
+message QueueDef {
+  string ID  = 1; 
+  QueueId queueId = 2;
+  MerchantId merchantId=3;
+  Executor executor=4;
+}
+
+message Executor {
+  string id = 1;
+  string type = 2;
+  string script = 3;
+}
+
 
 message Event {
   string id = 1;
   string schema = 2;
 }
 
-message ProcessorDefinition {
+message ExecutorDefinition {
   Event event = 1;
   string package = 2;
 }
@@ -35,17 +70,17 @@ message AddEventRequest {
 message AddEventReply {
 }
 
-message AddProcessorRequest {
-	repeated ProcessorDefinition definition = 1;
+message AddExecutorRequest {
+	repeated ExecutorDefinition definition = 1;
 }
   
-message AddProcessorReply {
+message AddExecutorReply {
 }
 
-message GetProcessorsRequest {
-	repeated ProcessorDefinition definitions = 1;
+message GetExecutorsRequest {
+	repeated ExecutorDefinition definitions = 1;
 }
   
-message GetProcessorsReply {
-	repeated ProcessorDefinition definitions = 1;
+message GetExecutorsReply {
+	repeated ExecutorDefinition definitions = 1;
 }
