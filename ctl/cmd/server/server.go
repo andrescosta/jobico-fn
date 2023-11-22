@@ -3,31 +3,38 @@ package main
 import (
 	"context"
 	"fmt"
-	"strconv"
+	"os"
 
-	"github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/ctl/internal/database"
-	"google.golang.org/protobuf/proto"
+	"github.com/andrescosta/goico/pkg/server"
+	"github.com/andrescosta/goico/pkg/service"
+	pb "github.com/andrescosta/workflew/api/types"
+	server1 "github.com/andrescosta/workflew/ctl/internal/server"
+	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
-type Serializer struct{}
-
-func (s *Serializer) Serialize(id uint64, q *types.QueueDef) ([]byte, error) {
-	q.ID = strconv.FormatUint(id, 10)
-	return proto.Marshal(q)
-}
-
-func (s *Serializer) Deserialize(id uint64, d []byte) (*types.QueueDef, error) {
-	dd := types.QueueDef{}
-	if err := proto.Unmarshal(d, &dd); err != nil {
-		return nil, err
-	}
-	return &dd, nil
-}
-
 func main() {
+	service.Start(serviceFunc)
+}
 
-	q := &types.QueueDef{
+func serviceFunc(ctx context.Context) error {
+	logger := zerolog.Ctx(ctx)
+	s := grpc.NewServer()
+	pb.RegisterControlServer(s, server1.NewQueue())
+	reflection.Register(s)
+
+	srv, err := server.New(os.Getenv("ctl.port"))
+	if err != nil {
+		return fmt.Errorf("server.New: %w", err)
+	}
+	logger.Info().Msgf("Queue started at:%s", srv.Addr())
+	err = srv.ServeGRPC(ctx, s)
+	logger.Info().Msg("Queue stopped")
+	return err
+}
+
+/*	q := &types.QueueDef{
 		QueueId: &types.QueueId{
 			Name: "aaaa",
 		},
@@ -55,4 +62,5 @@ func main() {
 		fmt.Println(kss)
 	}
 	schema.Close(context.Background())
-}
+*/
+//}
