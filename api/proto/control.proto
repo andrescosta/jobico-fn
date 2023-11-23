@@ -5,10 +5,8 @@ option go_package = "/types";
 import "common.proto";
 
 service Control {
-  /*rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
+  rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
   rpc AddEvents (AddEventRequest) returns (AddEventReply) {}
-  */
-
   rpc GetQueues(GetQueuesDefRequest) returns (GetQueuesDefReply){}
   rpc AddQueues(AddQueueDefRequest) returns (AddQueueDefReply){}
   rpc GetListeners(GetListenersRequest) returns (GetListenersReply){}

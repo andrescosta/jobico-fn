@@ -21,7 +21,11 @@ func main() {
 func serviceFunc(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
 	s := grpc.NewServer()
-	pb.RegisterControlServer(s, server1.NewQueue())
+	svr, err := server1.NewQueue(ctx)
+	if err != nil {
+		return err
+	}
+	pb.RegisterControlServer(s, svr)
 	reflection.Register(s)
 
 	srv, err := server.New(os.Getenv("ctl.port"))

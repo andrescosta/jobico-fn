@@ -19,6 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	Control_GetEvents_FullMethodName    = "/Control/GetEvents"
+	Control_AddEvents_FullMethodName    = "/Control/AddEvents"
 	Control_GetQueues_FullMethodName    = "/Control/GetQueues"
 	Control_AddQueues_FullMethodName    = "/Control/AddQueues"
 	Control_GetListeners_FullMethodName = "/Control/GetListeners"
@@ -31,6 +33,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ControlClient interface {
+	GetEvents(ctx context.Context, in *GetEventRequest, opts ...grpc.CallOption) (*GetEventReply, error)
+	AddEvents(ctx context.Context, in *AddEventRequest, opts ...grpc.CallOption) (*AddEventReply, error)
 	GetQueues(ctx context.Context, in *GetQueuesDefRequest, opts ...grpc.CallOption) (*GetQueuesDefReply, error)
 	AddQueues(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error)
 	GetListeners(ctx context.Context, in *GetListenersRequest, opts ...grpc.CallOption) (*GetListenersReply, error)
@@ -45,6 +49,24 @@ type controlClient struct {
 
 func NewControlClient(cc grpc.ClientConnInterface) ControlClient {
 	return &controlClient{cc}
+}
+
+func (c *controlClient) GetEvents(ctx context.Context, in *GetEventRequest, opts ...grpc.CallOption) (*GetEventReply, error) {
+	out := new(GetEventReply)
+	err := c.cc.Invoke(ctx, Control_GetEvents_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlClient) AddEvents(ctx context.Context, in *AddEventRequest, opts ...grpc.CallOption) (*AddEventReply, error) {
+	out := new(AddEventReply)
+	err := c.cc.Invoke(ctx, Control_AddEvents_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *controlClient) GetQueues(ctx context.Context, in *GetQueuesDefRequest, opts ...grpc.CallOption) (*GetQueuesDefReply, error) {
@@ -105,6 +127,8 @@ func (c *controlClient) GetExecutors(ctx context.Context, in *GetExecutorsReques
 // All implementations must embed UnimplementedControlServer
 // for forward compatibility
 type ControlServer interface {
+	GetEvents(context.Context, *GetEventRequest) (*GetEventReply, error)
+	AddEvents(context.Context, *AddEventRequest) (*AddEventReply, error)
 	GetQueues(context.Context, *GetQueuesDefRequest) (*GetQueuesDefReply, error)
 	AddQueues(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error)
 	GetListeners(context.Context, *GetListenersRequest) (*GetListenersReply, error)
@@ -118,6 +142,12 @@ type ControlServer interface {
 type UnimplementedControlServer struct {
 }
 
+func (UnimplementedControlServer) GetEvents(context.Context, *GetEventRequest) (*GetEventReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEvents not implemented")
+}
+func (UnimplementedControlServer) AddEvents(context.Context, *AddEventRequest) (*AddEventReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddEvents not implemented")
+}
 func (UnimplementedControlServer) GetQueues(context.Context, *GetQueuesDefRequest) (*GetQueuesDefReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetQueues not implemented")
 }
@@ -147,6 +177,42 @@ type UnsafeControlServer interface {
 
 func RegisterControlServer(s grpc.ServiceRegistrar, srv ControlServer) {
 	s.RegisterService(&Control_ServiceDesc, srv)
+}
+
+func _Control_GetEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).GetEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_GetEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).GetEvents(ctx, req.(*GetEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Control_AddEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).AddEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_AddEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).AddEvents(ctx, req.(*AddEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Control_GetQueues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -264,6 +330,14 @@ var Control_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "Control",
 	HandlerType: (*ControlServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetEvents",
+			Handler:    _Control_GetEvents_Handler,
+		},
+		{
+			MethodName: "AddEvents",
+			Handler:    _Control_AddEvents_Handler,
+		},
 		{
 			MethodName: "GetQueues",
 			Handler:    _Control_GetQueues_Handler,
