@@ -9,3 +9,9 @@ message QueueId {
 message MerchantId{
     string id = 1;
 }
+
+message Host {
+    string Ip =1;
+    int32 port=2; 
+  }
+  

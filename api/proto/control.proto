@@ -7,11 +7,14 @@ import "common.proto";
 service Control {
   /*rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
   rpc AddEvents (AddEventRequest) returns (AddEventReply) {}
-  rpc AddExecutor (AddExecutorRequest) returns (AddExecutorReply) {}
-  rpc GetExecutors (GetExecutorsRequest) returns (GetExecutorsReply) {}
   */
+
   rpc GetQueues(GetQueuesDefRequest) returns (GetQueuesDefReply){}
   rpc AddQueues(AddQueueDefRequest) returns (AddQueueDefReply){}
+  rpc GetListeners(GetListenersRequest) returns (GetListenersReply){}
+  rpc AddListener(AddListenersRequest) returns (AddListenersReply){}
+  rpc AddExecutor (AddExecutorRequest) returns (AddExecutorReply) {}
+  rpc GetExecutors (GetExecutorsRequest) returns (GetExecutorsReply) {}
 }
 
 message GetQueuesDefRequest {
@@ -32,6 +35,23 @@ message AddQueueDefReply {
   QueueDef queues = 1;  
 }
 
+message GetListenersRequest {
+  optional Listener listener = 1;
+}
+
+message GetListenersReply {
+  repeated Listener listeners = 1;
+}
+
+message AddListenersRequest {
+  Listener listener = 1;
+}
+
+message AddListenersReply {
+  Listener listener = 1;
+}
+
+
 message QueueDef {
   string ID  = 1; 
   QueueId queueId = 2;
@@ -39,10 +59,20 @@ message QueueDef {
   Executor executor=4;
 }
 
+message Listener{
+  string ID = 1;
+  Host host = 2;
+}
+
+message QueueEng{
+  string ID = 1;
+  Host host = 2;
+}
+
+
 message Executor {
-  string id = 1;
-  string type = 2;
-  string script = 3;
+  string ID = 1;
+  Host host = 2;
 }
 
 

@@ -19,20 +19,24 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Control_GetQueues_FullMethodName = "/Control/GetQueues"
-	Control_AddQueues_FullMethodName = "/Control/AddQueues"
+	Control_GetQueues_FullMethodName    = "/Control/GetQueues"
+	Control_AddQueues_FullMethodName    = "/Control/AddQueues"
+	Control_GetListeners_FullMethodName = "/Control/GetListeners"
+	Control_AddListener_FullMethodName  = "/Control/AddListener"
+	Control_AddExecutor_FullMethodName  = "/Control/AddExecutor"
+	Control_GetExecutors_FullMethodName = "/Control/GetExecutors"
 )
 
 // ControlClient is the client API for Control service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ControlClient interface {
-	// rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
-	// rpc AddEvents (AddEventRequest) returns (AddEventReply) {}
-	// rpc AddExecutor (AddExecutorRequest) returns (AddExecutorReply) {}
-	// rpc GetExecutors (GetExecutorsRequest) returns (GetExecutorsReply) {}
 	GetQueues(ctx context.Context, in *GetQueuesDefRequest, opts ...grpc.CallOption) (*GetQueuesDefReply, error)
 	AddQueues(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error)
+	GetListeners(ctx context.Context, in *GetListenersRequest, opts ...grpc.CallOption) (*GetListenersReply, error)
+	AddListener(ctx context.Context, in *AddListenersRequest, opts ...grpc.CallOption) (*AddListenersReply, error)
+	AddExecutor(ctx context.Context, in *AddExecutorRequest, opts ...grpc.CallOption) (*AddExecutorReply, error)
+	GetExecutors(ctx context.Context, in *GetExecutorsRequest, opts ...grpc.CallOption) (*GetExecutorsReply, error)
 }
 
 type controlClient struct {
@@ -61,16 +65,52 @@ func (c *controlClient) AddQueues(ctx context.Context, in *AddQueueDefRequest, o
 	return out, nil
 }
 
+func (c *controlClient) GetListeners(ctx context.Context, in *GetListenersRequest, opts ...grpc.CallOption) (*GetListenersReply, error) {
+	out := new(GetListenersReply)
+	err := c.cc.Invoke(ctx, Control_GetListeners_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlClient) AddListener(ctx context.Context, in *AddListenersRequest, opts ...grpc.CallOption) (*AddListenersReply, error) {
+	out := new(AddListenersReply)
+	err := c.cc.Invoke(ctx, Control_AddListener_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlClient) AddExecutor(ctx context.Context, in *AddExecutorRequest, opts ...grpc.CallOption) (*AddExecutorReply, error) {
+	out := new(AddExecutorReply)
+	err := c.cc.Invoke(ctx, Control_AddExecutor_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlClient) GetExecutors(ctx context.Context, in *GetExecutorsRequest, opts ...grpc.CallOption) (*GetExecutorsReply, error) {
+	out := new(GetExecutorsReply)
+	err := c.cc.Invoke(ctx, Control_GetExecutors_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ControlServer is the server API for Control service.
 // All implementations must embed UnimplementedControlServer
 // for forward compatibility
 type ControlServer interface {
-	// rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
-	// rpc AddEvents (AddEventRequest) returns (AddEventReply) {}
-	// rpc AddExecutor (AddExecutorRequest) returns (AddExecutorReply) {}
-	// rpc GetExecutors (GetExecutorsRequest) returns (GetExecutorsReply) {}
 	GetQueues(context.Context, *GetQueuesDefRequest) (*GetQueuesDefReply, error)
 	AddQueues(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error)
+	GetListeners(context.Context, *GetListenersRequest) (*GetListenersReply, error)
+	AddListener(context.Context, *AddListenersRequest) (*AddListenersReply, error)
+	AddExecutor(context.Context, *AddExecutorRequest) (*AddExecutorReply, error)
+	GetExecutors(context.Context, *GetExecutorsRequest) (*GetExecutorsReply, error)
 	mustEmbedUnimplementedControlServer()
 }
 
@@ -83,6 +123,18 @@ func (UnimplementedControlServer) GetQueues(context.Context, *GetQueuesDefReques
 }
 func (UnimplementedControlServer) AddQueues(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddQueues not implemented")
+}
+func (UnimplementedControlServer) GetListeners(context.Context, *GetListenersRequest) (*GetListenersReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetListeners not implemented")
+}
+func (UnimplementedControlServer) AddListener(context.Context, *AddListenersRequest) (*AddListenersReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddListener not implemented")
+}
+func (UnimplementedControlServer) AddExecutor(context.Context, *AddExecutorRequest) (*AddExecutorReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddExecutor not implemented")
+}
+func (UnimplementedControlServer) GetExecutors(context.Context, *GetExecutorsRequest) (*GetExecutorsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetExecutors not implemented")
 }
 func (UnimplementedControlServer) mustEmbedUnimplementedControlServer() {}
 
@@ -133,6 +185,78 @@ func _Control_AddQueues_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Control_GetListeners_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetListenersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).GetListeners(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_GetListeners_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).GetListeners(ctx, req.(*GetListenersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Control_AddListener_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddListenersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).AddListener(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_AddListener_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).AddListener(ctx, req.(*AddListenersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Control_AddExecutor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddExecutorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).AddExecutor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_AddExecutor_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).AddExecutor(ctx, req.(*AddExecutorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Control_GetExecutors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExecutorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).GetExecutors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_GetExecutors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).GetExecutors(ctx, req.(*GetExecutorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Control_ServiceDesc is the grpc.ServiceDesc for Control service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -147,6 +271,22 @@ var Control_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddQueues",
 			Handler:    _Control_AddQueues_Handler,
+		},
+		{
+			MethodName: "GetListeners",
+			Handler:    _Control_GetListeners_Handler,
+		},
+		{
+			MethodName: "AddListener",
+			Handler:    _Control_AddListener_Handler,
+		},
+		{
+			MethodName: "AddExecutor",
+			Handler:    _Control_AddExecutor_Handler,
+		},
+		{
+			MethodName: "GetExecutors",
+			Handler:    _Control_GetExecutors_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
