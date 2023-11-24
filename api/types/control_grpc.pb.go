@@ -19,14 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Control_GetMechants_FullMethodName   = "/Control/GetMechants"
-	Control_AddMerchant_FullMethodName   = "/Control/AddMerchant"
-	Control_GetEventDefs_FullMethodName  = "/Control/GetEventDefs"
-	Control_AddEventDef_FullMethodName   = "/Control/AddEventDef"
-	Control_GetQueueDefs_FullMethodName  = "/Control/GetQueueDefs"
-	Control_AddQueueDef_FullMethodName   = "/Control/AddQueueDef"
-	Control_GetEnviroment_FullMethodName = "/Control/GetEnviroment"
-	Control_AddEnviroment_FullMethodName = "/Control/AddEnviroment"
+	Control_GetMechants_FullMethodName      = "/Control/GetMechants"
+	Control_AddMerchant_FullMethodName      = "/Control/AddMerchant"
+	Control_GetEventDefs_FullMethodName     = "/Control/GetEventDefs"
+	Control_AddEventDef_FullMethodName      = "/Control/AddEventDef"
+	Control_GetQueueDefs_FullMethodName     = "/Control/GetQueueDefs"
+	Control_AddQueueDef_FullMethodName      = "/Control/AddQueueDef"
+	Control_GetEnviroment_FullMethodName    = "/Control/GetEnviroment"
+	Control_AddEnviroment_FullMethodName    = "/Control/AddEnviroment"
+	Control_UpdateEnviroment_FullMethodName = "/Control/UpdateEnviroment"
 )
 
 // ControlClient is the client API for Control service.
@@ -41,6 +42,7 @@ type ControlClient interface {
 	AddQueueDef(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error)
 	GetEnviroment(ctx context.Context, in *GetEnviromentRequest, opts ...grpc.CallOption) (*GetEnviromentReply, error)
 	AddEnviroment(ctx context.Context, in *AddEnviromentRequest, opts ...grpc.CallOption) (*AddEnviromentReply, error)
+	UpdateEnviroment(ctx context.Context, in *UpdateEnviromentRequest, opts ...grpc.CallOption) (*UpdateEnviromentReply, error)
 }
 
 type controlClient struct {
@@ -123,6 +125,15 @@ func (c *controlClient) AddEnviroment(ctx context.Context, in *AddEnviromentRequ
 	return out, nil
 }
 
+func (c *controlClient) UpdateEnviroment(ctx context.Context, in *UpdateEnviromentRequest, opts ...grpc.CallOption) (*UpdateEnviromentReply, error) {
+	out := new(UpdateEnviromentReply)
+	err := c.cc.Invoke(ctx, Control_UpdateEnviroment_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ControlServer is the server API for Control service.
 // All implementations must embed UnimplementedControlServer
 // for forward compatibility
@@ -135,6 +146,7 @@ type ControlServer interface {
 	AddQueueDef(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error)
 	GetEnviroment(context.Context, *GetEnviromentRequest) (*GetEnviromentReply, error)
 	AddEnviroment(context.Context, *AddEnviromentRequest) (*AddEnviromentReply, error)
+	UpdateEnviroment(context.Context, *UpdateEnviromentRequest) (*UpdateEnviromentReply, error)
 	mustEmbedUnimplementedControlServer()
 }
 
@@ -165,6 +177,9 @@ func (UnimplementedControlServer) GetEnviroment(context.Context, *GetEnviromentR
 }
 func (UnimplementedControlServer) AddEnviroment(context.Context, *AddEnviromentRequest) (*AddEnviromentReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddEnviroment not implemented")
+}
+func (UnimplementedControlServer) UpdateEnviroment(context.Context, *UpdateEnviromentRequest) (*UpdateEnviromentReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateEnviroment not implemented")
 }
 func (UnimplementedControlServer) mustEmbedUnimplementedControlServer() {}
 
@@ -323,6 +338,24 @@ func _Control_AddEnviroment_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Control_UpdateEnviroment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateEnviromentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).UpdateEnviroment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_UpdateEnviroment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).UpdateEnviroment(ctx, req.(*UpdateEnviromentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Control_ServiceDesc is the grpc.ServiceDesc for Control service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -361,6 +394,10 @@ var Control_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddEnviroment",
 			Handler:    _Control_AddEnviroment_Handler,
+		},
+		{
+			MethodName: "UpdateEnviroment",
+			Handler:    _Control_UpdateEnviroment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

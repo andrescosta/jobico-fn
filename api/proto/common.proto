@@ -12,6 +12,6 @@ message MerchantId{
 
 message Host {
     string Ip =1;
-    int32 port=2; 
+    uint32 port=2; 
   }
   

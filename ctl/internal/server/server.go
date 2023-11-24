@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/andrescosta/goico/pkg/convertico"
@@ -142,6 +143,21 @@ func (s *ControlServer) AddEnviroment(ctx context.Context, in *pb.AddEnviromentR
 	in.Environment.ID = strconv.FormatUint(ms, 10)
 	return &pb.AddEnviromentReply{Environment: in.Environment}, nil
 }
+func (s *ControlServer) UpdateEnviroment(ctx context.Context, in *pb.UpdateEnviromentRequest) (*pb.UpdateEnviromentReply, error) {
+	if in.Environment.ID == "" {
+		return nil, fmt.Errorf("ID is empty")
+	}
+	mydao, err := s.getDaoGen(ctx, TBL_EXECUTOR, &pb.Environment{})
+	if err != nil {
+		return nil, err
+	}
+	var m proto.Message = in.Environment
+	err = mydao.Update(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.UpdateEnviromentReply{}, nil
+}
 
 func (s *ControlServer) GetEnviroment(ctx context.Context, in *pb.GetEnviromentRequest) (*pb.GetEnviromentReply, error) {
 	mydao, err := s.getDaoGen(ctx, TBL_EXECUTOR, &pb.Environment{})
@@ -153,8 +169,10 @@ func (s *ControlServer) GetEnviroment(ctx context.Context, in *pb.GetEnviromentR
 	if err != nil {
 		return nil, err
 	}
-	environment := ms[0].(*pb.Environment)
-
+	environment := &pb.Environment{}
+	if len(ms) > 0 {
+		environment = ms[0].(*pb.Environment)
+	}
 	return &pb.GetEnviromentReply{Environment: environment}, nil
 }
 

@@ -25,3 +25,10 @@ func (s *ProtoMessageMarshaler) Unmarshal(id uint64, d []byte) (proto.Message, e
 	}
 	return dd, nil
 }
+
+func (s *ProtoMessageMarshaler) MarshalObj(q proto.Message) (uint64, []byte, error) {
+	id := reflectico.GetFieldUInt(q, "ID")
+	r, err := proto.Marshal(q)
+	return id, r, err
+
+}

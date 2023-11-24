@@ -13,6 +13,7 @@ service Control {
   rpc AddQueueDef(AddQueueDefRequest) returns (AddQueueDefReply){}
   rpc GetEnviroment(GetEnviromentRequest) returns (GetEnviromentReply){}
   rpc AddEnviroment(AddEnviromentRequest) returns (AddEnviromentReply){}
+  rpc UpdateEnviroment(UpdateEnviromentRequest) returns (UpdateEnviromentReply){}
 }
 
 message GetQueueDefsRequest {
@@ -42,9 +43,17 @@ message AddEnviromentRequest {
   Environment environment = 1;
 }
 
+message UpdateEnviromentReply {
+}
+
+message UpdateEnviromentRequest {
+  Environment environment = 1;
+}
+
 message AddEnviromentReply {
   Environment environment = 1;
 }
+
 
 message GetEventDefsRequest {
   MerchantId merchantId=1;

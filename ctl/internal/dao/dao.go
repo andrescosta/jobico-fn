@@ -32,3 +32,7 @@ func (q *DAO[T]) Get(ctx context.Context, id uint64) (T, error) {
 func (q *DAO[T]) Add(ctx context.Context, data T) (uint64, error) {
 	return q.table.Add(ctx, data)
 }
+
+func (q *DAO[T]) Update(ctx context.Context, data T) error {
+	return q.table.Update(ctx, data)
+}
