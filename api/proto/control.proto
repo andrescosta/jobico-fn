@@ -5,111 +5,122 @@ option go_package = "/types";
 import "common.proto";
 
 service Control {
-  rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
-  rpc AddEvents (AddEventRequest) returns (AddEventReply) {}
-  rpc GetQueues(GetQueuesDefRequest) returns (GetQueuesDefReply){}
-  rpc AddQueues(AddQueueDefRequest) returns (AddQueueDefReply){}
-  rpc GetListeners(GetListenersRequest) returns (GetListenersReply){}
-  rpc AddListener(AddListenersRequest) returns (AddListenersReply){}
-  rpc AddExecutor (AddExecutorRequest) returns (AddExecutorReply) {}
-  rpc GetExecutors (GetExecutorsRequest) returns (GetExecutorsReply) {}
+  rpc GetMechants (GetMerchantsRequest) returns (GetMerchantsReply) {}
+  rpc AddMerchant (AddMerchantRequest) returns (AddMerchantReply) {}
+  rpc GetEventDefs (GetEventDefsRequest) returns (GetEventDefsReply) {}
+  rpc AddEventDef (AddEventDefRequest) returns (AddEventDefReply) {}
+  rpc GetQueueDefs(GetQueueDefsRequest) returns (GetQueueDefsReply){}
+  rpc AddQueueDef(AddQueueDefRequest) returns (AddQueueDefReply){}
+  rpc GetEnviroment(GetEnviromentRequest) returns (GetEnviromentReply){}
+  rpc AddEnviroment(AddEnviromentRequest) returns (AddEnviromentReply){}
 }
 
-message GetQueuesDefRequest {
-  optional QueueId queueId = 1;
-  optional MerchantId merchantId=2;
-
+message GetQueueDefsRequest {
+  MerchantId merchantId=1;
 }
 
-message GetQueuesDefReply {
+message GetQueueDefsReply {
   repeated QueueDef queues = 1;
 }
 
 message AddQueueDefRequest {
-  QueueDef queues = 1;
+  QueueDef queue = 1;
 }
 
 message AddQueueDefReply {
-  QueueDef queues = 1;  
+  QueueDef queue = 1;  
 }
 
-message GetListenersRequest {
-  optional Listener listener = 1;
+message GetEnviromentRequest {
 }
 
-message GetListenersReply {
-  repeated Listener listeners = 1;
+message GetEnviromentReply {
+  Environment environment = 1;
 }
 
-message AddListenersRequest {
-  Listener listener = 1;
+message AddEnviromentRequest {
+  Environment environment = 1;
 }
 
-message AddListenersReply {
-  Listener listener = 1;
+message AddEnviromentReply {
+  Environment environment = 1;
 }
 
+message GetEventDefsRequest {
+  MerchantId merchantId=1;
+}
+  
+message GetEventDefsReply {
+	repeated EventDef events = 1;
+}
+
+message AddEventDefRequest {
+	EventDef event = 1;
+}
+  
+message AddEventDefReply {
+	EventDef event = 1;
+}
+
+message AddExecutorDefRequest {
+	ExecutorDef executor = 1;
+}
+  
+message AddExecutorDefReply {
+	ExecutorDef executor = 1;
+}
+
+message GetExecutorDefsRequest {
+  MerchantId merchantId=1;
+}
+  
+message GetExecutorDefsReply {
+	repeated ExecutorDef executors = 1;
+}
+
+message GetMerchantsRequest {
+}
+
+message GetMerchantsReply {
+  repeated Merchant merchants=1;
+}
+
+message AddMerchantRequest {
+  Merchant merchant=1;
+}
+
+message AddMerchantReply {
+  Merchant merchant=1;
+}
+
+
+message Merchant {
+  string ID = 1;
+  MerchantId merchantId=2;
+  string Name = 3;
+}
 
 message QueueDef {
   string ID  = 1; 
   QueueId queueId = 2;
   MerchantId merchantId=3;
-  Executor executor=4;
+  ExecutorDef executor=4;
 }
 
-message Listener{
+message Environment{
   string ID = 1;
-  Host host = 2;
+  map<string, Host> servers = 2;
 }
 
-message QueueEng{
+message EventDef {
   string ID = 1;
-  Host host = 2;
-}
-
-
-message Executor {
-  string ID = 1;
-  Host host = 2;
-}
-
-
-message Event {
-  string id = 1;
   string schema = 2;
+  QueueId queueId = 3;
+  MerchantId merchantId=4;
 }
 
-message ExecutorDefinition {
-  Event event = 1;
-  string package = 2;
-}
-
-message GetEventRequest {
-	repeated Event events = 1;
-}
-  
-message GetEventReply {
-	repeated Event events = 1;
-}
-
-message AddEventRequest {
-	repeated Event event = 1;
-}
-  
-message AddEventReply {
-}
-
-message AddExecutorRequest {
-	repeated ExecutorDefinition definition = 1;
-}
-  
-message AddExecutorReply {
-}
-
-message GetExecutorsRequest {
-	repeated ExecutorDefinition definitions = 1;
-}
-  
-message GetExecutorsReply {
-	repeated ExecutorDefinition definitions = 1;
+message ExecutorDef {
+  string ID = 1;
+  EventDef event = 2;
+  string package = 3;
 }

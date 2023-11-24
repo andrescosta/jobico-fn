@@ -19,28 +19,28 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Control_GetEvents_FullMethodName    = "/Control/GetEvents"
-	Control_AddEvents_FullMethodName    = "/Control/AddEvents"
-	Control_GetQueues_FullMethodName    = "/Control/GetQueues"
-	Control_AddQueues_FullMethodName    = "/Control/AddQueues"
-	Control_GetListeners_FullMethodName = "/Control/GetListeners"
-	Control_AddListener_FullMethodName  = "/Control/AddListener"
-	Control_AddExecutor_FullMethodName  = "/Control/AddExecutor"
-	Control_GetExecutors_FullMethodName = "/Control/GetExecutors"
+	Control_GetMechants_FullMethodName   = "/Control/GetMechants"
+	Control_AddMerchant_FullMethodName   = "/Control/AddMerchant"
+	Control_GetEventDefs_FullMethodName  = "/Control/GetEventDefs"
+	Control_AddEventDef_FullMethodName   = "/Control/AddEventDef"
+	Control_GetQueueDefs_FullMethodName  = "/Control/GetQueueDefs"
+	Control_AddQueueDef_FullMethodName   = "/Control/AddQueueDef"
+	Control_GetEnviroment_FullMethodName = "/Control/GetEnviroment"
+	Control_AddEnviroment_FullMethodName = "/Control/AddEnviroment"
 )
 
 // ControlClient is the client API for Control service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ControlClient interface {
-	GetEvents(ctx context.Context, in *GetEventRequest, opts ...grpc.CallOption) (*GetEventReply, error)
-	AddEvents(ctx context.Context, in *AddEventRequest, opts ...grpc.CallOption) (*AddEventReply, error)
-	GetQueues(ctx context.Context, in *GetQueuesDefRequest, opts ...grpc.CallOption) (*GetQueuesDefReply, error)
-	AddQueues(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error)
-	GetListeners(ctx context.Context, in *GetListenersRequest, opts ...grpc.CallOption) (*GetListenersReply, error)
-	AddListener(ctx context.Context, in *AddListenersRequest, opts ...grpc.CallOption) (*AddListenersReply, error)
-	AddExecutor(ctx context.Context, in *AddExecutorRequest, opts ...grpc.CallOption) (*AddExecutorReply, error)
-	GetExecutors(ctx context.Context, in *GetExecutorsRequest, opts ...grpc.CallOption) (*GetExecutorsReply, error)
+	GetMechants(ctx context.Context, in *GetMerchantsRequest, opts ...grpc.CallOption) (*GetMerchantsReply, error)
+	AddMerchant(ctx context.Context, in *AddMerchantRequest, opts ...grpc.CallOption) (*AddMerchantReply, error)
+	GetEventDefs(ctx context.Context, in *GetEventDefsRequest, opts ...grpc.CallOption) (*GetEventDefsReply, error)
+	AddEventDef(ctx context.Context, in *AddEventDefRequest, opts ...grpc.CallOption) (*AddEventDefReply, error)
+	GetQueueDefs(ctx context.Context, in *GetQueueDefsRequest, opts ...grpc.CallOption) (*GetQueueDefsReply, error)
+	AddQueueDef(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error)
+	GetEnviroment(ctx context.Context, in *GetEnviromentRequest, opts ...grpc.CallOption) (*GetEnviromentReply, error)
+	AddEnviroment(ctx context.Context, in *AddEnviromentRequest, opts ...grpc.CallOption) (*AddEnviromentReply, error)
 }
 
 type controlClient struct {
@@ -51,72 +51,72 @@ func NewControlClient(cc grpc.ClientConnInterface) ControlClient {
 	return &controlClient{cc}
 }
 
-func (c *controlClient) GetEvents(ctx context.Context, in *GetEventRequest, opts ...grpc.CallOption) (*GetEventReply, error) {
-	out := new(GetEventReply)
-	err := c.cc.Invoke(ctx, Control_GetEvents_FullMethodName, in, out, opts...)
+func (c *controlClient) GetMechants(ctx context.Context, in *GetMerchantsRequest, opts ...grpc.CallOption) (*GetMerchantsReply, error) {
+	out := new(GetMerchantsReply)
+	err := c.cc.Invoke(ctx, Control_GetMechants_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) AddEvents(ctx context.Context, in *AddEventRequest, opts ...grpc.CallOption) (*AddEventReply, error) {
-	out := new(AddEventReply)
-	err := c.cc.Invoke(ctx, Control_AddEvents_FullMethodName, in, out, opts...)
+func (c *controlClient) AddMerchant(ctx context.Context, in *AddMerchantRequest, opts ...grpc.CallOption) (*AddMerchantReply, error) {
+	out := new(AddMerchantReply)
+	err := c.cc.Invoke(ctx, Control_AddMerchant_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) GetQueues(ctx context.Context, in *GetQueuesDefRequest, opts ...grpc.CallOption) (*GetQueuesDefReply, error) {
-	out := new(GetQueuesDefReply)
-	err := c.cc.Invoke(ctx, Control_GetQueues_FullMethodName, in, out, opts...)
+func (c *controlClient) GetEventDefs(ctx context.Context, in *GetEventDefsRequest, opts ...grpc.CallOption) (*GetEventDefsReply, error) {
+	out := new(GetEventDefsReply)
+	err := c.cc.Invoke(ctx, Control_GetEventDefs_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) AddQueues(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error) {
+func (c *controlClient) AddEventDef(ctx context.Context, in *AddEventDefRequest, opts ...grpc.CallOption) (*AddEventDefReply, error) {
+	out := new(AddEventDefReply)
+	err := c.cc.Invoke(ctx, Control_AddEventDef_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlClient) GetQueueDefs(ctx context.Context, in *GetQueueDefsRequest, opts ...grpc.CallOption) (*GetQueueDefsReply, error) {
+	out := new(GetQueueDefsReply)
+	err := c.cc.Invoke(ctx, Control_GetQueueDefs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlClient) AddQueueDef(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error) {
 	out := new(AddQueueDefReply)
-	err := c.cc.Invoke(ctx, Control_AddQueues_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Control_AddQueueDef_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) GetListeners(ctx context.Context, in *GetListenersRequest, opts ...grpc.CallOption) (*GetListenersReply, error) {
-	out := new(GetListenersReply)
-	err := c.cc.Invoke(ctx, Control_GetListeners_FullMethodName, in, out, opts...)
+func (c *controlClient) GetEnviroment(ctx context.Context, in *GetEnviromentRequest, opts ...grpc.CallOption) (*GetEnviromentReply, error) {
+	out := new(GetEnviromentReply)
+	err := c.cc.Invoke(ctx, Control_GetEnviroment_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) AddListener(ctx context.Context, in *AddListenersRequest, opts ...grpc.CallOption) (*AddListenersReply, error) {
-	out := new(AddListenersReply)
-	err := c.cc.Invoke(ctx, Control_AddListener_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *controlClient) AddExecutor(ctx context.Context, in *AddExecutorRequest, opts ...grpc.CallOption) (*AddExecutorReply, error) {
-	out := new(AddExecutorReply)
-	err := c.cc.Invoke(ctx, Control_AddExecutor_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *controlClient) GetExecutors(ctx context.Context, in *GetExecutorsRequest, opts ...grpc.CallOption) (*GetExecutorsReply, error) {
-	out := new(GetExecutorsReply)
-	err := c.cc.Invoke(ctx, Control_GetExecutors_FullMethodName, in, out, opts...)
+func (c *controlClient) AddEnviroment(ctx context.Context, in *AddEnviromentRequest, opts ...grpc.CallOption) (*AddEnviromentReply, error) {
+	out := new(AddEnviromentReply)
+	err := c.cc.Invoke(ctx, Control_AddEnviroment_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,14 +127,14 @@ func (c *controlClient) GetExecutors(ctx context.Context, in *GetExecutorsReques
 // All implementations must embed UnimplementedControlServer
 // for forward compatibility
 type ControlServer interface {
-	GetEvents(context.Context, *GetEventRequest) (*GetEventReply, error)
-	AddEvents(context.Context, *AddEventRequest) (*AddEventReply, error)
-	GetQueues(context.Context, *GetQueuesDefRequest) (*GetQueuesDefReply, error)
-	AddQueues(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error)
-	GetListeners(context.Context, *GetListenersRequest) (*GetListenersReply, error)
-	AddListener(context.Context, *AddListenersRequest) (*AddListenersReply, error)
-	AddExecutor(context.Context, *AddExecutorRequest) (*AddExecutorReply, error)
-	GetExecutors(context.Context, *GetExecutorsRequest) (*GetExecutorsReply, error)
+	GetMechants(context.Context, *GetMerchantsRequest) (*GetMerchantsReply, error)
+	AddMerchant(context.Context, *AddMerchantRequest) (*AddMerchantReply, error)
+	GetEventDefs(context.Context, *GetEventDefsRequest) (*GetEventDefsReply, error)
+	AddEventDef(context.Context, *AddEventDefRequest) (*AddEventDefReply, error)
+	GetQueueDefs(context.Context, *GetQueueDefsRequest) (*GetQueueDefsReply, error)
+	AddQueueDef(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error)
+	GetEnviroment(context.Context, *GetEnviromentRequest) (*GetEnviromentReply, error)
+	AddEnviroment(context.Context, *AddEnviromentRequest) (*AddEnviromentReply, error)
 	mustEmbedUnimplementedControlServer()
 }
 
@@ -142,29 +142,29 @@ type ControlServer interface {
 type UnimplementedControlServer struct {
 }
 
-func (UnimplementedControlServer) GetEvents(context.Context, *GetEventRequest) (*GetEventReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetEvents not implemented")
+func (UnimplementedControlServer) GetMechants(context.Context, *GetMerchantsRequest) (*GetMerchantsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMechants not implemented")
 }
-func (UnimplementedControlServer) AddEvents(context.Context, *AddEventRequest) (*AddEventReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddEvents not implemented")
+func (UnimplementedControlServer) AddMerchant(context.Context, *AddMerchantRequest) (*AddMerchantReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddMerchant not implemented")
 }
-func (UnimplementedControlServer) GetQueues(context.Context, *GetQueuesDefRequest) (*GetQueuesDefReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetQueues not implemented")
+func (UnimplementedControlServer) GetEventDefs(context.Context, *GetEventDefsRequest) (*GetEventDefsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEventDefs not implemented")
 }
-func (UnimplementedControlServer) AddQueues(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddQueues not implemented")
+func (UnimplementedControlServer) AddEventDef(context.Context, *AddEventDefRequest) (*AddEventDefReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddEventDef not implemented")
 }
-func (UnimplementedControlServer) GetListeners(context.Context, *GetListenersRequest) (*GetListenersReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetListeners not implemented")
+func (UnimplementedControlServer) GetQueueDefs(context.Context, *GetQueueDefsRequest) (*GetQueueDefsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetQueueDefs not implemented")
 }
-func (UnimplementedControlServer) AddListener(context.Context, *AddListenersRequest) (*AddListenersReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddListener not implemented")
+func (UnimplementedControlServer) AddQueueDef(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddQueueDef not implemented")
 }
-func (UnimplementedControlServer) AddExecutor(context.Context, *AddExecutorRequest) (*AddExecutorReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddExecutor not implemented")
+func (UnimplementedControlServer) GetEnviroment(context.Context, *GetEnviromentRequest) (*GetEnviromentReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEnviroment not implemented")
 }
-func (UnimplementedControlServer) GetExecutors(context.Context, *GetExecutorsRequest) (*GetExecutorsReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetExecutors not implemented")
+func (UnimplementedControlServer) AddEnviroment(context.Context, *AddEnviromentRequest) (*AddEnviromentReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddEnviroment not implemented")
 }
 func (UnimplementedControlServer) mustEmbedUnimplementedControlServer() {}
 
@@ -179,146 +179,146 @@ func RegisterControlServer(s grpc.ServiceRegistrar, srv ControlServer) {
 	s.RegisterService(&Control_ServiceDesc, srv)
 }
 
-func _Control_GetEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetEventRequest)
+func _Control_GetMechants_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMerchantsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).GetEvents(ctx, in)
+		return srv.(ControlServer).GetMechants(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_GetEvents_FullMethodName,
+		FullMethod: Control_GetMechants_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetEvents(ctx, req.(*GetEventRequest))
+		return srv.(ControlServer).GetMechants(ctx, req.(*GetMerchantsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_AddEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddEventRequest)
+func _Control_AddMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddMerchantRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).AddEvents(ctx, in)
+		return srv.(ControlServer).AddMerchant(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_AddEvents_FullMethodName,
+		FullMethod: Control_AddMerchant_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).AddEvents(ctx, req.(*AddEventRequest))
+		return srv.(ControlServer).AddMerchant(ctx, req.(*AddMerchantRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_GetQueues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetQueuesDefRequest)
+func _Control_GetEventDefs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEventDefsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).GetQueues(ctx, in)
+		return srv.(ControlServer).GetEventDefs(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_GetQueues_FullMethodName,
+		FullMethod: Control_GetEventDefs_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetQueues(ctx, req.(*GetQueuesDefRequest))
+		return srv.(ControlServer).GetEventDefs(ctx, req.(*GetEventDefsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_AddQueues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Control_AddEventDef_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddEventDefRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).AddEventDef(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_AddEventDef_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).AddEventDef(ctx, req.(*AddEventDefRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Control_GetQueueDefs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetQueueDefsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).GetQueueDefs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_GetQueueDefs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).GetQueueDefs(ctx, req.(*GetQueueDefsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Control_AddQueueDef_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddQueueDefRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).AddQueues(ctx, in)
+		return srv.(ControlServer).AddQueueDef(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_AddQueues_FullMethodName,
+		FullMethod: Control_AddQueueDef_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).AddQueues(ctx, req.(*AddQueueDefRequest))
+		return srv.(ControlServer).AddQueueDef(ctx, req.(*AddQueueDefRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_GetListeners_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetListenersRequest)
+func _Control_GetEnviroment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEnviromentRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).GetListeners(ctx, in)
+		return srv.(ControlServer).GetEnviroment(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_GetListeners_FullMethodName,
+		FullMethod: Control_GetEnviroment_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetListeners(ctx, req.(*GetListenersRequest))
+		return srv.(ControlServer).GetEnviroment(ctx, req.(*GetEnviromentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_AddListener_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddListenersRequest)
+func _Control_AddEnviroment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddEnviromentRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).AddListener(ctx, in)
+		return srv.(ControlServer).AddEnviroment(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_AddListener_FullMethodName,
+		FullMethod: Control_AddEnviroment_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).AddListener(ctx, req.(*AddListenersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Control_AddExecutor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddExecutorRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ControlServer).AddExecutor(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Control_AddExecutor_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).AddExecutor(ctx, req.(*AddExecutorRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Control_GetExecutors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetExecutorsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ControlServer).GetExecutors(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Control_GetExecutors_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetExecutors(ctx, req.(*GetExecutorsRequest))
+		return srv.(ControlServer).AddEnviroment(ctx, req.(*AddEnviromentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -331,36 +331,36 @@ var Control_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ControlServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetEvents",
-			Handler:    _Control_GetEvents_Handler,
+			MethodName: "GetMechants",
+			Handler:    _Control_GetMechants_Handler,
 		},
 		{
-			MethodName: "AddEvents",
-			Handler:    _Control_AddEvents_Handler,
+			MethodName: "AddMerchant",
+			Handler:    _Control_AddMerchant_Handler,
 		},
 		{
-			MethodName: "GetQueues",
-			Handler:    _Control_GetQueues_Handler,
+			MethodName: "GetEventDefs",
+			Handler:    _Control_GetEventDefs_Handler,
 		},
 		{
-			MethodName: "AddQueues",
-			Handler:    _Control_AddQueues_Handler,
+			MethodName: "AddEventDef",
+			Handler:    _Control_AddEventDef_Handler,
 		},
 		{
-			MethodName: "GetListeners",
-			Handler:    _Control_GetListeners_Handler,
+			MethodName: "GetQueueDefs",
+			Handler:    _Control_GetQueueDefs_Handler,
 		},
 		{
-			MethodName: "AddListener",
-			Handler:    _Control_AddListener_Handler,
+			MethodName: "AddQueueDef",
+			Handler:    _Control_AddQueueDef_Handler,
 		},
 		{
-			MethodName: "AddExecutor",
-			Handler:    _Control_AddExecutor_Handler,
+			MethodName: "GetEnviroment",
+			Handler:    _Control_GetEnviroment_Handler,
 		},
 		{
-			MethodName: "GetExecutors",
-			Handler:    _Control_GetExecutors_Handler,
+			MethodName: "AddEnviroment",
+			Handler:    _Control_AddEnviroment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

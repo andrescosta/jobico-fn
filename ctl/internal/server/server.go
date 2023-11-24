@@ -4,35 +4,45 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/andrescosta/goico/pkg/convertico"
 	"github.com/andrescosta/goico/pkg/database"
-	"github.com/andrescosta/goico/pkg/reflectico"
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/andrescosta/workflew/ctl/internal/dao"
 	"google.golang.org/protobuf/proto"
 )
 
-type Queue struct {
+const (
+	DB_PATH      = ".\\db.db"
+	TBL_EVENT    = "event"
+	TBL_QUEUE    = "queue"
+	TBL_LISTENER = "listener"
+	TBL_EXECUTOR = "executor"
+	GEN_MERCHANT = "[Generic]"
+)
+
+type ControlServer struct {
 	pb.UnimplementedControlServer
-	daos map[string]*dao.ProtoMessageDAO
+	daos map[string]*dao.DAO[proto.Message]
 	db   *database.Database
 }
 
-const DB_PATH = ".\\db.db"
-
-func NewQueue(ctx context.Context) (*Queue, error) {
-	q, err := database.Open(ctx, DB_PATH)
+func NewCotrolServer(ctx context.Context) (*ControlServer, error) {
+	db, err := database.Open(ctx, DB_PATH)
 	if err != nil {
 		return nil, err
 	}
-	return &Queue{
-		daos: make(map[string]*dao.ProtoMessageDAO),
-		db:   q,
+	return &ControlServer{
+		daos: make(map[string]*dao.DAO[proto.Message]),
+		db:   db,
 	}, nil
 }
 
-func (s *Queue) GetQueues(ctx context.Context, in *pb.GetQueuesDefRequest) (*pb.GetQueuesDefReply, error) {
-	r := &pb.GetQueuesDefReply{}
-	mydao, err := s.getDao(ctx, in.MerchantId.Id, "queue", &pb.QueueDef{})
+func (s *ControlServer) Close(ctx context.Context) {
+	s.db.Close(ctx)
+}
+
+func (s *ControlServer) GetQueueDefs(ctx context.Context, in *pb.GetQueueDefsRequest) (*pb.GetQueueDefsReply, error) {
+	mydao, err := s.getDao(ctx, in.MerchantId.Id, TBL_QUEUE, &pb.QueueDef{})
 	if err != nil {
 		return nil, err
 	}
@@ -41,53 +51,127 @@ func (s *Queue) GetQueues(ctx context.Context, in *pb.GetQueuesDefRequest) (*pb.
 	if err != nil {
 		return nil, err
 	}
-	queues := reflectico.Convert[*proto.Message, *pb.QueueDef](ms)
-	r.Queues = queues
+	queues := convertico.ConvertSlices[proto.Message, *pb.QueueDef](ms)
 
-	return r, nil
+	return &pb.GetQueueDefsReply{Queues: queues}, nil
 }
 
-func (s *Queue) AddQueues(ctx context.Context, in *pb.AddQueueDefRequest) (*pb.AddQueueDefReply, error) {
-	mydao, err := s.getDao(ctx, in.Queues.MerchantId.Id, "queue", &pb.QueueDef{})
+func (s *ControlServer) AddQueueDef(ctx context.Context, in *pb.AddQueueDefRequest) (*pb.AddQueueDefReply, error) {
+	mydao, err := s.getDao(ctx, in.Queue.MerchantId.Id, TBL_QUEUE, &pb.QueueDef{})
 	if err != nil {
 		return nil, err
 	}
-	var m proto.Message = in.Queues
-	ms, err := mydao.Add(ctx, &m)
+	var m proto.Message = in.Queue
+	ms, err := mydao.Add(ctx, m)
 	if err != nil {
 		return nil, err
 	}
-	in.Queues.ID = strconv.FormatUint(ms, 10)
-	return &pb.AddQueueDefReply{
-		Queues: in.Queues,
-	}, nil
+	in.Queue.ID = strconv.FormatUint(ms, 10)
+	return &pb.AddQueueDefReply{Queue: in.Queue}, nil
 
 }
 
-func (s *Queue) GetEvents(ctx context.Context, in *pb.GetEventRequest) (*pb.GetEventReply, error) {
-	return nil, nil
-}
-func (s *Queue) AddEvents(ctx context.Context, in *pb.AddEventRequest) (*pb.AddEventReply, error) {
-	return nil, nil
-}
-func (s *Queue) GetListeners(ctx context.Context, in *pb.GetListenersRequest) (*pb.GetListenersReply, error) {
-	return nil, nil
-}
-func (s *Queue) AddListener(ctx context.Context, in *pb.AddListenersRequest) (*pb.AddListenersReply, error) {
-	return nil, nil
-}
-func (s *Queue) AddExecutor(ctx context.Context, in *pb.AddExecutorRequest) (*pb.AddExecutorReply, error) {
-	return nil, nil
-}
-func (s *Queue) GetExecutors(ctx context.Context, in *pb.GetExecutorsRequest) (*pb.GetExecutorsReply, error) {
-	return nil, nil
+func (s *ControlServer) GetEventDefs(ctx context.Context, in *pb.GetEventDefsRequest) (*pb.GetEventDefsReply, error) {
+	mydao, err := s.getDao(ctx, in.MerchantId.Id, TBL_EVENT, &pb.EventDef{})
+	if err != nil {
+		return nil, err
+	}
+
+	ms, err := mydao.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	events := convertico.ConvertSlices[proto.Message, *pb.EventDef](ms)
+
+	return &pb.GetEventDefsReply{Events: events}, nil
 }
 
-func (s *Queue) getDao(ctx context.Context, merchant string, entity string, message proto.Message) (*dao.ProtoMessageDAO, error) {
+func (s *ControlServer) AddEventDef(ctx context.Context, in *pb.AddEventDefRequest) (*pb.AddEventDefReply, error) {
+	mydao, err := s.getDao(ctx, in.Event.MerchantId.Id, TBL_EVENT, &pb.EventDef{})
+	if err != nil {
+		return nil, err
+	}
+	var m proto.Message = in.Event
+	ms, err := mydao.Add(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	in.Event.ID = strconv.FormatUint(ms, 10)
+	return &pb.AddEventDefReply{Event: in.Event}, nil
+}
+
+func (s *ControlServer) GetMechants(ctx context.Context, in *pb.GetMerchantsRequest) (*pb.GetMerchantsReply, error) {
+	mydao, err := s.getDaoGen(ctx, TBL_LISTENER, &pb.Merchant{})
+	if err != nil {
+		return nil, err
+	}
+
+	ms, err := mydao.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	mechants := convertico.ConvertSlices[proto.Message, *pb.Merchant](ms)
+
+	return &pb.GetMerchantsReply{Merchants: mechants}, nil
+}
+
+func (s *ControlServer) AddMerchant(ctx context.Context, in *pb.AddMerchantRequest) (*pb.AddMerchantReply, error) {
+	mydao, err := s.getDaoGen(ctx, TBL_LISTENER, &pb.Merchant{})
+	if err != nil {
+		return nil, err
+	}
+	var m proto.Message = in.Merchant
+	ms, err := mydao.Add(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	in.Merchant.ID = strconv.FormatUint(ms, 10)
+	return &pb.AddMerchantReply{Merchant: in.Merchant}, nil
+}
+
+func (s *ControlServer) AddEnviroment(ctx context.Context, in *pb.AddEnviromentRequest) (*pb.AddEnviromentReply, error) {
+	mydao, err := s.getDaoGen(ctx, TBL_EXECUTOR, &pb.Environment{})
+	if err != nil {
+		return nil, err
+	}
+	var m proto.Message = in.Environment
+	ms, err := mydao.Add(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	in.Environment.ID = strconv.FormatUint(ms, 10)
+	return &pb.AddEnviromentReply{Environment: in.Environment}, nil
+}
+
+func (s *ControlServer) GetEnviroment(ctx context.Context, in *pb.GetEnviromentRequest) (*pb.GetEnviromentReply, error) {
+	mydao, err := s.getDaoGen(ctx, TBL_EXECUTOR, &pb.Environment{})
+	if err != nil {
+		return nil, err
+	}
+
+	ms, err := mydao.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	environment := ms[0].(*pb.Environment)
+
+	return &pb.GetEnviromentReply{Environment: environment}, nil
+}
+
+func (s *ControlServer) getDaoGen(ctx context.Context, entity string, message proto.Message) (*dao.DAO[proto.Message], error) {
+	return s.getDao(ctx, GEN_MERCHANT, entity, message)
+}
+
+func (s *ControlServer) getDao(ctx context.Context, merchant string, entity string, message proto.Message) (*dao.DAO[proto.Message], error) {
 	mydao, ok := s.daos[merchant]
 	if !ok {
 		var err error
-		mydao, err = dao.NewProtoMessageDAO(ctx, s.db, merchant+"/"+entity, message)
+		mydao, err = dao.NewDAO(ctx, s.db, merchant+"/"+entity,
+			&ProtoMessageMarshaler{
+				newMessage: func() proto.Message {
+					return message
+				},
+			})
 		if err != nil {
 			return nil, err
 		}

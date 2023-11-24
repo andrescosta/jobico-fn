@@ -21,10 +21,11 @@ func main() {
 func serviceFunc(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
 	s := grpc.NewServer()
-	svr, err := server1.NewQueue(ctx)
+	svr, err := server1.NewCotrolServer(ctx)
 	if err != nil {
 		return err
 	}
+	defer svr.Close(ctx)
 	pb.RegisterControlServer(s, svr)
 	reflection.Register(s)
 
@@ -32,39 +33,8 @@ func serviceFunc(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("server.New: %w", err)
 	}
-	logger.Info().Msgf("Queue started at:%s", srv.Addr())
+	logger.Info().Msgf("Ctl Server started at:%s", srv.Addr())
 	err = srv.ServeGRPC(ctx, s)
-	logger.Info().Msg("Queue stopped")
+	logger.Info().Msg("Ctl Server stopped")
 	return err
 }
-
-/*	q := &types.QueueDef{
-		QueueId: &types.QueueId{
-			Name: "aaaa",
-		},
-	}
-
-	s := Serializer{}
-	schema, err := database.Open(context.Background(), ".\\db.db", "queue", &s)
-	if err != nil {
-		println(err)
-	}
-	i, err := schema.Add(context.Background(), q)
-	if err != nil {
-		println(err)
-	}
-	k, err := schema.Get(context.Background(), i)
-	if err != nil {
-		println(err)
-	}
-	println(k.String())
-	ks, err := schema.GetAll(context.Background())
-	if err != nil {
-		println(err)
-	}
-	for _, kss := range ks {
-		fmt.Println(kss)
-	}
-	schema.Close(context.Background())
-*/
-//}
