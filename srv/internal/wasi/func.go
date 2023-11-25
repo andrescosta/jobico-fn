@@ -89,7 +89,7 @@ func (f *WasmFunc) readData(ctx context.Context, eventResultPtrSize uint64) (str
 		defer func() {
 			_, err := f.free.Call(ctx, uint64(eventResultPtr))
 			if err != nil {
-				logger.Err(err)
+				logger.Err(err).Msg("error freeing memory")
 			}
 		}()
 	}

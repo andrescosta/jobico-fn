@@ -1,8 +1,6 @@
 package server
 
 import (
-	"strconv"
-
 	"github.com/andrescosta/goico/pkg/reflectico"
 	"google.golang.org/protobuf/proto"
 )
@@ -14,7 +12,7 @@ type ProtoMessageMarshaler struct {
 }
 
 func (s *ProtoMessageMarshaler) Marshal(id uint64, q proto.Message) ([]byte, error) {
-	reflectico.SetFieldString(q, "ID", strconv.FormatUint(id, 10))
+	reflectico.SetFieldUInt(q, "ID", &id)
 	return proto.Marshal(q)
 }
 

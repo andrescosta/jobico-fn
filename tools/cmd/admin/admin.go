@@ -8,8 +8,8 @@ import (
 
 	"github.com/andrescosta/goico/pkg/config"
 	"github.com/andrescosta/goico/pkg/env"
+	"github.com/andrescosta/workflew/api/pkg/remote"
 	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/cli/internal/remote"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -37,7 +37,7 @@ type HostModal struct {
 	modal   tview.Primitive
 }
 type CliApp struct {
-	controlClient remote.ControlClient
+	controlClient *remote.ControlClient
 	*pb.Environment
 }
 

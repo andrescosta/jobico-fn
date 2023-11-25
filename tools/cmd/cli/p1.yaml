@@ -1,0 +1,33 @@
+name: mypackage
+merchantid: m1
+queues:
+  -
+    queueid: aaa
+    name: queue1
+  -
+    queueid: bbb
+    name: queue2
+
+events:
+  -
+    name: ev1
+    dataType: 0
+    schema:
+      schemaid: sche1
+      name: sche1
+      schemaref: schema.json
+    supplierqueue:
+      queueid: idqu1
+      name: queue1
+
+executors:
+  -
+    name: myexs
+    package:
+        packageid: package1
+        name: package111
+        packageref: package1.wasm
+        type: wasi
+    supportedevents:
+      -
+        name: evt1

@@ -76,12 +76,12 @@ func executor(ctx context.Context, merchant string, queue string, wasmFunc strin
 		case <-ticker.C:
 			d, err := query(ctx, merchant, queue)
 			if err != nil {
-				logger.Err(err)
+				logger.Err(err).Msg("Error quering")
 			} else {
 				for _, ds := range d {
 					if err = execute(ctx, ds, wasmFunc, runtime); err != nil {
 						logger.Debug().Msg(err.Error())
-						logger.Err(err)
+						logger.Err(err).Msg("error executing")
 					}
 				}
 			}

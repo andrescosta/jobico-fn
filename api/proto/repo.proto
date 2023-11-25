@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = "/types";
+
+service Repo {
+  rpc GetFile (GetFileRequest) returns (GetFileReply);
+  rpc AddFile (AddFileRequest) returns (AddFileReply);
+}
+
+message AddFileRequest{
+    string merchantId = 1;
+    string name = 2;
+    bytes file = 3;
+}
+
+message AddFileReply {
+    bytes file = 1; 
+}
+
+message GetFileRequest{
+    string merchantId = 1;
+    string name = 2;
+}
+
+message GetFileReply {
+    bytes file = 1; 
+}

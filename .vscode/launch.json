@@ -11,11 +11,24 @@
         "program": "${file}"
     },
     {
-        "name": "Launch cli",
+        "name": "Launch CLI",
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/cli/cmd/main.go",
+        "program": "${workspaceFolder}/tools/cmd/cli/cli.go",
+        "args": [
+            "repo",
+            "merch1",
+            "personschema",
+            "./schema.json"
+        ]
+    },
+    {
+        "name": "Launch Admin",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/tools/cmd/admin/admin.go",
         "console": "integratedTerminal"
     },
 ]

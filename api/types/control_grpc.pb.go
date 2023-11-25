@@ -21,10 +21,10 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Control_GetMechants_FullMethodName      = "/Control/GetMechants"
 	Control_AddMerchant_FullMethodName      = "/Control/AddMerchant"
-	Control_GetEventDefs_FullMethodName     = "/Control/GetEventDefs"
-	Control_AddEventDef_FullMethodName      = "/Control/AddEventDef"
-	Control_GetQueueDefs_FullMethodName     = "/Control/GetQueueDefs"
-	Control_AddQueueDef_FullMethodName      = "/Control/AddQueueDef"
+	Control_AddPackage_FullMethodName       = "/Control/AddPackage"
+	Control_GetAllPackages_FullMethodName   = "/Control/GetAllPackages"
+	Control_GetPackages_FullMethodName      = "/Control/GetPackages"
+	Control_UpdatePackage_FullMethodName    = "/Control/UpdatePackage"
 	Control_GetEnviroment_FullMethodName    = "/Control/GetEnviroment"
 	Control_AddEnviroment_FullMethodName    = "/Control/AddEnviroment"
 	Control_UpdateEnviroment_FullMethodName = "/Control/UpdateEnviroment"
@@ -36,10 +36,10 @@ const (
 type ControlClient interface {
 	GetMechants(ctx context.Context, in *GetMerchantsRequest, opts ...grpc.CallOption) (*GetMerchantsReply, error)
 	AddMerchant(ctx context.Context, in *AddMerchantRequest, opts ...grpc.CallOption) (*AddMerchantReply, error)
-	GetEventDefs(ctx context.Context, in *GetEventDefsRequest, opts ...grpc.CallOption) (*GetEventDefsReply, error)
-	AddEventDef(ctx context.Context, in *AddEventDefRequest, opts ...grpc.CallOption) (*AddEventDefReply, error)
-	GetQueueDefs(ctx context.Context, in *GetQueueDefsRequest, opts ...grpc.CallOption) (*GetQueueDefsReply, error)
-	AddQueueDef(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error)
+	AddPackage(ctx context.Context, in *AddJobPackageRequest, opts ...grpc.CallOption) (*AddJobPackageReply, error)
+	GetAllPackages(ctx context.Context, in *GetAllJobPackagesRequest, opts ...grpc.CallOption) (*GetAllJobPackagesReply, error)
+	GetPackages(ctx context.Context, in *GetJobPackagesRequest, opts ...grpc.CallOption) (*GetJobPackagesReply, error)
+	UpdatePackage(ctx context.Context, in *UpdateJobPackageRequest, opts ...grpc.CallOption) (*UpdateJobPackageReply, error)
 	GetEnviroment(ctx context.Context, in *GetEnviromentRequest, opts ...grpc.CallOption) (*GetEnviromentReply, error)
 	AddEnviroment(ctx context.Context, in *AddEnviromentRequest, opts ...grpc.CallOption) (*AddEnviromentReply, error)
 	UpdateEnviroment(ctx context.Context, in *UpdateEnviromentRequest, opts ...grpc.CallOption) (*UpdateEnviromentReply, error)
@@ -71,36 +71,36 @@ func (c *controlClient) AddMerchant(ctx context.Context, in *AddMerchantRequest,
 	return out, nil
 }
 
-func (c *controlClient) GetEventDefs(ctx context.Context, in *GetEventDefsRequest, opts ...grpc.CallOption) (*GetEventDefsReply, error) {
-	out := new(GetEventDefsReply)
-	err := c.cc.Invoke(ctx, Control_GetEventDefs_FullMethodName, in, out, opts...)
+func (c *controlClient) AddPackage(ctx context.Context, in *AddJobPackageRequest, opts ...grpc.CallOption) (*AddJobPackageReply, error) {
+	out := new(AddJobPackageReply)
+	err := c.cc.Invoke(ctx, Control_AddPackage_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) AddEventDef(ctx context.Context, in *AddEventDefRequest, opts ...grpc.CallOption) (*AddEventDefReply, error) {
-	out := new(AddEventDefReply)
-	err := c.cc.Invoke(ctx, Control_AddEventDef_FullMethodName, in, out, opts...)
+func (c *controlClient) GetAllPackages(ctx context.Context, in *GetAllJobPackagesRequest, opts ...grpc.CallOption) (*GetAllJobPackagesReply, error) {
+	out := new(GetAllJobPackagesReply)
+	err := c.cc.Invoke(ctx, Control_GetAllPackages_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) GetQueueDefs(ctx context.Context, in *GetQueueDefsRequest, opts ...grpc.CallOption) (*GetQueueDefsReply, error) {
-	out := new(GetQueueDefsReply)
-	err := c.cc.Invoke(ctx, Control_GetQueueDefs_FullMethodName, in, out, opts...)
+func (c *controlClient) GetPackages(ctx context.Context, in *GetJobPackagesRequest, opts ...grpc.CallOption) (*GetJobPackagesReply, error) {
+	out := new(GetJobPackagesReply)
+	err := c.cc.Invoke(ctx, Control_GetPackages_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) AddQueueDef(ctx context.Context, in *AddQueueDefRequest, opts ...grpc.CallOption) (*AddQueueDefReply, error) {
-	out := new(AddQueueDefReply)
-	err := c.cc.Invoke(ctx, Control_AddQueueDef_FullMethodName, in, out, opts...)
+func (c *controlClient) UpdatePackage(ctx context.Context, in *UpdateJobPackageRequest, opts ...grpc.CallOption) (*UpdateJobPackageReply, error) {
+	out := new(UpdateJobPackageReply)
+	err := c.cc.Invoke(ctx, Control_UpdatePackage_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -140,10 +140,10 @@ func (c *controlClient) UpdateEnviroment(ctx context.Context, in *UpdateEnvirome
 type ControlServer interface {
 	GetMechants(context.Context, *GetMerchantsRequest) (*GetMerchantsReply, error)
 	AddMerchant(context.Context, *AddMerchantRequest) (*AddMerchantReply, error)
-	GetEventDefs(context.Context, *GetEventDefsRequest) (*GetEventDefsReply, error)
-	AddEventDef(context.Context, *AddEventDefRequest) (*AddEventDefReply, error)
-	GetQueueDefs(context.Context, *GetQueueDefsRequest) (*GetQueueDefsReply, error)
-	AddQueueDef(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error)
+	AddPackage(context.Context, *AddJobPackageRequest) (*AddJobPackageReply, error)
+	GetAllPackages(context.Context, *GetAllJobPackagesRequest) (*GetAllJobPackagesReply, error)
+	GetPackages(context.Context, *GetJobPackagesRequest) (*GetJobPackagesReply, error)
+	UpdatePackage(context.Context, *UpdateJobPackageRequest) (*UpdateJobPackageReply, error)
 	GetEnviroment(context.Context, *GetEnviromentRequest) (*GetEnviromentReply, error)
 	AddEnviroment(context.Context, *AddEnviromentRequest) (*AddEnviromentReply, error)
 	UpdateEnviroment(context.Context, *UpdateEnviromentRequest) (*UpdateEnviromentReply, error)
@@ -160,17 +160,17 @@ func (UnimplementedControlServer) GetMechants(context.Context, *GetMerchantsRequ
 func (UnimplementedControlServer) AddMerchant(context.Context, *AddMerchantRequest) (*AddMerchantReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddMerchant not implemented")
 }
-func (UnimplementedControlServer) GetEventDefs(context.Context, *GetEventDefsRequest) (*GetEventDefsReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetEventDefs not implemented")
+func (UnimplementedControlServer) AddPackage(context.Context, *AddJobPackageRequest) (*AddJobPackageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddPackage not implemented")
 }
-func (UnimplementedControlServer) AddEventDef(context.Context, *AddEventDefRequest) (*AddEventDefReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddEventDef not implemented")
+func (UnimplementedControlServer) GetAllPackages(context.Context, *GetAllJobPackagesRequest) (*GetAllJobPackagesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllPackages not implemented")
 }
-func (UnimplementedControlServer) GetQueueDefs(context.Context, *GetQueueDefsRequest) (*GetQueueDefsReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetQueueDefs not implemented")
+func (UnimplementedControlServer) GetPackages(context.Context, *GetJobPackagesRequest) (*GetJobPackagesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPackages not implemented")
 }
-func (UnimplementedControlServer) AddQueueDef(context.Context, *AddQueueDefRequest) (*AddQueueDefReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddQueueDef not implemented")
+func (UnimplementedControlServer) UpdatePackage(context.Context, *UpdateJobPackageRequest) (*UpdateJobPackageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdatePackage not implemented")
 }
 func (UnimplementedControlServer) GetEnviroment(context.Context, *GetEnviromentRequest) (*GetEnviromentReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEnviroment not implemented")
@@ -230,74 +230,74 @@ func _Control_AddMerchant_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_GetEventDefs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetEventDefsRequest)
+func _Control_AddPackage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddJobPackageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).GetEventDefs(ctx, in)
+		return srv.(ControlServer).AddPackage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_GetEventDefs_FullMethodName,
+		FullMethod: Control_AddPackage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetEventDefs(ctx, req.(*GetEventDefsRequest))
+		return srv.(ControlServer).AddPackage(ctx, req.(*AddJobPackageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_AddEventDef_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddEventDefRequest)
+func _Control_GetAllPackages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllJobPackagesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).AddEventDef(ctx, in)
+		return srv.(ControlServer).GetAllPackages(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_AddEventDef_FullMethodName,
+		FullMethod: Control_GetAllPackages_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).AddEventDef(ctx, req.(*AddEventDefRequest))
+		return srv.(ControlServer).GetAllPackages(ctx, req.(*GetAllJobPackagesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_GetQueueDefs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetQueueDefsRequest)
+func _Control_GetPackages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetJobPackagesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).GetQueueDefs(ctx, in)
+		return srv.(ControlServer).GetPackages(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_GetQueueDefs_FullMethodName,
+		FullMethod: Control_GetPackages_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetQueueDefs(ctx, req.(*GetQueueDefsRequest))
+		return srv.(ControlServer).GetPackages(ctx, req.(*GetJobPackagesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_AddQueueDef_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddQueueDefRequest)
+func _Control_UpdatePackage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateJobPackageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).AddQueueDef(ctx, in)
+		return srv.(ControlServer).UpdatePackage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_AddQueueDef_FullMethodName,
+		FullMethod: Control_UpdatePackage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).AddQueueDef(ctx, req.(*AddQueueDefRequest))
+		return srv.(ControlServer).UpdatePackage(ctx, req.(*UpdateJobPackageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -372,20 +372,20 @@ var Control_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Control_AddMerchant_Handler,
 		},
 		{
-			MethodName: "GetEventDefs",
-			Handler:    _Control_GetEventDefs_Handler,
+			MethodName: "AddPackage",
+			Handler:    _Control_AddPackage_Handler,
 		},
 		{
-			MethodName: "AddEventDef",
-			Handler:    _Control_AddEventDef_Handler,
+			MethodName: "GetAllPackages",
+			Handler:    _Control_GetAllPackages_Handler,
 		},
 		{
-			MethodName: "GetQueueDefs",
-			Handler:    _Control_GetQueueDefs_Handler,
+			MethodName: "GetPackages",
+			Handler:    _Control_GetPackages_Handler,
 		},
 		{
-			MethodName: "AddQueueDef",
-			Handler:    _Control_AddQueueDef_Handler,
+			MethodName: "UpdatePackage",
+			Handler:    _Control_UpdatePackage_Handler,
 		},
 		{
 			MethodName: "GetEnviroment",
