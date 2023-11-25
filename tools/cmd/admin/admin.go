@@ -110,8 +110,8 @@ func (c *CliApp) renderSideMenu() *tview.TreeView {
 	nodeEnvironment := c.renderEnviromentNode(context.Background())
 	nodeRoot.AddChild(nodeEnvironment)
 
-	nodeMerchants := c.renderDefinitionsNode(context.Background())
-	nodeRoot.AddChild(nodeMerchants)
+	nodeTenants := c.renderDefinitionsNode(context.Background())
+	nodeRoot.AddChild(nodeTenants)
 
 	menu := tview.NewTreeView()
 	menu.SetRoot(nodeRoot).

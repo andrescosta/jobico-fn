@@ -68,35 +68,35 @@ func (c *ControlClient) UpdateEnvironment(ctx context.Context, environment *pb.E
 	return nil
 }
 
-func (c *ControlClient) GetMerchants(ctx context.Context) ([]*pb.Merchant, error) {
+func (c *ControlClient) GetTenants(ctx context.Context) ([]*pb.Tenant, error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 	client := pb.NewControlClient(conn)
-	r, err := client.GetMechants(ctx, &pb.GetMerchantsRequest{})
+	r, err := client.GetTenants(ctx, &pb.GetTenantsRequest{})
 	if err != nil {
 		return nil, err
 	}
-	return r.Merchants, nil
+	return r.Tenants, nil
 }
 
-func (c *ControlClient) AddMerchant(ctx context.Context, merchant *pb.Merchant) (*pb.Merchant, error) {
+func (c *ControlClient) AddTenant(ctx context.Context, tenant *pb.Tenant) (*pb.Tenant, error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 	client := pb.NewControlClient(conn)
-	r, err := client.AddMerchant(ctx, &pb.AddMerchantRequest{Merchant: merchant})
+	r, err := client.AddTenant(ctx, &pb.AddTenantRequest{Tenant: tenant})
 	if err != nil {
 		return nil, err
 	}
-	return r.Merchant, nil
+	return r.Tenant, nil
 }
 
-func (c *ControlClient) GetPackages(ctx context.Context, merchant string) ([]*pb.JobPackage, error) {
+func (c *ControlClient) GetPackages(ctx context.Context, tenant string) ([]*pb.JobPackage, error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (c *ControlClient) GetPackages(ctx context.Context, merchant string) ([]*pb
 	defer conn.Close()
 	client := pb.NewControlClient(conn)
 	r, err := client.GetPackages(ctx, &pb.GetJobPackagesRequest{
-		MerchantId: merchant,
+		TenantId: tenant,
 	})
 	if err != nil {
 		return nil, err

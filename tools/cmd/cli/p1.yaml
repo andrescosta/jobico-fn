@@ -1,6 +1,6 @@
 name: mypackage
 jobpackageid: mypackage
-merchantid: m1
+tenantid: m1
 queues:
   -
     queueid: queue1

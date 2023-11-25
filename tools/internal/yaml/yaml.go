@@ -35,9 +35,9 @@ func Encode(j *pb.JobPackage) (*string, error) {
 func Debug() {
 	id := uint64(1)
 	k := pb.JobPackage{
-		ID:         &id,
-		Name:       "packname",
-		MerchantId: "merch1",
+		ID:       &id,
+		Name:     "packname",
+		TenantId: "merch1",
 	}
 	o, err := yaml.Marshal(k)
 	if err != nil {

@@ -26,7 +26,7 @@ func (c *RepoClient) dial() (*grpc.ClientConn, error) {
 
 }
 
-func (c *RepoClient) AddFile(ctx context.Context, merchant string, name string, reader io.Reader) error {
+func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, reader io.Reader) error {
 	conn, err := c.dial()
 	if err != nil {
 		return err
@@ -40,9 +40,9 @@ func (c *RepoClient) AddFile(ctx context.Context, merchant string, name string, 
 	}
 
 	_, err = repo.AddFile(ctx, &pb.AddFileRequest{
-		MerchantId: merchant,
-		Name:       name,
-		File:       bytes,
+		TenantId: tenant,
+		Name:     name,
+		File:     bytes,
 	})
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func (c *RepoClient) AddFile(ctx context.Context, merchant string, name string, 
 	return nil
 }
 
-func (c *RepoClient) GetFile(ctx context.Context, merchant string, name string) ([]byte, error) {
+func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([]byte, error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -58,8 +58,8 @@ func (c *RepoClient) GetFile(ctx context.Context, merchant string, name string) 
 	defer conn.Close()
 	repo := pb.NewRepoClient(conn)
 	r, err := repo.GetFile(ctx, &pb.GetFileRequest{
-		MerchantId: merchant,
-		Name:       name,
+		TenantId: tenant,
+		Name:     name,
 	})
 	if err != nil {
 		return nil, err

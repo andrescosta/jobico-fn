@@ -17,7 +17,7 @@ import (
 )
 
 type executionQueue struct {
-	MerchantId    string
+	TenantId      string
 	QueueId       string
 	FuncPerEvents map[string]*exFunc
 }
@@ -48,7 +48,7 @@ func getPackages(ctx context.Context) ([]*executionQueue, error) {
 		for _, ex := range p.Executors {
 			runtime := getRuntime(ex.RuntimeId, p.Runtimes)
 
-			wasmfile, err := repoClient.GetFile(ctx, p.MerchantId, runtime.ModuleRef)
+			wasmfile, err := repoClient.GetFile(ctx, p.TenantId, runtime.ModuleRef)
 			if err != nil {
 				return nil, err
 			}
@@ -78,7 +78,7 @@ func getPackages(ctx context.Context) ([]*executionQueue, error) {
 		for _, qq := range p.Queues {
 			pkgs = append(pkgs,
 				&executionQueue{
-					MerchantId:    p.MerchantId,
+					TenantId:      p.TenantId,
 					QueueId:       qq.QueueId,
 					FuncPerEvents: exs,
 				})
@@ -101,7 +101,7 @@ func StartExecutors(ctx context.Context) error {
 	}
 	for _, q := range exqs {
 		w.Add(1)
-		go executor(ctx, q.MerchantId, q.QueueId, q.FuncPerEvents, &w)
+		go executor(ctx, q.TenantId, q.QueueId, q.FuncPerEvents, &w)
 	}
 	logger.Info().Msg("Workers started")
 	w.Wait()
@@ -109,18 +109,18 @@ func StartExecutors(ctx context.Context) error {
 	return nil
 }
 
-func executor(ctx context.Context, merchantId string, queueId string, exs map[string]*exFunc, w *sync.WaitGroup) {
+func executor(ctx context.Context, tenantId string, queueId string, exs map[string]*exFunc, w *sync.WaitGroup) {
 	defer w.Done()
 	logger := zerolog.Ctx(ctx)
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	logger.Debug().Msgf("Worker for merchant: %s and queue: %s started", merchantId, queueId)
+	logger.Debug().Msgf("Worker for tenant: %s and queue: %s started", tenantId, queueId)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			d, err := query(ctx, merchantId, queueId)
+			d, err := query(ctx, tenantId, queueId)
 			if err != nil {
 				logger.Err(err).Msg("Error quering")
 			} else {
@@ -137,7 +137,7 @@ func executor(ctx context.Context, merchantId string, queueId string, exs map[st
 
 }
 
-func query(ctx context.Context, merchant string, queue string) ([]*pb.QueueItem, error) {
+func query(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	Host := os.Getenv("queue.host")
@@ -151,8 +151,8 @@ func query(ctx context.Context, merchant string, queue string) ([]*pb.QueueItem,
 	defer conn.Close()
 
 	request := pb.DequeueRequest{
-		QueueId:    queue,
-		MerchantId: merchant,
+		QueueId:  queue,
+		TenantId: tenant,
 	}
 
 	r, err := client.Dequeue(ctx, &request)

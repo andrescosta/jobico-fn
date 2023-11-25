@@ -43,22 +43,22 @@ func New(ctx context.Context) (*Controller, error) {
 		return nil, err
 	}
 	for _, ps := range pkgs {
-		merchantId := ps.MerchantId
+		tenantId := ps.TenantId
 		for _, event := range ps.Events {
-			f, err := repoClient.GetFile(ctx, merchantId, event.Schema.SchemaRef)
+			f, err := repoClient.GetFile(ctx, tenantId, event.Schema.SchemaRef)
 			if err != nil {
 				return nil, err
 			}
 			comp := jsonschema.NewCompiler()
-			if err := comp.AddResource(getFullEventId(merchantId, event.EventId), bytes.NewReader(f)); err != nil {
+			if err := comp.AddResource(getFullEventId(tenantId, event.EventId), bytes.NewReader(f)); err != nil {
 				return nil, err
 			}
-			compiledSchema, err := comp.Compile(getFullEventId(merchantId, event.EventId))
+			compiledSchema, err := comp.Compile(getFullEventId(tenantId, event.EventId))
 			if err != nil {
 				return nil, err
 			}
 
-			events[getFullEventId(merchantId, event.EventId)] = &Event{
+			events[getFullEventId(tenantId, event.EventId)] = &Event{
 				event:  event,
 				schema: compiledSchema,
 			}
@@ -67,12 +67,12 @@ func New(ctx context.Context) (*Controller, error) {
 	return &con, nil
 }
 
-func getFullEventId(merchantId string, eventId string) string {
-	return merchantId + "/" + eventId
+func getFullEventId(tenantId string, eventId string) string {
+	return tenantId + "/" + eventId
 }
 
-func (rr Controller) getEventDef(merchantId string, eventId string) (*Event, error) {
-	ev, ok := rr.events[getFullEventId(merchantId, eventId)]
+func (rr Controller) getEventDef(tenantId string, eventId string) (*Event, error) {
+	ev, ok := rr.events[getFullEventId(tenantId, eventId)]
 	if !ok {
 		return nil, fmt.Errorf("event unknown")
 	}
@@ -82,7 +82,7 @@ func (rr Controller) getEventDef(merchantId string, eventId string) (*Event, err
 func (rr Controller) Routes(logger zerolog.Logger) chi.Router {
 	r := chi.NewRouter()
 	r.Use(httplog.RequestLogger(logger))
-	r.Route("/{merchant_id}/{event_id}", func(r2 chi.Router) {
+	r.Route("/{tenant_id}/{event_id}", func(r2 chi.Router) {
 		r2.Post("/", rr.Post)
 		r2.Get("/", rr.Get)
 	})
@@ -102,9 +102,9 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	var items []*pb.QueueItem
-	merchantId := chi.URLParam(request, "merchant_id")
+	tenantId := chi.URLParam(request, "tenant_id")
 	eventId := chi.URLParam(request, "event_id")
-	ef, err := c.getEventDef(merchantId, eventId)
+	ef, err := c.getEventDef(tenantId, eventId)
 	if err != nil {
 		logger.Error().Msgf("Data unknown: %s", err)
 		http.Error(writer, "Event unknown", http.StatusBadRequest)
@@ -133,9 +133,9 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 		}
 	}
 	queueRequest := pb.QueueRequest{
-		QueueId:    ef.event.SupplierQueueId,
-		MerchantId: merchantId,
-		Items:      items,
+		QueueId:  ef.event.SupplierQueueId,
+		TenantId: tenantId,
+		Items:    items,
 	}
 
 	var opts []grpc.DialOption

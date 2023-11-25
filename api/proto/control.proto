@@ -5,8 +5,8 @@ option go_package = "/types";
 import "common.proto";
 
 service Control {
-  rpc GetMechants (GetMerchantsRequest) returns (GetMerchantsReply) {}
-  rpc AddMerchant (AddMerchantRequest) returns (AddMerchantReply) {}
+  rpc GetTenants (GetTenantsRequest) returns (GetTenantsReply) {}
+  rpc AddTenant (AddTenantRequest) returns (AddTenantReply) {}
   rpc AddPackage (AddJobPackageRequest) returns (AddJobPackageReply) {}
   rpc GetAllPackages (GetAllJobPackagesRequest) returns (GetAllJobPackagesReply) {}
   rpc GetPackages (GetJobPackagesRequest) returns (GetJobPackagesReply) {}
@@ -28,7 +28,7 @@ message GetAllJobPackagesReply{
   repeated JobPackage packages = 1;
 }
 message GetJobPackagesRequest{
-  string merchantId = 1;  
+  string tenantId = 1;  
 }
 message GetJobPackagesReply{
   repeated JobPackage packages = 1;
@@ -61,19 +61,19 @@ message AddEnviromentReply {
 }
 
 
-message GetMerchantsRequest {
+message GetTenantsRequest {
 }
 
-message GetMerchantsReply {
-  repeated Merchant merchants=1;
+message GetTenantsReply {
+  repeated Tenant Tenants=1;
 }
 
-message AddMerchantRequest {
-  Merchant merchant=1;
+message AddTenantRequest {
+  Tenant tenant=1;
 }
 
-message AddMerchantReply {
-  Merchant merchant=1;
+message AddTenantReply {
+  Tenant tenant=1;
 }
 
 
@@ -87,16 +87,16 @@ message JobPackage {
     optional uint64 ID = 1;
     string jobPackageId = 2;
     string name = 3;
-    string merchantId = 4;
+    string tenantId = 4;
     repeated QueueDef queues = 5;
     repeated EventDef events = 6;
     repeated RuntimeDef runtimes = 7;
     repeated ExecutorDef executors = 8;
 }
 
-message Merchant {
+message Tenant {
   optional uint64 ID = 1;
-  string merchantId=2;
+  string tenantId=2;
   string Name = 3;
 }
 
@@ -157,7 +157,7 @@ message SchemaDef {
   
 
 message GetQueueDefsRequest {
-  string merchantId=1;
+  string tenantId=1;
 }
 
 message GetQueueDefsReply {
@@ -172,7 +172,7 @@ message AddQueueDefReply {
   QueueDef queue = 1;  
 }
 message GetEventDefsRequest {
-  string merchantId=1;
+  string tenantId=1;
 }
   
 message GetEventDefsReply {
@@ -196,7 +196,7 @@ message AddExecutorDefReply {
 }
 
 message GetExecutorDefsRequest {
-  string merchantId=1;
+  string tenantId=1;
 }
   
 message GetExecutorDefsReply {

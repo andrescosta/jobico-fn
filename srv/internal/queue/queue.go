@@ -1,8 +1,8 @@
 package queue
 
 type Id struct {
-	QueueId    string
-	MerchantId string
+	QueueId  string
+	TenantId string
 }
 
 type Queue[T any] interface {
