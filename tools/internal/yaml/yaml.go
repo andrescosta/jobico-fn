@@ -39,7 +39,7 @@ func Debug() {
 		Name:     "packname",
 		TenantId: "merch1",
 	}
-	o, err := yaml.Marshal(k)
+	o, err := yaml.Marshal(&k)
 	if err != nil {
 		fmt.Println(err)
 	} else {

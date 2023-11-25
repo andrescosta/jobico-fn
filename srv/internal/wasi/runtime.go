@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/andrescosta/goico/pkg/io"
 	"github.com/rs/zerolog"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
@@ -11,28 +12,31 @@ import (
 )
 
 type WasmRuntime struct {
-	funcs    map[string]*WasmFuncString
-	cacheDir string
+	module   *WasmModuleString
+	cacheDir *string
 	cache    wazero.CompilationCache
 }
 
-type Func struct {
-	ModuleId   string
-	WasmModule []byte
-	FuncName   string
-}
+func NewWasmRuntime(ctx context.Context, tempDir string, moduleId string, mainFuncName string, wasmModule []byte) (*WasmRuntime, error) {
+	wruntime := &WasmRuntime{}
 
-func NewWasmRuntime(ctx context.Context, tempDir string, funcs []*Func) (*WasmRuntime, error) {
+	// Creates a directory to store wazero cache
+	if err := io.CreateDirIfNotExist(tempDir); err != nil {
+		return nil, err
+	}
 	cacheDir, err := os.MkdirTemp(tempDir, "cache")
 	if err != nil {
 		return nil, err
 	}
+	wruntime.cacheDir = &cacheDir
 
 	cache, err := wazero.NewCompilationCacheWithDir(cacheDir)
 	if err != nil {
-		clean(ctx, cacheDir, nil)
+		wruntime.Close(ctx)
 		return nil, err
 	}
+	wruntime.cache = cache
+
 	runtimeConfig := wazero.NewRuntimeConfig().WithCompilationCache(cache)
 	runtime := wazero.NewRuntimeWithConfig(ctx, runtimeConfig)
 
@@ -41,38 +45,36 @@ func NewWasmRuntime(ctx context.Context, tempDir string, funcs []*Func) (*WasmRu
 		NewFunctionBuilder().WithFunc(log).Export("log").
 		Instantiate(ctx)
 	if err != nil {
-		clean(ctx, cacheDir, cache)
+		wruntime.Close(ctx)
+		return nil, err
+	}
+	wasi_snapshot_preview1.MustInstantiate(ctx, runtime)
+
+	module, err := runtime.Instantiate(ctx, wasmModule)
+	if err != nil {
+		wruntime.Close(ctx)
 		return nil, err
 	}
 
-	wasi_snapshot_preview1.MustInstantiate(ctx, runtime)
-
-	// init, initializes the SDK.
-	wruntime := &WasmRuntime{}
-	wruntime.funcs = make(map[string]*WasmFuncString)
-	for _, f := range funcs {
-		wf, err := NewWasmFuncString(ctx, runtime, f.FuncName, f.WasmModule)
-		if err != nil {
-			clean(ctx, cacheDir, cache)
-			return nil, err
-		}
-		wruntime.funcs[f.ModuleId] = wf
+	w, err := NewWasmModuleString(ctx, module, mainFuncName)
+	if err != nil {
+		wruntime.Close(ctx)
+		return nil, err
 	}
+	wruntime.module = w
 	return wruntime, nil
 }
 
-func (r *WasmRuntime) Execute(ctx context.Context, wasmRuntime string, data []byte) (string, error) {
-	return r.funcs[wasmRuntime].Execute(ctx, string(data))
+func (r *WasmRuntime) ExecuteMainFunc(ctx context.Context, data []byte) (string, error) {
+	return r.module.ExecuteMainFunc(ctx, string(data))
 }
 
 func (r *WasmRuntime) Close(ctx context.Context) {
-	clean(ctx, r.cacheDir, r.cache)
-}
-
-func clean(ctx context.Context, cacheDir string, cache wazero.CompilationCache) {
-	os.RemoveAll(cacheDir)
-	if cache != nil {
-		cache.Close(ctx)
+	if r.cacheDir != nil {
+		os.RemoveAll(*r.cacheDir)
+	}
+	if r.cache != nil {
+		r.cache.Close(ctx)
 	}
 
 }

@@ -22,6 +22,7 @@ runtimes:
     runtimeid: runtime1
     name: greet.wasm
     moduleref: greet.wasm
+    mainfuncname: event
     type: 0
 
 executors:
@@ -29,6 +30,5 @@ executors:
     executorid: myexs 
     name: myexs
     runtimeid: runtime1
-    funcname: event
     supportedevents:
       - ev1

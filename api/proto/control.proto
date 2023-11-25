@@ -112,7 +112,6 @@ message ExecutorDef {
   string executorId = 2;
   string name = 3;
   string runtimeId = 4;
-  string funcName = 5;
   repeated string supportedEvents = 6;
 }
 
@@ -121,7 +120,8 @@ message RuntimeDef{
   string runtimeId = 2;
   string name = 3;
   string moduleRef = 4;
-  RuntimeType type = 5;
+  string mainFuncName = 5;
+  RuntimeType type = 6;
 }
 
 enum RuntimeType {
