@@ -29,8 +29,8 @@ type Event struct {
 }
 
 func New(ctx context.Context) (*Controller, error) {
-	client := remote.NewControlClient(env.GetAsString("ctl.host", ""))
-	repoClient := remote.NewRepoClient(env.GetAsString("repo.host", ""))
+	client := remote.NewControlClient()
+	repoClient := remote.NewRepoClient()
 
 	events := make(map[string]*Event)
 	con := Controller{
@@ -43,46 +43,46 @@ func New(ctx context.Context) (*Controller, error) {
 		return nil, err
 	}
 	for _, ps := range pkgs {
-		m := ps.MerchantId
-		for _, e := range ps.Events {
-			f, err := repoClient.GetFile(ctx, m, e.Schema.SchemaRef)
+		merchantId := ps.MerchantId
+		for _, event := range ps.Events {
+			f, err := repoClient.GetFile(ctx, merchantId, event.Schema.SchemaRef)
 			if err != nil {
 				return nil, err
 			}
 			comp := jsonschema.NewCompiler()
-			if err := comp.AddResource(getEventId(m, e.Name), bytes.NewReader(f)); err != nil {
+			if err := comp.AddResource(getFullEventId(merchantId, event.EventId), bytes.NewReader(f)); err != nil {
 				return nil, err
 			}
-			sch, err := comp.Compile(getEventId(m, e.Name))
+			compiledSchema, err := comp.Compile(getFullEventId(merchantId, event.EventId))
 			if err != nil {
 				return nil, err
 			}
 
-			events[getEventId(m, e.Name)] = &Event{
-				event:  e,
-				schema: sch,
+			events[getFullEventId(merchantId, event.EventId)] = &Event{
+				event:  event,
+				schema: compiledSchema,
 			}
 		}
 	}
 	return &con, nil
 }
 
-func getEventId(merchant string, name string) string {
-	return merchant + "/" + name
+func getFullEventId(merchantId string, eventId string) string {
+	return merchantId + "/" + eventId
 }
 
-func (rr Controller) getEventDef(merchant string, name string) (*Event, error) {
-	q, ok := rr.events[getEventId(merchant, name)]
+func (rr Controller) getEventDef(merchantId string, eventId string) (*Event, error) {
+	ev, ok := rr.events[getFullEventId(merchantId, eventId)]
 	if !ok {
-		return nil, fmt.Errorf("queue unknown")
+		return nil, fmt.Errorf("event unknown")
 	}
-	return q, nil
+	return ev, nil
 }
 
 func (rr Controller) Routes(logger zerolog.Logger) chi.Router {
 	r := chi.NewRouter()
 	r.Use(httplog.RequestLogger(logger))
-	r.Route("/{merchant_id}/{event_name}", func(r2 chi.Router) {
+	r.Route("/{merchant_id}/{event_id}", func(r2 chi.Router) {
 		r2.Post("/", rr.Post)
 		r2.Get("/", rr.Get)
 	})
@@ -102,14 +102,14 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	var items []*pb.QueueItem
-	merchant := chi.URLParam(request, "merchant_id")
-	eventName := chi.URLParam(request, "event_name")
-	ef, err := c.getEventDef(merchant, eventName)
+	merchantId := chi.URLParam(request, "merchant_id")
+	eventId := chi.URLParam(request, "event_id")
+	ef, err := c.getEventDef(merchantId, eventId)
 	if err != nil {
 		logger.Error().Msgf("Data unknown: %s", err)
 		http.Error(writer, "Event unknown", http.StatusBadRequest)
 	}
-	if ef.event.DataType == pb.DataTypes_JSon {
+	if ef.event.DataType == pb.DataType_Json {
 
 		for _, ev := range event.Data {
 
@@ -126,19 +126,16 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 				return
 			}
 			q := pb.QueueItem{
-				Data: string(evBin),
+				Data:    evBin,
+				EventId: eventId,
 			}
 			items = append(items, &q)
 		}
 	}
 	queueRequest := pb.QueueRequest{
-		QueueId: &pb.QueueId{
-			Name: ef.event.SupplierQueue.GetQueueId(),
-		},
-		MerchantId: &pb.MerchantId{
-			Id: merchant,
-		},
-		Items: items,
+		QueueId:    ef.event.SupplierQueueId,
+		MerchantId: merchantId,
+		Items:      items,
 	}
 
 	var opts []grpc.DialOption

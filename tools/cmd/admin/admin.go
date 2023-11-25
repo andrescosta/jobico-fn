@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/andrescosta/goico/pkg/config"
-	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/workflew/api/pkg/remote"
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/gdamore/tcell/v2"
@@ -47,7 +46,7 @@ func main() {
 	if err != nil {
 		os.Exit(-1)
 	}
-	cc := remote.NewControlClient(env.GetAsString("ctl.host", ""))
+	cc := remote.NewControlClient()
 	cli := &CliApp{
 		controlClient: cc,
 	}

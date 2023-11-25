@@ -55,7 +55,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	bdata, filename, err := io.GetOldestFile(f.directory, preffix, suffix)
 	if err != nil {
 		var d T
-		return d, errors.Join(errors.New("Error removing file"), err)
+		return d, errors.Join(errors.New("error removing file"), err)
 	}
 	if bdata == nil {
 		var d T
@@ -67,7 +67,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	if err = decoder.Decode(&data); err != nil {
 		var d T
 		io.RenameFile(*filename, *filename+".error")
-		return d, errors.Join(errors.New("Error decoding"), err)
+		return d, errors.Join(errors.New("error decoding"), err)
 	}
 	io.RemoveFile(*filename)
 	return data, nil
@@ -78,7 +78,7 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 	encoder := gob.NewEncoder(buffer)
 	err := encoder.Encode(data)
 	if err != nil {
-		return errors.Join(errors.New("Error encoding"), err)
+		return errors.Join(errors.New("error encoding"), err)
 	}
 	err = io.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes())
 	if err != nil {
@@ -88,5 +88,5 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 }
 
 func queueDirectory(directory string, id Id) string {
-	return io.BuildFullPath([]string{directory, id.Merchant, id.Name})
+	return io.BuildFullPath([]string{directory, id.MerchantId, id.QueueId})
 }

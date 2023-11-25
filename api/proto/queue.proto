@@ -2,38 +2,32 @@ syntax = "proto3";
 
 option go_package = "/types";
 
-import "common.proto";
-
 service Queue {
-	// Sends a greeting
-	rpc queue (QueueRequest) returns (QueueReply) {}
-  rpc dequeue (DequeueRequest) returns (DequeueReply) {}
+	rpc Queue (QueueRequest) returns (QueueReply) {}
+  rpc Dequeue (DequeueRequest) returns (DequeueReply) {}
 }
-  
 
-  // Idea: add loadtype, and it will processed by any queue that supports that loadtype.
-  // The request message containing the user's name.
-  message QueueRequest {
-    QueueId queueId = 1;
-    MerchantId merchantId=2;
-	  repeated QueueItem items = 3;
-  }
-  
-  // The response message containing the greetings
-  message QueueReply {
-  }
+// Idea: add loadtype, and it will processed by any queue that supports that loadtype.
+message QueueRequest {
+  string merchantId=1;
+  string queueId = 2;
+  repeated QueueItem items = 3;
+}
 
-  message DequeueRequest {
-    QueueId queueId = 1;
-    MerchantId merchantId=2;
-	  repeated QueueItem items = 3;
-  }
-  
-  // The response message containing the greetings
-  message DequeueReply {
-    repeated QueueItem items = 1;
-  }
+message QueueReply {
+}
 
-  message QueueItem {
-    string data = 2;
-  }
+message DequeueRequest {
+  string merchantId=1;
+  string queueId = 2;
+  repeated QueueItem items = 3;
+}
+
+message DequeueReply {
+  repeated QueueItem items = 1;
+}
+
+message QueueItem {
+  string eventId=1;
+  bytes data = 2;
+} 

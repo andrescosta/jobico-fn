@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/andrescosta/goico/pkg/env"
 	pb "github.com/andrescosta/workflew/api/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -13,9 +14,9 @@ type RepoClient struct {
 	serverAddr string
 }
 
-func NewRepoClient(serverAddr string) *RepoClient {
+func NewRepoClient() *RepoClient {
 	return &RepoClient{
-		serverAddr: serverAddr,
+		serverAddr: env.GetAsString("repo.host"),
 	}
 }
 

@@ -77,6 +77,23 @@ message AddMerchantReply {
 }
 
 
+message Environment{
+  optional uint64 ID = 1;
+  map<string, Host> servers = 2;
+}
+
+  
+message JobPackage {
+    optional uint64 ID = 1;
+    string jobPackageId = 2;
+    string name = 3;
+    string merchantId = 4;
+    repeated QueueDef queues = 5;
+    repeated EventDef events = 6;
+    repeated RuntimeDef runtimes = 7;
+    repeated ExecutorDef executors = 8;
+}
+
 message Merchant {
   optional uint64 ID = 1;
   string merchantId=2;
@@ -89,21 +106,39 @@ message QueueDef {
   string name = 3;
 }
 
-message Environment{
+
+message ExecutorDef {
   optional uint64 ID = 1;
-  map<string, Host> servers = 2;
+  string executorId = 2;
+  string name = 3;
+  string runtimeId = 4;
+  string funcName = 5;
+  repeated string supportedEvents = 6;
+}
+
+message RuntimeDef{
+  optional uint64 ID = 1;
+  string runtimeId = 2;
+  string name = 3;
+  string moduleRef = 4;
+  RuntimeType type = 5;
+}
+
+enum RuntimeType {
+  Wasm = 0;
 }
 
 message EventDef {
   optional uint64 ID = 1;
-  string name = 2;
-  DataTypes dataType = 3;
-  optional SchemaDef schema = 4;
-  QueueDef supplierQueue = 5;
+  string eventId = 2;
+  string name = 3;
+  DataType dataType = 4;
+  optional SchemaDef schema = 5;
+  string supplierQueueId = 6;
 }
 
-enum DataTypes {
-  JSon = 0;
+enum DataType {
+  Json = 0;
 }
 
 message SchemaDef {
@@ -112,30 +147,6 @@ message SchemaDef {
     string name = 3;
     string schemaRef = 4;
 }
-
-message ExecutorDef {
-  optional uint64 ID = 1;
-  string name = 2;
-  PackageDef package=3;
-  repeated EventDef supportedEvents = 4;
-}
-message PackageDef{
-  optional uint64 ID = 1;
-  string packageId = 2;
-  string name = 3;
-  string packageRef = 4;
-  string type = 5;
-  
-}
-message JobPackage {
-  optional uint64 ID = 1;
-  string name = 2;
-  string merchantId = 3;
-  repeated QueueDef queues = 4;
-  repeated EventDef events = 6;
-  repeated ExecutorDef executors = 5;
-}
- 
 
 /*
   

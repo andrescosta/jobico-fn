@@ -3,35 +3,29 @@ package wasi
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/rs/zerolog"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 )
 
-type WasmFunc struct {
-	event  api.Function
-	init   api.Function
-	malloc api.Function
-	free   api.Function
-	module api.Module
+type WasmFuncString struct {
+	wasmfunction api.Function
+	init         api.Function
+	malloc       api.Function
+	free         api.Function
+	module       api.Module
 }
 
-func NewWasmFunc(ctx context.Context, runtime wazero.Runtime, module string) (*WasmFunc, error) {
-	wasmPath := fmt.Sprintf("worklets/%v.wasm", module)
-	greetWasm, err := os.ReadFile(wasmPath)
-	if err != nil {
-		return nil, err
-	}
-	mod, err := runtime.Instantiate(ctx, greetWasm)
+func NewWasmFuncString(ctx context.Context, runtime wazero.Runtime, wasmfunction string, wasmFunc []byte) (*WasmFuncString, error) {
+	mod, err := runtime.Instantiate(ctx, wasmFunc)
 	if err != nil {
 		return nil, err
 	}
 	initf := mod.ExportedFunction("init")
-	wr := &WasmFunc{
-		event: mod.ExportedFunction("event"),
-		init:  initf,
+	wr := &WasmFuncString{
+		wasmfunction: mod.ExportedFunction(wasmfunction),
+		init:         initf,
 		// These are undocumented, but exported. See tinygo-org/tinygo#2788
 		malloc: mod.ExportedFunction("malloc"),
 		free:   mod.ExportedFunction("free"),
@@ -45,7 +39,7 @@ func NewWasmFunc(ctx context.Context, runtime wazero.Runtime, module string) (*W
 	return wr, nil
 }
 
-func (f *WasmFunc) Event(ctx context.Context, data string) (string, error) {
+func (f *WasmFuncString) Execute(ctx context.Context, data string) (string, error) {
 	logger := zerolog.Ctx(ctx)
 
 	// event data
@@ -57,7 +51,7 @@ func (f *WasmFunc) Event(ctx context.Context, data string) (string, error) {
 
 	// calls the event function which will handle it.
 	logger.Debug().Msg("calling Event method")
-	eventResultPtrSize, err := f.event.Call(ctx, eventDataPtr, eventDataSize)
+	eventResultPtrSize, err := f.wasmfunction.Call(ctx, eventDataPtr, eventDataSize)
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +59,7 @@ func (f *WasmFunc) Event(ctx context.Context, data string) (string, error) {
 	return f.readData(ctx, eventResultPtrSize[0])
 }
 
-func (f *WasmFunc) mallocData(ctx context.Context, eventData string) (uint64, uint64, error) {
+func (f *WasmFuncString) mallocData(ctx context.Context, eventData string) (uint64, uint64, error) {
 	eventDataSize := uint64(len(eventData))
 	results, err := f.malloc.Call(ctx, eventDataSize)
 	if err != nil {
@@ -80,7 +74,7 @@ func (f *WasmFunc) mallocData(ctx context.Context, eventData string) (uint64, ui
 	return eventDataPtr, eventDataSize, nil
 }
 
-func (f *WasmFunc) readData(ctx context.Context, eventResultPtrSize uint64) (string, error) {
+func (f *WasmFuncString) readData(ctx context.Context, eventResultPtrSize uint64) (string, error) {
 	logger := zerolog.Ctx(ctx)
 	eventResultPtr := uint32(eventResultPtrSize >> 32)
 	eventResultSize := uint32(eventResultPtrSize)

@@ -44,7 +44,7 @@ func main() {
 				fmt.Println(*s)
 			}
 
-			c := remote.NewControlClient(os.Getenv("ctl.host"))
+			c := remote.NewControlClient()
 			c.AddMerchant(context.Background(), &types.Merchant{MerchantId: f.MerchantId})
 			r, err := c.AddPackage(context.Background(), f)
 			if err != nil {
@@ -68,7 +68,7 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		c := remote.NewRepoClient(os.Getenv("repo.host"))
+		c := remote.NewRepoClient()
 		c.AddFile(context.Background(), merchant, name, f)
 	}
 	//yaml.Debug()

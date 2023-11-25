@@ -3,6 +3,7 @@ package remote
 import (
 	"context"
 
+	"github.com/andrescosta/goico/pkg/env"
 	pb "github.com/andrescosta/workflew/api/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -12,9 +13,9 @@ type ControlClient struct {
 	serverAddr string
 }
 
-func NewControlClient(serverAddr string) *ControlClient {
+func NewControlClient() *ControlClient {
 	return &ControlClient{
-		serverAddr: serverAddr,
+		serverAddr: env.GetAsString("ctl.host"),
 	}
 }
 

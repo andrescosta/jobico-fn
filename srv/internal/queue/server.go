@@ -13,8 +13,8 @@ type Server struct {
 
 func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.QueueReply, error) {
 	id := Id{
-		Name:     in.QueueId.Name,
-		Merchant: in.MerchantId.Id,
+		QueueId:    in.QueueId,
+		MerchantId: in.MerchantId,
 	}
 	myqueue, err := GetQueue[*pb.QueueItem](id)
 	if err != nil {
@@ -31,8 +31,8 @@ func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.QueueReply
 
 func (s *Server) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
 	id := Id{
-		Name:     in.QueueId.Name,
-		Merchant: in.MerchantId.Id,
+		QueueId:    in.QueueId,
+		MerchantId: in.MerchantId,
 	}
 	myqueue, err := GetQueue[*pb.QueueItem](id)
 	if err != nil {

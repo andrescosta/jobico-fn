@@ -1,33 +1,34 @@
 name: mypackage
+jobpackageid: mypackage
 merchantid: m1
 queues:
   -
-    queueid: aaa
+    queueid: queue1
     name: queue1
-  -
-    queueid: bbb
-    name: queue2
 
 events:
   -
     name: ev1
-    dataType: 0
+    eventid: ev1
+    datatype: 0
     schema:
       schemaid: sche1
       name: sche1
       schemaref: schema.json
-    supplierqueue:
-      queueid: idqu1
-      name: queue1
+    supplierqueueid: queue1 
+  
+runtimes:
+  -
+    runtimeid: runtime1
+    name: greet.wasm
+    moduleref: greet.wasm
+    type: 0
 
 executors:
   -
+    executorid: myexs 
     name: myexs
-    package:
-        packageid: package1
-        name: package111
-        packageref: package1.wasm
-        type: wasi
+    runtimeid: runtime1
+    funcname: event
     supportedevents:
-      -
-        name: evt1
+      - ev1
