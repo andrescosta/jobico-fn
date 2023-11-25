@@ -5,82 +5,201 @@ option go_package = "/types";
 import "common.proto";
 
 service Control {
-  rpc GetEvents (GetEventRequest) returns (GetEventReply) {}
-  rpc AddEvents (AddEventRequest) returns (AddEventReply) {}
-  rpc AddExecutor (AddExecutorRequest) returns (AddExecutorReply) {}
-  rpc GetExecutors (GetExecutorsRequest) returns (GetExecutorsReply) {}
-  rpc GetQueues(GetQueuesDefRequest) returns (GetQueuesDefReply){}
-  rpc AddQueues(AddQueueDefRequest) returns (AddQueueDefReply){}
+  rpc GetMechants (GetMerchantsRequest) returns (GetMerchantsReply) {}
+  rpc AddMerchant (AddMerchantRequest) returns (AddMerchantReply) {}
+  rpc AddPackage (AddJobPackageRequest) returns (AddJobPackageReply) {}
+  rpc GetAllPackages (GetAllJobPackagesRequest) returns (GetAllJobPackagesReply) {}
+  rpc GetPackages (GetJobPackagesRequest) returns (GetJobPackagesReply) {}
+  rpc UpdatePackage (UpdateJobPackageRequest) returns (UpdateJobPackageReply) {}
+  rpc GetEnviroment(GetEnviromentRequest) returns (GetEnviromentReply){}
+  rpc AddEnviroment(AddEnviromentRequest) returns (AddEnviromentReply){}
+  rpc UpdateEnviroment(UpdateEnviromentRequest) returns (UpdateEnviromentReply){}
 }
 
-message GetQueuesDefRequest {
-  optional QueueId queueId = 1;
-  optional MerchantId merchantId=2;
-
+message AddJobPackageRequest{
+  JobPackage package = 1;
+}
+message AddJobPackageReply{
+  JobPackage package = 1;
+}
+message GetAllJobPackagesRequest{
+}
+message GetAllJobPackagesReply{
+  repeated JobPackage packages = 1;
+}
+message GetJobPackagesRequest{
+  string merchantId = 1;  
+}
+message GetJobPackagesReply{
+  repeated JobPackage packages = 1;
+}
+message UpdateJobPackageRequest{
+  JobPackage package = 1;
+}
+message UpdateJobPackageReply{
+}
+message GetEnviromentRequest {
 }
 
-message GetQueuesDefReply {
+message GetEnviromentReply {
+  Environment environment = 1;
+}
+
+message AddEnviromentRequest {
+  Environment environment = 1;
+}
+
+message UpdateEnviromentReply {
+}
+
+message UpdateEnviromentRequest {
+  Environment environment = 1;
+}
+
+message AddEnviromentReply {
+  Environment environment = 1;
+}
+
+
+message GetMerchantsRequest {
+}
+
+message GetMerchantsReply {
+  repeated Merchant merchants=1;
+}
+
+message AddMerchantRequest {
+  Merchant merchant=1;
+}
+
+message AddMerchantReply {
+  Merchant merchant=1;
+}
+
+
+message Environment{
+  optional uint64 ID = 1;
+  map<string, Host> servers = 2;
+}
+
+  
+message JobPackage {
+    optional uint64 ID = 1;
+    string jobPackageId = 2;
+    string name = 3;
+    string merchantId = 4;
+    repeated QueueDef queues = 5;
+    repeated EventDef events = 6;
+    repeated RuntimeDef runtimes = 7;
+    repeated ExecutorDef executors = 8;
+}
+
+message Merchant {
+  optional uint64 ID = 1;
+  string merchantId=2;
+  string Name = 3;
+}
+
+message QueueDef {
+  optional uint64 ID  = 1; 
+  string queueId = 2;
+  string name = 3;
+}
+
+
+message ExecutorDef {
+  optional uint64 ID = 1;
+  string executorId = 2;
+  string name = 3;
+  string runtimeId = 4;
+  string funcName = 5;
+  repeated string supportedEvents = 6;
+}
+
+message RuntimeDef{
+  optional uint64 ID = 1;
+  string runtimeId = 2;
+  string name = 3;
+  string moduleRef = 4;
+  RuntimeType type = 5;
+}
+
+enum RuntimeType {
+  Wasm = 0;
+}
+
+message EventDef {
+  optional uint64 ID = 1;
+  string eventId = 2;
+  string name = 3;
+  DataType dataType = 4;
+  optional SchemaDef schema = 5;
+  string supplierQueueId = 6;
+}
+
+enum DataType {
+  Json = 0;
+}
+
+message SchemaDef {
+    optional uint64 ID = 1;
+    string schemaId = 2;
+    string name = 3;
+    string schemaRef = 4;
+}
+
+/*
+  
+  rpc GetEventDefs (GetEventDefsRequest) returns (GetEventDefsReply) {}
+  rpc AddEventDef (AddEventDefRequest) returns (AddEventDefReply) {}
+  rpc GetQueueDefs(GetQueueDefsRequest) returns (GetQueueDefsReply){}
+  rpc AddQueueDef(AddQueueDefRequest) returns (AddQueueDefReply){}
+  
+
+message GetQueueDefsRequest {
+  string merchantId=1;
+}
+
+message GetQueueDefsReply {
   repeated QueueDef queues = 1;
 }
 
 message AddQueueDefRequest {
-  QueueDef queues = 1;
+  QueueDef queue = 1;
 }
 
 message AddQueueDefReply {
-  QueueDef queues = 1;  
+  QueueDef queue = 1;  
 }
-
-message QueueDef {
-  string ID  = 1; 
-  QueueId queueId = 2;
-  MerchantId merchantId=3;
-  Executor executor=4;
-}
-
-message Executor {
-  string id = 1;
-  string type = 2;
-  string script = 3;
-}
-
-
-message Event {
-  string id = 1;
-  string schema = 2;
-}
-
-message ExecutorDefinition {
-  Event event = 1;
-  string package = 2;
-}
-
-message GetEventRequest {
-	repeated Event events = 1;
+message GetEventDefsRequest {
+  string merchantId=1;
 }
   
-message GetEventReply {
-	repeated Event events = 1;
+message GetEventDefsReply {
+	repeated EventDef events = 1;
 }
 
-message AddEventRequest {
-	repeated Event event = 1;
+message AddEventDefRequest {
+	EventDef event = 1;
 }
   
-message AddEventReply {
+message AddEventDefReply {
+	EventDef event = 1;
 }
 
-message AddExecutorRequest {
-	repeated ExecutorDefinition definition = 1;
+message AddExecutorDefRequest {
+	ExecutorDef executor = 1;
 }
   
-message AddExecutorReply {
+message AddExecutorDefReply {
+	ExecutorDef executor = 1;
 }
 
-message GetExecutorsRequest {
-	repeated ExecutorDefinition definitions = 1;
+message GetExecutorDefsRequest {
+  string merchantId=1;
 }
   
-message GetExecutorsReply {
-	repeated ExecutorDefinition definitions = 1;
+message GetExecutorDefsReply {
+	repeated ExecutorDef executors = 1;
 }
+*/

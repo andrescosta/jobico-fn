@@ -28,8 +28,9 @@ func serviceFunc(ctx context.Context) error {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 
-	controler := listener.Controller{
-		QueueHost: os.Getenv("queue.host"),
+	controler, err := listener.New(ctx)
+	if err != nil {
+		return err
 	}
 
 	router.Mount("/events", controler.Routes(*logger))

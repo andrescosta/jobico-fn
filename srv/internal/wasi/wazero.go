@@ -88,7 +88,7 @@ func invoke(ctx context.Context, modname string, wasmPath string, env map[string
 		defer func() {
 			_, err := free.Call(ctx, uint64(eventResultPtr))
 			if err != nil {
-				logger.Err(err)
+				logger.Err(err).Msg("error freeing memory")
 			}
 		}()
 	}

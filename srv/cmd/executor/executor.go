@@ -5,7 +5,6 @@ import (
 
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/workflew/srv/internal/executor"
-	"github.com/andrescosta/workflew/srv/internal/queue"
 )
 
 func main() {
@@ -13,9 +12,7 @@ func main() {
 }
 
 func serviceFunc(ctx context.Context) error {
-	dirq := "../queue/" + queue.DIR + "/"
-
-	if err := executor.StartExecutors(ctx, dirq); err != nil {
+	if err := executor.StartExecutors(ctx); err != nil {
 		return err
 	}
 	return nil

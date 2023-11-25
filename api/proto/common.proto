@@ -2,10 +2,8 @@ syntax = "proto3";
 
 option go_package = "/types";
 
-message QueueId {
-    string name = 1;
-} 
-
-message MerchantId{
-    string id = 1;
-}
+message Host {
+    string Ip =1;
+    uint32 port=2; 
+  }
+  
