@@ -4,104 +4,105 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/workflew/api/pkg/remote"
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/andrescosta/workflew/srv/internal/wasi"
 	"github.com/rs/zerolog"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
-type executionQueue struct {
-	MerchantId    string
-	QueueId       string
-	FuncPerEvents map[string]*exFunc
-}
-type exFunc struct {
-	Name     string
-	ModuleId string
-	Runtime  *wasi.WasmRuntime
+const (
+	cacheDir = ".\\cache"
+)
+
+type jobPackage struct {
+	PackageId string
+	TenantId  string
+	Queues    []string
+	Runtime   *wasi.WasmRuntime
+	Modules   map[string]*wasi.WasmModuleString
 }
 
-func getRuntime(runtimeId string, rds []*pb.RuntimeDef) *pb.RuntimeDef {
-	for _, r := range rds {
-		if runtimeId == r.RuntimeId {
-			return r
-		}
-	}
-	return nil
-}
-
-func getPackages(ctx context.Context) ([]*executionQueue, error) {
+func getPackages(ctx context.Context) ([]*jobPackage, error) {
 	ps, err := remote.NewControlClient().GetAllPackages(ctx)
 	if err != nil {
 		return nil, err
 	}
-	pkgs := make([]*executionQueue, 0)
-	repoClient := remote.NewRepoClient()
-	for _, p := range ps {
-		exs := make(map[string]*exFunc)
-		for _, ex := range p.Executors {
-			runtime := getRuntime(ex.RuntimeId, p.Runtimes)
+	jobPackages := make([]*jobPackage, 0)
+	for _, pkg := range ps {
+		jobPackage := &jobPackage{}
+		jobPackage.TenantId = pkg.TenantId
+		jobPackage.PackageId = pkg.JobPackageId
+		jobPackages = append(jobPackages, jobPackage)
 
-			wasmfile, err := repoClient.GetFile(ctx, p.MerchantId, runtime.ModuleRef)
-			if err != nil {
-				return nil, err
-			}
+		queues := make([]string, 0)
+		modulesForEvents := make(map[string]*wasi.WasmModuleString)
 
-			// TODO: we hsould have only one runtime type
-			wa := []*wasi.Func{
-				{
-					ModuleId:   runtime.RuntimeId,
-					WasmModule: wasmfile,
-					FuncName:   ex.FuncName,
-				},
-			}
+		jobPackage.Runtime, err = wasi.NewWasmRuntime(ctx, cacheDir)
+		if err != nil {
+			return nil, err
+		}
+		for _, q := range pkg.Queues {
+			queues = append(queues, q.QueueId)
+		}
+		jobPackage.Queues = queues
 
-			wruntime, err := wasi.NewWasmRuntime(ctx, ".\\", wa)
-			if err != nil {
-				return nil, err
-			}
-			exf := &exFunc{
-				Name:     ex.FuncName,
-				Runtime:  wruntime,
-				ModuleId: runtime.RuntimeId,
-			}
-			for _, e := range ex.SupportedEvents {
-				exs[e] = exf
+		repoClient := remote.NewRepoClient()
+		files := make(map[string][]byte)
+		for _, event := range pkg.Events {
+			for _, runtime := range pkg.Runtimes {
+				if runtime.RuntimeId == event.RuntimeId {
+					wasmfile, ok := files[runtime.ModuleRef]
+					if !ok {
+						wasmfile, err = repoClient.GetFile(ctx, pkg.TenantId, runtime.ModuleRef)
+						if err != nil {
+							return nil, err
+						}
+						files[runtime.ModuleRef] = wasmfile
+					}
+					// We create a module per queue because wazero module call is not goroutine compatible
+					wasmModule, err := wasi.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, runtime.MainFuncName)
+					if err != nil {
+						return nil, err
+					}
+					modulesForEvents[getModuleName(event.SupplierQueueId, event.EventId)] = wasmModule
+					break
+				}
 			}
 		}
-		for _, qq := range p.Queues {
-			pkgs = append(pkgs,
-				&executionQueue{
-					MerchantId:    p.MerchantId,
-					QueueId:       qq.QueueId,
-					FuncPerEvents: exs,
-				})
-		}
+		jobPackage.Modules = modulesForEvents
 	}
-	return pkgs, nil
+	return jobPackages, nil
 }
 
+func getModuleName(supplierQueueId string, eventId string) string {
+	return supplierQueueId + "/" + eventId
+
+}
 func StartExecutors(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
-	exqs, err := getPackages(ctx)
+	pkgs, err := getPackages(ctx)
 	if err != nil {
 		return err
 	}
-	var w sync.WaitGroup
+	defer func() {
+		for _, pkg := range pkgs {
+			for _, m := range pkg.Modules {
+				m.Close(ctx)
+			}
+			pkg.Runtime.Close(ctx)
+		}
+	}()
 
-	//defer runtime.Close(ctx)
-	if err != nil {
-		return err
-	}
-	for _, q := range exqs {
+	var w sync.WaitGroup
+	for _, pkg := range pkgs {
 		w.Add(1)
-		go executor(ctx, q.MerchantId, q.QueueId, q.FuncPerEvents, &w)
+		for _, queue := range pkg.Queues {
+			go executor(ctx, pkg.TenantId, queue, pkg.Modules, &w)
+		}
 	}
 	logger.Info().Msg("Workers started")
 	w.Wait()
@@ -109,63 +110,53 @@ func StartExecutors(ctx context.Context) error {
 	return nil
 }
 
-func executor(ctx context.Context, merchantId string, queueId string, exs map[string]*exFunc, w *sync.WaitGroup) {
+func executor(ctx context.Context, tenantId string, queueId string, modules map[string]*wasi.WasmModuleString, w *sync.WaitGroup) {
 	defer w.Done()
 	logger := zerolog.Ctx(ctx)
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	logger.Debug().Msgf("Worker for merchant: %s and queue: %s started", merchantId, queueId)
+	logger.Debug().Msgf("Worker for tenant: %s and queue: %s started", tenantId, queueId)
+	queueErrors := 0
+	maxQueueErrors := env.GetAsInt("max.queue.errors", 10)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			d, err := query(ctx, merchantId, queueId)
+			items, err := dequeue(ctx, tenantId, queueId)
 			if err != nil {
-				logger.Err(err).Msg("Error quering")
-			} else {
-				for _, ds := range d {
-					runtime := exs[ds.EventId]
-					if err = execute(ctx, runtime.ModuleId, ds.Data, runtime.Runtime); err != nil {
-						logger.Debug().Msg(err.Error())
-						logger.Err(err).Msg("error executing")
-					}
+				queueErrors++
+				logger.Err(err).Msg("error dequeuing")
+				if queueErrors == maxQueueErrors {
+					logger.Err(err).Msg("stopping goroutine due queue errors")
+					return
+				} else {
+					continue
+				}
+			}
+			queueErrors = 0
+			for _, item := range items {
+				module, ok1 := modules[getModuleName(queueId, item.EventId)]
+				if !ok1 {
+					logger.Warn().Msgf("event %s not supported", item.EventId)
+					continue
+				}
+				if execute(ctx, module, item.Data); err != nil {
+					logger.Err(err).Msg("error executing")
 				}
 			}
 		}
 	}
-
 }
 
-func query(ctx context.Context, merchant string, queue string) ([]*pb.QueueItem, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	Host := os.Getenv("queue.host")
-	conn, err := grpc.Dial(Host, opts...)
-
-	if err != nil {
-		return nil, err
-	}
-	client := pb.NewQueueClient(conn)
-
-	defer conn.Close()
-
-	request := pb.DequeueRequest{
-		QueueId:    queue,
-		MerchantId: merchant,
-	}
-
-	r, err := client.Dequeue(ctx, &request)
-	if err != nil {
-		return nil, err
-	}
-	return r.Items, nil
+func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
+	return remote.NewQueueClient().Dequeue(ctx, tenant, queue)
 }
 
-func execute(ctx context.Context, wasmRuntime string, data []byte, runtime *wasi.WasmRuntime) error {
+func execute(ctx context.Context, module *wasi.WasmModuleString, data []byte) error {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
-	out, err := runtime.Execute(ctx, wasmRuntime, data) //wasi.InvokeModule(ctx, mod, data)
+	out, err := module.ExecuteMainFunc(ctx, string(data))
 	if err != nil {
 		return errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}

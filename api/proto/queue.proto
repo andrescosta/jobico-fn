@@ -9,7 +9,7 @@ service Queue {
 
 // Idea: add loadtype, and it will processed by any queue that supports that loadtype.
 message QueueRequest {
-  string merchantId=1;
+  string tenantId=1;
   string queueId = 2;
   repeated QueueItem items = 3;
 }
@@ -18,7 +18,7 @@ message QueueReply {
 }
 
 message DequeueRequest {
-  string merchantId=1;
+  string tenantId=1;
   string queueId = 2;
   repeated QueueItem items = 3;
 }

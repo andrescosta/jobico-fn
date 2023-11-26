@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Control_GetMechants_FullMethodName      = "/Control/GetMechants"
-	Control_AddMerchant_FullMethodName      = "/Control/AddMerchant"
+	Control_GetTenants_FullMethodName       = "/Control/GetTenants"
+	Control_AddTenant_FullMethodName        = "/Control/AddTenant"
 	Control_AddPackage_FullMethodName       = "/Control/AddPackage"
 	Control_GetAllPackages_FullMethodName   = "/Control/GetAllPackages"
 	Control_GetPackages_FullMethodName      = "/Control/GetPackages"
@@ -34,8 +34,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ControlClient interface {
-	GetMechants(ctx context.Context, in *GetMerchantsRequest, opts ...grpc.CallOption) (*GetMerchantsReply, error)
-	AddMerchant(ctx context.Context, in *AddMerchantRequest, opts ...grpc.CallOption) (*AddMerchantReply, error)
+	GetTenants(ctx context.Context, in *GetTenantsRequest, opts ...grpc.CallOption) (*GetTenantsReply, error)
+	AddTenant(ctx context.Context, in *AddTenantRequest, opts ...grpc.CallOption) (*AddTenantReply, error)
 	AddPackage(ctx context.Context, in *AddJobPackageRequest, opts ...grpc.CallOption) (*AddJobPackageReply, error)
 	GetAllPackages(ctx context.Context, in *GetAllJobPackagesRequest, opts ...grpc.CallOption) (*GetAllJobPackagesReply, error)
 	GetPackages(ctx context.Context, in *GetJobPackagesRequest, opts ...grpc.CallOption) (*GetJobPackagesReply, error)
@@ -53,18 +53,18 @@ func NewControlClient(cc grpc.ClientConnInterface) ControlClient {
 	return &controlClient{cc}
 }
 
-func (c *controlClient) GetMechants(ctx context.Context, in *GetMerchantsRequest, opts ...grpc.CallOption) (*GetMerchantsReply, error) {
-	out := new(GetMerchantsReply)
-	err := c.cc.Invoke(ctx, Control_GetMechants_FullMethodName, in, out, opts...)
+func (c *controlClient) GetTenants(ctx context.Context, in *GetTenantsRequest, opts ...grpc.CallOption) (*GetTenantsReply, error) {
+	out := new(GetTenantsReply)
+	err := c.cc.Invoke(ctx, Control_GetTenants_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *controlClient) AddMerchant(ctx context.Context, in *AddMerchantRequest, opts ...grpc.CallOption) (*AddMerchantReply, error) {
-	out := new(AddMerchantReply)
-	err := c.cc.Invoke(ctx, Control_AddMerchant_FullMethodName, in, out, opts...)
+func (c *controlClient) AddTenant(ctx context.Context, in *AddTenantRequest, opts ...grpc.CallOption) (*AddTenantReply, error) {
+	out := new(AddTenantReply)
+	err := c.cc.Invoke(ctx, Control_AddTenant_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +138,8 @@ func (c *controlClient) UpdateEnviroment(ctx context.Context, in *UpdateEnvirome
 // All implementations must embed UnimplementedControlServer
 // for forward compatibility
 type ControlServer interface {
-	GetMechants(context.Context, *GetMerchantsRequest) (*GetMerchantsReply, error)
-	AddMerchant(context.Context, *AddMerchantRequest) (*AddMerchantReply, error)
+	GetTenants(context.Context, *GetTenantsRequest) (*GetTenantsReply, error)
+	AddTenant(context.Context, *AddTenantRequest) (*AddTenantReply, error)
 	AddPackage(context.Context, *AddJobPackageRequest) (*AddJobPackageReply, error)
 	GetAllPackages(context.Context, *GetAllJobPackagesRequest) (*GetAllJobPackagesReply, error)
 	GetPackages(context.Context, *GetJobPackagesRequest) (*GetJobPackagesReply, error)
@@ -154,11 +154,11 @@ type ControlServer interface {
 type UnimplementedControlServer struct {
 }
 
-func (UnimplementedControlServer) GetMechants(context.Context, *GetMerchantsRequest) (*GetMerchantsReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMechants not implemented")
+func (UnimplementedControlServer) GetTenants(context.Context, *GetTenantsRequest) (*GetTenantsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTenants not implemented")
 }
-func (UnimplementedControlServer) AddMerchant(context.Context, *AddMerchantRequest) (*AddMerchantReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddMerchant not implemented")
+func (UnimplementedControlServer) AddTenant(context.Context, *AddTenantRequest) (*AddTenantReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddTenant not implemented")
 }
 func (UnimplementedControlServer) AddPackage(context.Context, *AddJobPackageRequest) (*AddJobPackageReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddPackage not implemented")
@@ -194,38 +194,38 @@ func RegisterControlServer(s grpc.ServiceRegistrar, srv ControlServer) {
 	s.RegisterService(&Control_ServiceDesc, srv)
 }
 
-func _Control_GetMechants_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetMerchantsRequest)
+func _Control_GetTenants_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTenantsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).GetMechants(ctx, in)
+		return srv.(ControlServer).GetTenants(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_GetMechants_FullMethodName,
+		FullMethod: Control_GetTenants_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetMechants(ctx, req.(*GetMerchantsRequest))
+		return srv.(ControlServer).GetTenants(ctx, req.(*GetTenantsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Control_AddMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddMerchantRequest)
+func _Control_AddTenant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddTenantRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControlServer).AddMerchant(ctx, in)
+		return srv.(ControlServer).AddTenant(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Control_AddMerchant_FullMethodName,
+		FullMethod: Control_AddTenant_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).AddMerchant(ctx, req.(*AddMerchantRequest))
+		return srv.(ControlServer).AddTenant(ctx, req.(*AddTenantRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -364,12 +364,12 @@ var Control_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ControlServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetMechants",
-			Handler:    _Control_GetMechants_Handler,
+			MethodName: "GetTenants",
+			Handler:    _Control_GetTenants_Handler,
 		},
 		{
-			MethodName: "AddMerchant",
-			Handler:    _Control_AddMerchant_Handler,
+			MethodName: "AddTenant",
+			Handler:    _Control_AddTenant_Handler,
 		},
 		{
 			MethodName: "AddPackage",

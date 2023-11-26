@@ -7,20 +7,17 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/workflew/api/pkg/remote"
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog"
 	"github.com/rs/zerolog"
 	"github.com/santhosh-tekuri/jsonschema/v5"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Controller struct {
-	queueHost string
-	events    map[string]*Event
+	queueClient *remote.QueueClient
+	events      map[string]*Event
 }
 
 type Event struct {
@@ -34,8 +31,8 @@ func New(ctx context.Context) (*Controller, error) {
 
 	events := make(map[string]*Event)
 	con := Controller{
-		events:    events,
-		queueHost: env.GetAsString("queue.host", ""),
+		events:      events,
+		queueClient: remote.NewQueueClient(),
 	}
 
 	pkgs, err := client.GetAllPackages(ctx)
@@ -43,22 +40,22 @@ func New(ctx context.Context) (*Controller, error) {
 		return nil, err
 	}
 	for _, ps := range pkgs {
-		merchantId := ps.MerchantId
+		tenantId := ps.TenantId
 		for _, event := range ps.Events {
-			f, err := repoClient.GetFile(ctx, merchantId, event.Schema.SchemaRef)
+			f, err := repoClient.GetFile(ctx, tenantId, event.Schema.SchemaRef)
 			if err != nil {
 				return nil, err
 			}
 			comp := jsonschema.NewCompiler()
-			if err := comp.AddResource(getFullEventId(merchantId, event.EventId), bytes.NewReader(f)); err != nil {
+			if err := comp.AddResource(getFullEventId(tenantId, event.EventId), bytes.NewReader(f)); err != nil {
 				return nil, err
 			}
-			compiledSchema, err := comp.Compile(getFullEventId(merchantId, event.EventId))
+			compiledSchema, err := comp.Compile(getFullEventId(tenantId, event.EventId))
 			if err != nil {
 				return nil, err
 			}
 
-			events[getFullEventId(merchantId, event.EventId)] = &Event{
+			events[getFullEventId(tenantId, event.EventId)] = &Event{
 				event:  event,
 				schema: compiledSchema,
 			}
@@ -67,12 +64,12 @@ func New(ctx context.Context) (*Controller, error) {
 	return &con, nil
 }
 
-func getFullEventId(merchantId string, eventId string) string {
-	return merchantId + "/" + eventId
+func getFullEventId(tenantId string, eventId string) string {
+	return tenantId + "/" + eventId
 }
 
-func (rr Controller) getEventDef(merchantId string, eventId string) (*Event, error) {
-	ev, ok := rr.events[getFullEventId(merchantId, eventId)]
+func (rr Controller) getEventDef(tenantId string, eventId string) (*Event, error) {
+	ev, ok := rr.events[getFullEventId(tenantId, eventId)]
 	if !ok {
 		return nil, fmt.Errorf("event unknown")
 	}
@@ -82,7 +79,7 @@ func (rr Controller) getEventDef(merchantId string, eventId string) (*Event, err
 func (rr Controller) Routes(logger zerolog.Logger) chi.Router {
 	r := chi.NewRouter()
 	r.Use(httplog.RequestLogger(logger))
-	r.Route("/{merchant_id}/{event_id}", func(r2 chi.Router) {
+	r.Route("/{tenant_id}/{event_id}", func(r2 chi.Router) {
 		r2.Post("/", rr.Post)
 		r2.Get("/", rr.Get)
 	})
@@ -102,9 +99,9 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	var items []*pb.QueueItem
-	merchantId := chi.URLParam(request, "merchant_id")
+	tenantId := chi.URLParam(request, "tenant_id")
 	eventId := chi.URLParam(request, "event_id")
-	ef, err := c.getEventDef(merchantId, eventId)
+	ef, err := c.getEventDef(tenantId, eventId)
 	if err != nil {
 		logger.Error().Msgf("Data unknown: %s", err)
 		http.Error(writer, "Event unknown", http.StatusBadRequest)
@@ -133,28 +130,15 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 		}
 	}
 	queueRequest := pb.QueueRequest{
-		QueueId:    ef.event.SupplierQueueId,
-		MerchantId: merchantId,
-		Items:      items,
+		QueueId:  ef.event.SupplierQueueId,
+		TenantId: tenantId,
+		Items:    items,
 	}
-
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.Dial(c.queueHost, opts...)
+	err = c.queueClient.Queue(request.Context(), &queueRequest)
 	if err != nil {
 		logger.Error().Msgf("Failed to connect to queue server: %s", err)
 		http.Error(writer, "", http.StatusInternalServerError)
 		return
-	} else {
-		client := pb.NewQueueClient(conn)
-		defer conn.Close()
-		_, err := client.Queue(request.Context(), &queueRequest)
-		if err != nil {
-			logger.Error().Msgf("Failed to send event to queue server: %s", err)
-			http.Error(writer, "", http.StatusInternalServerError)
-			return
-		}
-		writer.WriteHeader(http.StatusOK)
 	}
-
+	writer.WriteHeader(http.StatusOK)
 }

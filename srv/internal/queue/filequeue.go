@@ -88,5 +88,5 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 }
 
 func queueDirectory(directory string, id Id) string {
-	return io.BuildFullPath([]string{directory, id.MerchantId, id.QueueId})
+	return io.BuildFullPath([]string{directory, id.TenantId, id.QueueId})
 }

@@ -12,7 +12,7 @@ type Server struct {
 }
 
 func (s *Server) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.AddFileReply, error) {
-	err := s.Repo.AddFile(r.MerchantId, r.Name, r.File)
+	err := s.Repo.AddFile(r.TenantId, r.Name, r.File)
 	if err != nil {
 		return nil, err
 	}
@@ -20,7 +20,7 @@ func (s *Server) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.AddFile
 }
 
 func (s *Server) GetFile(ctx context.Context, r *pb.GetFileRequest) (*pb.GetFileReply, error) {
-	f, err := s.Repo.File(r.MerchantId, r.Name)
+	f, err := s.Repo.File(r.TenantId, r.Name)
 	if err != nil {
 		return nil, err
 	}

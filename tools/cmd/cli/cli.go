@@ -45,7 +45,7 @@ func main() {
 			}
 
 			c := remote.NewControlClient()
-			c.AddMerchant(context.Background(), &types.Merchant{MerchantId: f.MerchantId})
+			c.AddTenant(context.Background(), &types.Tenant{TenantId: f.TenantId})
 			r, err := c.AddPackage(context.Background(), f)
 			if err != nil {
 				fmt.Println(err)
@@ -60,7 +60,7 @@ func main() {
 			fmt.Println("expected yaml deploy file name")
 			os.Exit(1)
 		}
-		merchant := args[0]
+		tenant := args[0]
 		name := args[1]
 		file := args[2]
 		f, err := os.Open(file)
@@ -69,7 +69,7 @@ func main() {
 			os.Exit(1)
 		}
 		c := remote.NewRepoClient()
-		c.AddFile(context.Background(), merchant, name, f)
+		c.AddFile(context.Background(), tenant, name, f)
 	}
 	//yaml.Debug()
 }

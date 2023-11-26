@@ -17,7 +17,7 @@ const (
 	TBL_QUEUE       = "queue"
 	TBL_PACKAGE     = "package"
 	TBL_LISTENER    = "listener"
-	TBL_MERCHANT    = "merchant"
+	TBL_MERCHANT    = "tenant"
 	TBL_ENVIRONMENT = "environment"
 	TBL_EXECUTOR    = "executor"
 	GEN_MERCHANT    = "[Generic]"
@@ -45,7 +45,7 @@ func (s *ControlServer) Close(ctx context.Context) {
 }
 
 func (s *ControlServer) GetPackages(ctx context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
-	mydao, err := s.getDao(ctx, in.MerchantId, TBL_PACKAGE, &pb.JobPackage{})
+	mydao, err := s.getDao(ctx, in.TenantId, TBL_PACKAGE, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
 	}
@@ -60,13 +60,13 @@ func (s *ControlServer) GetPackages(ctx context.Context, in *pb.GetJobPackagesRe
 }
 
 func (s *ControlServer) GetAllPackages(ctx context.Context, in *pb.GetAllJobPackagesRequest) (*pb.GetAllJobPackagesReply, error) {
-	ms, err := s.getMechants(ctx)
+	ms, err := s.getTenants(ctx)
 	if err != nil {
 		return nil, err
 	}
 	packages := make([]*pb.JobPackage, 0)
 	for _, me := range ms {
-		mydao, err := s.getDao(ctx, me.MerchantId, TBL_PACKAGE, &pb.JobPackage{})
+		mydao, err := s.getDao(ctx, me.TenantId, TBL_PACKAGE, &pb.JobPackage{})
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +82,7 @@ func (s *ControlServer) GetAllPackages(ctx context.Context, in *pb.GetAllJobPack
 }
 
 func (s *ControlServer) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (*pb.AddJobPackageReply, error) {
-	mydao, err := s.getDao(ctx, in.Package.MerchantId, TBL_PACKAGE, &pb.JobPackage{})
+	mydao, err := s.getDao(ctx, in.Package.TenantId, TBL_PACKAGE, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
 	}
@@ -96,16 +96,16 @@ func (s *ControlServer) AddPackage(ctx context.Context, in *pb.AddJobPackageRequ
 
 }
 
-func (s *ControlServer) GetMechants(ctx context.Context, in *pb.GetMerchantsRequest) (*pb.GetMerchantsReply, error) {
-	m, err := s.getMechants(ctx)
+func (s *ControlServer) GetTenants(ctx context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
+	m, err := s.getTenants(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetMerchantsReply{Merchants: m}, nil
+	return &pb.GetTenantsReply{Tenants: m}, nil
 }
 
-func (s *ControlServer) getMechants(ctx context.Context) ([]*pb.Merchant, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_MERCHANT, &pb.Merchant{})
+func (s *ControlServer) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
+	mydao, err := s.getDaoGen(ctx, TBL_MERCHANT, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -114,23 +114,23 @@ func (s *ControlServer) getMechants(ctx context.Context) ([]*pb.Merchant, error)
 	if err != nil {
 		return nil, err
 	}
-	mechants := convertico.ConvertSlices[proto.Message, *pb.Merchant](ms)
+	Tenants := convertico.ConvertSlices[proto.Message, *pb.Tenant](ms)
 
-	return mechants, nil
+	return Tenants, nil
 }
 
-func (s *ControlServer) AddMerchant(ctx context.Context, in *pb.AddMerchantRequest) (*pb.AddMerchantReply, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_MERCHANT, &pb.Merchant{})
+func (s *ControlServer) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
+	mydao, err := s.getDaoGen(ctx, TBL_MERCHANT, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
-	var m proto.Message = in.Merchant
+	var m proto.Message = in.Tenant
 	ms, err := mydao.Add(ctx, m)
 	if err != nil {
 		return nil, err
 	}
-	in.Merchant.ID = &ms
-	return &pb.AddMerchantReply{Merchant: in.Merchant}, nil
+	in.Tenant.ID = &ms
+	return &pb.AddTenantReply{Tenant: in.Tenant}, nil
 }
 
 func (s *ControlServer) AddEnviroment(ctx context.Context, in *pb.AddEnviromentRequest) (*pb.AddEnviromentReply, error) {
@@ -183,11 +183,11 @@ func (s *ControlServer) getDaoGen(ctx context.Context, entity string, message pr
 	return s.getDao(ctx, GEN_MERCHANT, entity, message)
 }
 
-func (s *ControlServer) getDao(ctx context.Context, merchant string, entity string, message proto.Message) (*dao.DAO[proto.Message], error) {
-	mydao, ok := s.daos[merchant]
+func (s *ControlServer) getDao(ctx context.Context, tenant string, entity string, message proto.Message) (*dao.DAO[proto.Message], error) {
+	mydao, ok := s.daos[tenant]
 	if !ok {
 		var err error
-		mydao, err = dao.NewDAO(ctx, s.db, merchant+"/"+entity,
+		mydao, err = dao.NewDAO(ctx, s.db, tenant+"/"+entity,
 			&ProtoMessageMarshaler{
 				newMessage: func() proto.Message {
 					return message
@@ -196,14 +196,14 @@ func (s *ControlServer) getDao(ctx context.Context, merchant string, entity stri
 		if err != nil {
 			return nil, err
 		}
-		s.daos[merchant] = mydao
+		s.daos[tenant] = mydao
 	}
 	return mydao, nil
 }
 
 /*
 	func (s *ControlServer) GetQueueDefs(ctx context.Context, in *pb.GetQueueDefsRequest) (*pb.GetQueueDefsReply, error) {
-		mydao, err := s.getDao(ctx, in.MerchantId.Id, TBL_QUEUE, &pb.QueueDef{})
+		mydao, err := s.getDao(ctx, in.TenantId.Id, TBL_QUEUE, &pb.QueueDef{})
 		if err != nil {
 			return nil, err
 		}
@@ -218,7 +218,7 @@ func (s *ControlServer) getDao(ctx context.Context, merchant string, entity stri
 	}
 
 	func (s *ControlServer) AddQueueDef(ctx context.Context, in *pb.AddQueueDefRequest) (*pb.AddQueueDefReply, error) {
-		mydao, err := s.getDao(ctx, in.Queue.MerchantId.Id, TBL_QUEUE, &pb.QueueDef{})
+		mydao, err := s.getDao(ctx, in.Queue.TenantId.Id, TBL_QUEUE, &pb.QueueDef{})
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +233,7 @@ func (s *ControlServer) getDao(ctx context.Context, merchant string, entity stri
 }
 
 	func (s *ControlServer) GetEventDefs(ctx context.Context, in *pb.GetEventDefsRequest) (*pb.GetEventDefsReply, error) {
-		mydao, err := s.getDao(ctx, in.MerchantId.Id, TBL_EVENT, &pb.EventDef{})
+		mydao, err := s.getDao(ctx, in.TenantId.Id, TBL_EVENT, &pb.EventDef{})
 		if err != nil {
 			return nil, err
 		}
@@ -248,7 +248,7 @@ func (s *ControlServer) getDao(ctx context.Context, merchant string, entity stri
 	}
 
 	func (s *ControlServer) AddEventDef(ctx context.Context, in *pb.AddEventDefRequest) (*pb.AddEventDefReply, error) {
-		mydao, err := s.getDao(ctx, in.Event.MerchantId.Id, TBL_EVENT, &pb.EventDef{})
+		mydao, err := s.getDao(ctx, in.Event.TenantId.Id, TBL_EVENT, &pb.EventDef{})
 		if err != nil {
 			return nil, err
 		}

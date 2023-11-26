@@ -8,7 +8,7 @@ service Repo {
 }
 
 message AddFileRequest{
-    string merchantId = 1;
+    string tenantId = 1;
     string name = 2;
     bytes file = 3;
 }
@@ -18,7 +18,7 @@ message AddFileReply {
 }
 
 message GetFileRequest{
-    string merchantId = 1;
+    string tenantId = 1;
     string name = 2;
 }
 

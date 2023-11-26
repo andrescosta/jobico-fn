@@ -7,7 +7,7 @@ workers
 Package definition:
 
 - Name
-- MerchantId
+- TenantId
 - Queues[]:
     - Queue
         - Name
@@ -32,7 +32,7 @@ Package definition:
 YAML:
 
 name: mypackage
-merchantId: soytriguerov1
+tenantId: soytriguerov1
 queues:
   -
     name: queue1
