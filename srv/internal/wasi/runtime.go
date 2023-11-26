@@ -56,7 +56,7 @@ func NewWasmRuntime(ctx context.Context, tempDir string, moduleId string, mainFu
 		return nil, err
 	}
 
-	w, err := NewWasmModuleString(ctx, module, mainFuncName)
+	w, err := newWasmModuleString(ctx, module, mainFuncName)
 	if err != nil {
 		wruntime.Close(ctx)
 		return nil, err

@@ -20,7 +20,7 @@ type WasmModuleString struct {
 	module     api.Module
 }
 
-func NewWasmModuleString(ctx context.Context, module api.Module, mainFuncName string) (*WasmModuleString, error) {
+func newWasmModuleString(ctx context.Context, module api.Module, mainFuncName string) (*WasmModuleString, error) {
 	initf := module.ExportedFunction("init")
 	wr := &WasmModuleString{
 		mainFunc: module.ExportedFunction(mainFuncName),
