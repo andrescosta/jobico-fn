@@ -5,6 +5,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/env"
 	pb "github.com/andrescosta/workflew/api/types"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -41,4 +42,23 @@ func (c *QueueClient) Dequeue(ctx context.Context, tenant string, queue string) 
 		return nil, err
 	}
 	return r.Items, nil
+}
+func (c *QueueClient) Queue(ctx context.Context, queueRequest *pb.QueueRequest) error {
+	logger := zerolog.Ctx(ctx)
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(c.serverAddr, opts...)
+	if err != nil {
+		logger.Error().Msgf("Failed to connect to queue server: %s", err)
+		return err
+	} else {
+		client := pb.NewQueueClient(conn)
+		defer conn.Close()
+		_, err := client.Queue(ctx, queueRequest)
+		if err != nil {
+			logger.Error().Msgf("Failed to send event to queue server: %s", err)
+			return err
+		}
+		return nil
+	}
 }

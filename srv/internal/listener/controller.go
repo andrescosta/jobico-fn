@@ -7,20 +7,17 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/workflew/api/pkg/remote"
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog"
 	"github.com/rs/zerolog"
 	"github.com/santhosh-tekuri/jsonschema/v5"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Controller struct {
-	queueHost string
-	events    map[string]*Event
+	queueClient *remote.QueueClient
+	events      map[string]*Event
 }
 
 type Event struct {
@@ -34,8 +31,8 @@ func New(ctx context.Context) (*Controller, error) {
 
 	events := make(map[string]*Event)
 	con := Controller{
-		events:    events,
-		queueHost: env.GetAsString("queue.host", ""),
+		events:      events,
+		queueClient: remote.NewQueueClient(),
 	}
 
 	pkgs, err := client.GetAllPackages(ctx)
@@ -137,24 +134,11 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 		TenantId: tenantId,
 		Items:    items,
 	}
-
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.Dial(c.queueHost, opts...)
+	err = c.queueClient.Queue(request.Context(), &queueRequest)
 	if err != nil {
 		logger.Error().Msgf("Failed to connect to queue server: %s", err)
 		http.Error(writer, "", http.StatusInternalServerError)
 		return
-	} else {
-		client := pb.NewQueueClient(conn)
-		defer conn.Close()
-		_, err := client.Queue(request.Context(), &queueRequest)
-		if err != nil {
-			logger.Error().Msgf("Failed to send event to queue server: %s", err)
-			http.Error(writer, "", http.StatusInternalServerError)
-			return
-		}
-		writer.WriteHeader(http.StatusOK)
 	}
-
+	writer.WriteHeader(http.StatusOK)
 }

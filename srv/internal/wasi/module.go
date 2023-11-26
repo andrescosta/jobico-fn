@@ -10,10 +10,6 @@ import (
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
 
-type WasmModule[T string] interface {
-	ExecuteMainFunc(context.Context, string) (string, error)
-}
-
 type WasmModuleString struct {
 	mainFunc   api.Function
 	initFunc   api.Function
@@ -22,19 +18,20 @@ type WasmModuleString struct {
 	module     api.Module
 }
 
-func NewWasmModuleString(ctx context.Context, runtime *WasmRuntime, wasm []byte, mainFuncName string) (*WasmModuleString, error) {
-	return newWasmModuleString1(ctx, wazero.NewRuntimeWithConfig(ctx, runtime.runtimeConfig), wasm, mainFuncName)
-}
-func newWasmModuleString1(ctx context.Context, runtime wazero.Runtime, wasmModule []byte, mainFuncName string) (*WasmModuleString, error) {
-	_, err := runtime.NewHostModuleBuilder("env").
+// Documentation: https://github.com/tetratelabs/wazero/blob/main/examples/multiple-runtimes/counter.go
+func NewWasmModuleString(ctx context.Context, runtime *WasmRuntime, wasmModule []byte, mainFuncName string) (*WasmModuleString, error) {
+
+	wazeroRuntime := wazero.NewRuntimeWithConfig(ctx, runtime.runtimeConfig)
+
+	_, err := wazeroRuntime.NewHostModuleBuilder("env").
 		NewFunctionBuilder().WithFunc(log).Export("log").
 		Instantiate(ctx)
 	if err != nil {
 		return nil, err
 	}
-	wasi_snapshot_preview1.MustInstantiate(ctx, runtime)
+	wasi_snapshot_preview1.MustInstantiate(ctx, wazeroRuntime)
 
-	module, err := runtime.Instantiate(ctx, wasmModule)
+	module, err := wazeroRuntime.Instantiate(ctx, wasmModule)
 	if err != nil {
 		return nil, err
 	}
@@ -121,4 +118,8 @@ func log(ctx context.Context, m api.Module, level, offset, byteCount uint32) {
 		logger.Error().Msgf("Memory.Read(%d, %d) out of range", offset, byteCount)
 	}
 	logger.WithLevel(zerolog.Level(level)).Msg(string(buf))
+}
+
+func (f *WasmModuleString) Close(ctx context.Context) {
+	f.module.Close(ctx)
 }

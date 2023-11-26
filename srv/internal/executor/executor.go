@@ -63,11 +63,12 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 						}
 						files[runtime.ModuleRef] = wasmfile
 					}
+					// We create a module per queue because wazero module call is not goroutine compatible
 					wasmModule, err := wasi.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, runtime.MainFuncName)
 					if err != nil {
 						return nil, err
 					}
-					modulesForEvents[event.EventId] = wasmModule
+					modulesForEvents[getModuleName(event.SupplierQueueId, event.EventId)] = wasmModule
 					break
 				}
 			}
@@ -77,6 +78,10 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 	return jobPackages, nil
 }
 
+func getModuleName(supplierQueueId string, eventId string) string {
+	return supplierQueueId + "/" + eventId
+
+}
 func StartExecutors(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
 	pkgs, err := getPackages(ctx)
@@ -85,6 +90,9 @@ func StartExecutors(ctx context.Context) error {
 	}
 	defer func() {
 		for _, pkg := range pkgs {
+			for _, m := range pkg.Modules {
+				m.Close(ctx)
+			}
 			pkg.Runtime.Close(ctx)
 		}
 	}()
@@ -128,13 +136,12 @@ func executor(ctx context.Context, tenantId string, queueId string, modules map[
 			}
 			queueErrors = 0
 			for _, item := range items {
-				module, ok1 := modules[item.EventId]
+				module, ok1 := modules[getModuleName(queueId, item.EventId)]
 				if !ok1 {
 					logger.Warn().Msgf("event %s not supported", item.EventId)
 					continue
 				}
 				if execute(ctx, module, item.Data); err != nil {
-					logger.Debug().Msg(err.Error())
 					logger.Err(err).Msg("error executing")
 				}
 			}

@@ -36,6 +36,7 @@ func NewWasmRuntime(ctx context.Context, tempDir string) (*WasmRuntime, error) {
 
 	runtimeConfig := wazero.NewRuntimeConfig().WithCompilationCache(cache)
 	wruntime.runtimeConfig = runtimeConfig
+	wruntime.runtimeConfig.WithCloseOnContextDone(true)
 	return wruntime, nil
 }
 
@@ -46,4 +47,5 @@ func (r *WasmRuntime) Close(ctx context.Context) {
 	if r.cache != nil {
 		r.cache.Close(ctx)
 	}
+
 }
