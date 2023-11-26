@@ -41,22 +41,20 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 		queues := make([]string, 0)
 		modulesForEvents := make(map[string]*wasi.WasmModuleString)
 
+		jobPackage.Runtime, err = wasi.NewWasmRuntime(ctx, cacheDir)
+		if err != nil {
+			return nil, err
+		}
 		for _, q := range pkg.Queues {
 			queues = append(queues, q.QueueId)
 		}
 		jobPackage.Queues = queues
 
-		jobPackage.Runtime, err = wasi.NewWasmRuntime(ctx, cacheDir)
-		if err != nil {
-			return nil, err
-		}
-
 		repoClient := remote.NewRepoClient()
 		files := make(map[string][]byte)
-		for _, executor := range pkg.Executors {
-			var wasmModule *wasi.WasmModuleString
+		for _, event := range pkg.Events {
 			for _, runtime := range pkg.Runtimes {
-				if runtime.RuntimeId == executor.RuntimeId {
+				if runtime.RuntimeId == event.RuntimeId {
 					wasmfile, ok := files[runtime.ModuleRef]
 					if !ok {
 						wasmfile, err = repoClient.GetFile(ctx, pkg.TenantId, runtime.ModuleRef)
@@ -65,18 +63,15 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 						}
 						files[runtime.ModuleRef] = wasmfile
 					}
-					wasmModule, err = wasi.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, runtime.MainFuncName)
+					wasmModule, err := wasi.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, runtime.MainFuncName)
 					if err != nil {
 						return nil, err
 					}
+					modulesForEvents[event.EventId] = wasmModule
 					break
 				}
 			}
-			for _, sevent := range executor.SupportedEvents {
-				modulesForEvents[sevent] = wasmModule
-			}
 		}
-
 		jobPackage.Modules = modulesForEvents
 	}
 	return jobPackages, nil

@@ -91,7 +91,6 @@ message JobPackage {
     repeated QueueDef queues = 5;
     repeated EventDef events = 6;
     repeated RuntimeDef runtimes = 7;
-    repeated ExecutorDef executors = 8;
 }
 
 message Tenant {
@@ -106,14 +105,6 @@ message QueueDef {
   string name = 3;
 }
 
-
-message ExecutorDef {
-  optional uint64 ID = 1;
-  string executorId = 2;
-  string name = 3;
-  string runtimeId = 4;
-  repeated string supportedEvents = 6;
-}
 
 message RuntimeDef{
   optional uint64 ID = 1;
@@ -135,6 +126,7 @@ message EventDef {
   DataType dataType = 4;
   optional SchemaDef schema = 5;
   string supplierQueueId = 6;
+  string runtimeId = 7;
 }
 
 enum DataType {

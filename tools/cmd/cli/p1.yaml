@@ -14,6 +14,7 @@ events:
       name: sche1
       schemaref: schema.json
     supplierqueueid: queue1
+    runtimeid: runtime1
 
 runtimes:
   - runtimeid: runtime1
@@ -21,10 +22,3 @@ runtimes:
     moduleref: greet.wasm
     mainfuncname: event
     type: 0
-
-executors:
-  - executorid: myexs
-    name: myexs
-    runtimeid: runtime1
-    supportedevents:
-      - ev1
