@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/rs/zerolog"
+	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
+	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
 
 type WasmModule[T string] interface {
@@ -20,7 +22,23 @@ type WasmModuleString struct {
 	module     api.Module
 }
 
-func newWasmModuleString(ctx context.Context, module api.Module, mainFuncName string) (*WasmModuleString, error) {
+func NewWasmModuleString(ctx context.Context, runtime *WasmRuntime, wasm []byte, mainFuncName string) (*WasmModuleString, error) {
+	return newWasmModuleString1(ctx, wazero.NewRuntimeWithConfig(ctx, runtime.runtimeConfig), wasm, mainFuncName)
+}
+func newWasmModuleString1(ctx context.Context, runtime wazero.Runtime, wasmModule []byte, mainFuncName string) (*WasmModuleString, error) {
+	_, err := runtime.NewHostModuleBuilder("env").
+		NewFunctionBuilder().WithFunc(log).Export("log").
+		Instantiate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	wasi_snapshot_preview1.MustInstantiate(ctx, runtime)
+
+	module, err := runtime.Instantiate(ctx, wasmModule)
+	if err != nil {
+		return nil, err
+	}
+
 	initf := module.ExportedFunction("init")
 	wr := &WasmModuleString{
 		mainFunc: module.ExportedFunction(mainFuncName),
@@ -32,10 +50,11 @@ func newWasmModuleString(ctx context.Context, module api.Module, mainFuncName st
 	}
 
 	// Call the init function to initialize the module
-	_, err := initf.Call(ctx)
+	_, err = initf.Call(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	return wr, nil
 }
 
@@ -93,4 +112,13 @@ func (f *WasmModuleString) readParamData(ctx context.Context, eventResultPtrSize
 	} else {
 		return string(bytes), nil
 	}
+}
+
+func log(ctx context.Context, m api.Module, level, offset, byteCount uint32) {
+	logger := zerolog.Ctx(ctx)
+	buf, ok := m.Memory().Read(offset, byteCount)
+	if !ok {
+		logger.Error().Msgf("Memory.Read(%d, %d) out of range", offset, byteCount)
+	}
+	logger.WithLevel(zerolog.Level(level)).Msg(string(buf))
 }

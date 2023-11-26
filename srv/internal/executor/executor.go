@@ -19,11 +19,11 @@ const (
 )
 
 type jobPackage struct {
-	PackageId       string
-	TenantId        string
-	Queues          []string
-	RuntimePerEvent map[string]*string
-	Runtimes        map[string]*wasi.WasmRuntime
+	PackageId string
+	TenantId  string
+	Queues    []string
+	Runtime   *wasi.WasmRuntime
+	Modules   map[string]*wasi.WasmModuleString
 }
 
 func getPackages(ctx context.Context) ([]*jobPackage, error) {
@@ -39,36 +39,45 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 		jobPackages = append(jobPackages, jobPackage)
 
 		queues := make([]string, 0)
-		runtimes := make(map[string]*wasi.WasmRuntime)
-		eventsRuntime := make(map[string]*string)
+		modulesForEvents := make(map[string]*wasi.WasmModuleString)
 
 		for _, q := range pkg.Queues {
 			queues = append(queues, q.QueueId)
 		}
 		jobPackage.Queues = queues
 
+		jobPackage.Runtime, err = wasi.NewWasmRuntime(ctx, cacheDir)
+		if err != nil {
+			return nil, err
+		}
+
 		repoClient := remote.NewRepoClient()
-		for _, runtime := range pkg.Runtimes {
-
-			wasmfile, err := repoClient.GetFile(ctx, pkg.TenantId, runtime.ModuleRef)
-			if err != nil {
-				return nil, err
-			}
-
-			wruntime, err := wasi.NewWasmRuntime(ctx, cacheDir, runtime.RuntimeId, runtime.MainFuncName, wasmfile)
-			if err != nil {
-				return nil, err
-			}
-			runtimes[runtime.RuntimeId] = wruntime
-		}
-		jobPackage.Runtimes = runtimes
-
+		files := make(map[string][]byte)
 		for _, executor := range pkg.Executors {
+			var wasmModule *wasi.WasmModuleString
+			for _, runtime := range pkg.Runtimes {
+				if runtime.RuntimeId == executor.RuntimeId {
+					wasmfile, ok := files[runtime.ModuleRef]
+					if !ok {
+						wasmfile, err = repoClient.GetFile(ctx, pkg.TenantId, runtime.ModuleRef)
+						if err != nil {
+							return nil, err
+						}
+						files[runtime.ModuleRef] = wasmfile
+					}
+					wasmModule, err = wasi.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, runtime.MainFuncName)
+					if err != nil {
+						return nil, err
+					}
+					break
+				}
+			}
 			for _, sevent := range executor.SupportedEvents {
-				eventsRuntime[sevent] = &executor.RuntimeId
+				modulesForEvents[sevent] = wasmModule
 			}
 		}
-		jobPackage.RuntimePerEvent = eventsRuntime
+
+		jobPackage.Modules = modulesForEvents
 	}
 	return jobPackages, nil
 }
@@ -81,9 +90,7 @@ func StartExecutors(ctx context.Context) error {
 	}
 	defer func() {
 		for _, pkg := range pkgs {
-			for _, runtime := range pkg.Runtimes {
-				runtime.Close(ctx)
-			}
+			pkg.Runtime.Close(ctx)
 		}
 	}()
 
@@ -91,7 +98,7 @@ func StartExecutors(ctx context.Context) error {
 	for _, pkg := range pkgs {
 		w.Add(1)
 		for _, queue := range pkg.Queues {
-			go executor(ctx, pkg.TenantId, queue, pkg.Runtimes, pkg.RuntimePerEvent, &w)
+			go executor(ctx, pkg.TenantId, queue, pkg.Modules, &w)
 		}
 	}
 	logger.Info().Msg("Workers started")
@@ -100,7 +107,7 @@ func StartExecutors(ctx context.Context) error {
 	return nil
 }
 
-func executor(ctx context.Context, tenantId string, queueId string, runtimes map[string]*wasi.WasmRuntime, rpe map[string]*string, w *sync.WaitGroup) {
+func executor(ctx context.Context, tenantId string, queueId string, modules map[string]*wasi.WasmModuleString, w *sync.WaitGroup) {
 	defer w.Done()
 	logger := zerolog.Ctx(ctx)
 	ticker := time.NewTicker(5 * time.Second)
@@ -126,17 +133,12 @@ func executor(ctx context.Context, tenantId string, queueId string, runtimes map
 			}
 			queueErrors = 0
 			for _, item := range items {
-				runtimeId, ok1 := rpe[item.EventId]
+				module, ok1 := modules[item.EventId]
 				if !ok1 {
 					logger.Warn().Msgf("event %s not supported", item.EventId)
 					continue
 				}
-				runtime, ok2 := runtimes[*runtimeId]
-				if !ok2 {
-					logger.Warn().Msgf("runtime %s not supported", *runtimeId)
-					continue
-				}
-				if execute(ctx, runtime, item.Data); err != nil {
+				if execute(ctx, module, item.Data); err != nil {
 					logger.Debug().Msg(err.Error())
 					logger.Err(err).Msg("error executing")
 				}
@@ -149,10 +151,10 @@ func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem,
 	return remote.NewQueueClient().Dequeue(ctx, tenant, queue)
 }
 
-func execute(ctx context.Context, runtime *wasi.WasmRuntime, data []byte) error {
+func execute(ctx context.Context, module *wasi.WasmModuleString, data []byte) error {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
-	out, err := runtime.ExecuteMainFunc(ctx, data) //wasi.InvokeModule(ctx, mod, data)
+	out, err := module.ExecuteMainFunc(ctx, string(data))
 	if err != nil {
 		return errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}

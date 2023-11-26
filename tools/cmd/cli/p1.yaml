@@ -2,32 +2,28 @@ name: mypackage
 jobpackageid: mypackage
 tenantid: m1
 queues:
-  -
-    queueid: queue1
+  - queueid: queue1
     name: queue1
 
 events:
-  -
-    name: ev1
+  - name: ev1
     eventid: ev1
     datatype: 0
     schema:
       schemaid: sche1
       name: sche1
       schemaref: schema.json
-    supplierqueueid: queue1 
-  
+    supplierqueueid: queue1
+
 runtimes:
-  -
-    runtimeid: runtime1
+  - runtimeid: runtime1
     name: greet.wasm
     moduleref: greet.wasm
     mainfuncname: event
     type: 0
 
 executors:
-  -
-    executorid: myexs 
+  - executorid: myexs
     name: myexs
     runtimeid: runtime1
     supportedevents:
