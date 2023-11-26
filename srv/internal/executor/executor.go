@@ -52,7 +52,8 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 
 		repoClient := remote.NewRepoClient()
 		files := make(map[string][]byte)
-		for _, event := range pkg.Events {
+		for _, job := range pkg.Jobs {
+			event := job.Event
 			for _, runtime := range pkg.Runtimes {
 				if runtime.RuntimeId == event.RuntimeId {
 					wasmfile, ok := files[runtime.ModuleRef]
@@ -99,8 +100,8 @@ func StartExecutors(ctx context.Context) error {
 
 	var w sync.WaitGroup
 	for _, pkg := range pkgs {
-		w.Add(1)
 		for _, queue := range pkg.Queues {
+			w.Add(1)
 			go executor(ctx, pkg.TenantId, queue, pkg.Modules, &w)
 		}
 	}
@@ -136,8 +137,8 @@ func executor(ctx context.Context, tenantId string, queueId string, modules map[
 			}
 			queueErrors = 0
 			for _, item := range items {
-				module, ok1 := modules[getModuleName(queueId, item.EventId)]
-				if !ok1 {
+				module, ok := modules[getModuleName(queueId, item.EventId)]
+				if !ok {
 					logger.Warn().Msgf("event %s not supported", item.EventId)
 					continue
 				}

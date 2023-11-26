@@ -89,7 +89,7 @@ message JobPackage {
     string name = 3;
     string tenantId = 4;
     repeated QueueDef queues = 5;
-    repeated EventDef events = 6;
+    repeated JobDef jobs = 6;
     repeated RuntimeDef runtimes = 7;
 }
 
@@ -117,6 +117,16 @@ message RuntimeDef{
 
 enum RuntimeType {
   Wasm = 0;
+}
+
+message JobDef {
+  EventDef event = 1;
+  optional ResultDef result = 2;
+}
+
+message ResultDef {
+  optional EventDef ok = 1;
+  optional EventDef error = 2;
 }
 
 message EventDef {

@@ -41,7 +41,8 @@ func New(ctx context.Context) (*Controller, error) {
 	}
 	for _, ps := range pkgs {
 		tenantId := ps.TenantId
-		for _, event := range ps.Events {
+		for _, job := range ps.Jobs {
+			event := job.Event
 			f, err := repoClient.GetFile(ctx, tenantId, event.Schema.SchemaRef)
 			if err != nil {
 				return nil, err
