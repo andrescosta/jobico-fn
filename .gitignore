@@ -9,6 +9,7 @@
 *.dylib
 *.local
 *.wasm
+*.wat
 *.db
 *.bkp
 # Test binary, built with `go test -c`

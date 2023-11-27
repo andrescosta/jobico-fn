@@ -157,10 +157,10 @@ func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem,
 func execute(ctx context.Context, module *wasi.WasmModuleString, data []byte) error {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
-	out, err := module.ExecuteMainFunc(ctx, string(data))
+	code, result, err := module.ExecuteMainFunc(ctx, string(data))
 	if err != nil {
 		return errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}
-	logger.Debug().Msg(out)
+	logger.Debug().Msgf("%d | %s", code, result)
 	return nil
 }

@@ -3,7 +3,7 @@ module github.com/andrescosta/workflew
 go 1.21.4
 
 require (
-	github.com/andrescosta/goico v0.1.3
+	github.com/andrescosta/goico v0.1.5
 	github.com/gdamore/tcell/v2 v2.6.0
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-chi/httplog v0.3.2
