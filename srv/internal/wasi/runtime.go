@@ -14,6 +14,7 @@ type WasmRuntime struct {
 	runtimeConfig wazero.RuntimeConfig
 }
 
+// Documentation: https://github.com/tetratelabs/wazero/blob/main/examples/multiple-runtimes/counter.go
 func NewWasmRuntime(ctx context.Context, tempDir string) (*WasmRuntime, error) {
 	wruntime := &WasmRuntime{}
 

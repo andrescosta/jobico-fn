@@ -22,17 +22,16 @@ type WasmModuleString struct {
 }
 
 type EventFuncResult struct {
-	ResponseCode uint64
-	Result       uint64
+	ResponseCode  uint64
+	ResultPtrSize uint64
 }
 
-// Documentation: https://github.com/tetratelabs/wazero/blob/main/examples/multiple-runtimes/counter.go
 func NewWasmModuleString(ctx context.Context, runtime *WasmRuntime, wasmModule []byte, mainFuncName string) (*WasmModuleString, error) {
 
 	wazeroRuntime := wazero.NewRuntimeWithConfig(ctx, runtime.runtimeConfig)
 
 	_, err := wazeroRuntime.NewHostModuleBuilder("env").
-		NewFunctionBuilder().WithFunc(log).Export("log").
+		NewFunctionBuilder().WithFunc(logForExport).Export("log").
 		Instantiate(ctx)
 	if err != nil {
 		return nil, err
@@ -67,7 +66,7 @@ func (f *WasmModuleString) ExecuteMainFunc(ctx context.Context, data string) (ui
 	logger := zerolog.Ctx(ctx)
 
 	// reserve memory for the string parameter
-	funcParameterPtr, funcParameterSize, err := f.mallocAndWriteData(ctx, data)
+	funcParameterPtr, funcParameterSize, err := f.writeParameterToMemory(ctx, data)
 	if err != nil {
 		return 0, "", err
 	}
@@ -78,7 +77,7 @@ func (f *WasmModuleString) ExecuteMainFunc(ctx context.Context, data string) (ui
 		}
 	}()
 
-	resultFuncPtr, resultFuncSize, err := f.mallocForResult(ctx)
+	resultFuncPtr, resultFuncSize, err := f.reserveMemoryForResult(ctx)
 	if err != nil {
 		return 0, "", err
 	}
@@ -96,14 +95,14 @@ func (f *WasmModuleString) ExecuteMainFunc(ctx context.Context, data string) (ui
 		return 0, "", err
 	}
 
-	code, res, err := f.getResultFromMemory(ctx, resultFuncPtr, resultFuncSize)
+	code, res, err := f.readResultFromMemory(ctx, resultFuncPtr, resultFuncSize)
 	if err != nil {
 		return 0, "", err
 	}
 	return code, res, nil
 }
 
-func (f *WasmModuleString) mallocForResult(ctx context.Context) (uint64, uint64, error) {
+func (f *WasmModuleString) reserveMemoryForResult(ctx context.Context) (uint64, uint64, error) {
 	eventDataSize := uint64(unsafe.Sizeof(EventFuncResult{}))
 	results, err := f.mallocFunc.Call(ctx, eventDataSize)
 	if err != nil {
@@ -113,7 +112,7 @@ func (f *WasmModuleString) mallocForResult(ctx context.Context) (uint64, uint64,
 	return eventDataPtr, eventDataSize, nil
 }
 
-func (f *WasmModuleString) mallocAndWriteData(ctx context.Context, eventData string) (uint64, uint64, error) {
+func (f *WasmModuleString) writeParameterToMemory(ctx context.Context, eventData string) (uint64, uint64, error) {
 	eventDataSize := uint64(len(eventData))
 	results, err := f.mallocFunc.Call(ctx, eventDataSize)
 	if err != nil {
@@ -128,7 +127,7 @@ func (f *WasmModuleString) mallocAndWriteData(ctx context.Context, eventData str
 	return eventDataPtr, eventDataSize, nil
 }
 
-func (f *WasmModuleString) getResultFromMemory(ctx context.Context, eventResultPtr uint64, eventResultSize uint64) (uint64, string, error) {
+func (f *WasmModuleString) readResultFromMemory(ctx context.Context, eventResultPtr uint64, eventResultSize uint64) (uint64, string, error) {
 
 	if data, ok := f.module.Memory().Read(uint32(eventResultPtr), uint32(eventResultSize)); ok {
 		var result EventFuncResult
@@ -136,7 +135,7 @@ func (f *WasmModuleString) getResultFromMemory(ctx context.Context, eventResultP
 		if err != nil {
 			return 0, "", err
 		}
-		responseString, err := f.getDataFromMemory(ctx, result.Result)
+		responseString, err := f.readDataFromMemory(ctx, result.ResultPtrSize)
 		if err != nil {
 			return 0, "", err
 		}
@@ -147,7 +146,7 @@ func (f *WasmModuleString) getResultFromMemory(ctx context.Context, eventResultP
 	}
 }
 
-func (f *WasmModuleString) getDataFromMemory(ctx context.Context, eventResultPtrSize uint64) (string, error) {
+func (f *WasmModuleString) readDataFromMemory(ctx context.Context, eventResultPtrSize uint64) (string, error) {
 	logger := zerolog.Ctx(ctx)
 	eventResultPtr := uint32(eventResultPtrSize >> 32)
 	eventResultSize := uint32(eventResultPtrSize)
@@ -169,7 +168,7 @@ func (f *WasmModuleString) getDataFromMemory(ctx context.Context, eventResultPtr
 	}
 }
 
-func log(ctx context.Context, m api.Module, level, offset, byteCount uint32) {
+func logForExport(ctx context.Context, m api.Module, level, offset, byteCount uint32) {
 	logger := zerolog.Ctx(ctx)
 	buf, ok := m.Memory().Read(offset, byteCount)
 	if !ok {

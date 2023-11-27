@@ -147,7 +147,7 @@ func executor(ctx context.Context, tenantId string, queueId string, modules map[
 					logger.Warn().Msgf("event %s not supported", item.EventId)
 					continue
 				}
-				code, result, err := execute(ctx, module, item.Data)
+				code, result, err := executeWasm(ctx, module, item.Data)
 				if err != nil {
 					logger.Err(err).Msg("error executing")
 				}
@@ -200,7 +200,7 @@ func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem,
 	return remote.NewQueueClient().Dequeue(ctx, tenant, queue)
 }
 
-func execute(ctx context.Context, module *wasi.WasmModuleString, data []byte) (uint64, string, error) {
+func executeWasm(ctx context.Context, module *wasi.WasmModuleString, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
 	code, result, err := module.ExecuteMainFunc(ctx, string(data))
