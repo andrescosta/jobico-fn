@@ -113,10 +113,16 @@ message RuntimeDef{
   string moduleRef = 4;
   string mainFuncName = 5;
   RuntimeType type = 6;
+  optional Platform platform = 7;
 }
 
 enum RuntimeType {
   Wasm = 0;
+  Go = 1;
+}
+
+enum Platform {
+  TinyGO = 0;
 }
 
 message JobDef {
@@ -137,6 +143,11 @@ message EventDef {
   optional SchemaDef schema = 5;
   string supplierQueueId = 6;
   string runtimeId = 7;
+}
+
+message JobResult {
+  uint64 Code = 1;
+  string Result=2;
 }
 
 enum DataType {

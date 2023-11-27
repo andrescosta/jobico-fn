@@ -22,8 +22,8 @@ type WasmModuleString struct {
 }
 
 type EventFuncResult struct {
-	Error  uint64
-	Result uint64
+	ResponseCode uint64
+	Result       uint64
 }
 
 // Documentation: https://github.com/tetratelabs/wazero/blob/main/examples/multiple-runtimes/counter.go
@@ -67,33 +67,43 @@ func (f *WasmModuleString) ExecuteMainFunc(ctx context.Context, data string) (ui
 	logger := zerolog.Ctx(ctx)
 
 	// reserve memory for the string parameter
-	eventDataPtr, eventDataSize, err := f.mallocForParamData(ctx, data)
+	funcParameterPtr, funcParameterSize, err := f.mallocAndWriteData(ctx, data)
 	if err != nil {
 		return 0, "", err
 	}
-	defer f.freeFunc.Call(ctx, eventDataPtr)
+	defer func() {
+		_, err := f.freeFunc.Call(ctx, uint64(funcParameterPtr))
+		if err != nil {
+			logger.Warn().AnErr("err", err)
+		}
+	}()
 
-	resultStructPtr, resultStructSize, err := f.mallocForTheReturnStruct(ctx)
+	resultFuncPtr, resultFuncSize, err := f.mallocForResult(ctx)
 	if err != nil {
 		return 0, "", err
 	}
-	defer f.freeFunc.Call(ctx, resultStructPtr)
+	defer func() {
+		_, err := f.freeFunc.Call(ctx, uint64(resultFuncPtr))
+		if err != nil {
+			logger.Warn().AnErr("err", err)
+		}
+	}()
 
 	logger.Debug().Msg("calling Event method")
-	_, err = f.mainFunc.Call(ctx, resultStructPtr, eventDataPtr, eventDataSize)
+	// The result of the call will be stored in struct pointed by resultFuncPtr
+	_, err = f.mainFunc.Call(ctx, resultFuncPtr, funcParameterPtr, funcParameterSize)
 	if err != nil {
 		return 0, "", err
 	}
 
-	code, res, err := f.readParamDataForResult4(ctx, resultStructPtr, resultStructSize)
+	code, res, err := f.getResultFromMemory(ctx, resultFuncPtr, resultFuncSize)
 	if err != nil {
 		return 0, "", err
 	}
 	return code, res, nil
-	//f.readParamData(ctx, eventResultPtrSize[0])
 }
 
-func (f *WasmModuleString) mallocForTheReturnStruct(ctx context.Context) (uint64, uint64, error) {
+func (f *WasmModuleString) mallocForResult(ctx context.Context) (uint64, uint64, error) {
 	eventDataSize := uint64(unsafe.Sizeof(EventFuncResult{}))
 	results, err := f.mallocFunc.Call(ctx, eventDataSize)
 	if err != nil {
@@ -103,7 +113,7 @@ func (f *WasmModuleString) mallocForTheReturnStruct(ctx context.Context) (uint64
 	return eventDataPtr, eventDataSize, nil
 }
 
-func (f *WasmModuleString) mallocForParamData(ctx context.Context, eventData string) (uint64, uint64, error) {
+func (f *WasmModuleString) mallocAndWriteData(ctx context.Context, eventData string) (uint64, uint64, error) {
 	eventDataSize := uint64(len(eventData))
 	results, err := f.mallocFunc.Call(ctx, eventDataSize)
 	if err != nil {
@@ -118,7 +128,26 @@ func (f *WasmModuleString) mallocForParamData(ctx context.Context, eventData str
 	return eventDataPtr, eventDataSize, nil
 }
 
-func (f *WasmModuleString) readParamData(ctx context.Context, eventResultPtrSize uint64) (string, error) {
+func (f *WasmModuleString) getResultFromMemory(ctx context.Context, eventResultPtr uint64, eventResultSize uint64) (uint64, string, error) {
+
+	if data, ok := f.module.Memory().Read(uint32(eventResultPtr), uint32(eventResultSize)); ok {
+		var result EventFuncResult
+		err := binary.Read(bytes.NewReader(data), binary.LittleEndian, &result)
+		if err != nil {
+			return 0, "", err
+		}
+		responseString, err := f.getDataFromMemory(ctx, result.Result)
+		if err != nil {
+			return 0, "", err
+		}
+		return result.ResponseCode, responseString, nil
+	} else {
+		return 0, "", fmt.Errorf("Memory.Read(%d, %d) out of range of memory size %d",
+			eventResultPtr, eventResultSize, f.module.Memory().Size())
+	}
+}
+
+func (f *WasmModuleString) getDataFromMemory(ctx context.Context, eventResultPtrSize uint64) (string, error) {
 	logger := zerolog.Ctx(ctx)
 	eventResultPtr := uint32(eventResultPtrSize >> 32)
 	eventResultSize := uint32(eventResultPtrSize)
@@ -151,31 +180,4 @@ func log(ctx context.Context, m api.Module, level, offset, byteCount uint32) {
 
 func (f *WasmModuleString) Close(ctx context.Context) {
 	f.module.Close(ctx)
-}
-
-func (f *WasmModuleString) readParamDataForResult4(ctx context.Context, eventResultPtr uint64, eventResultSize uint64) (uint64, string, error) {
-	if eventResultPtr != 0 {
-		defer func() {
-			_, err := f.freeFunc.Call(ctx, uint64(eventResultPtr))
-			if err != nil {
-				//log.Printf("Warning!! %v\n", err)
-			}
-		}()
-	}
-
-	if bytes1, ok := f.module.Memory().Read(uint32(eventResultPtr), uint32(eventResultSize)); !ok {
-		return 0, "", fmt.Errorf("Memory.Read(%d, %d) out of range of memory size %d",
-			eventResultPtr, eventResultSize, f.module.Memory().Size())
-	} else {
-		var r EventFuncResult
-		err := binary.Read(bytes.NewReader(bytes1), binary.LittleEndian, &r)
-		if err != nil {
-			return 0, "", err
-		}
-		result, err := f.readParamData(ctx, r.Result)
-		if err != nil {
-			return 0, "", err
-		}
-		return r.Error, result, nil
-	}
 }
