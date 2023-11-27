@@ -29,7 +29,7 @@ func serviceFunc(ctx context.Context) error {
 	pb.RegisterControlServer(s, svr)
 	reflection.Register(s)
 
-	srv, err := server.New(os.Getenv("ctl.port"))
+	srv, err := server.New(os.Getenv("ctl.addr"))
 	if err != nil {
 		return fmt.Errorf("server.New: %w", err)
 	}

@@ -26,7 +26,7 @@ func serviceFunc(ctx context.Context) error {
 	pb.RegisterQueueServer(s, &queue.Server{})
 	reflection.Register(s)
 
-	srv, err := server.New(os.Getenv("queue.port"))
+	srv, err := server.New(os.Getenv("queue.addr"))
 	if err != nil {
 		return fmt.Errorf("server.New: %w", err)
 	}

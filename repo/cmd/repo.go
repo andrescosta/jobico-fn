@@ -30,7 +30,7 @@ func serviceFunc(ctx context.Context) error {
 	})
 	reflection.Register(s)
 
-	srv, err := server.New(os.Getenv("repo.port"))
+	srv, err := server.New(os.Getenv("repo.addr"))
 	if err != nil {
 		return fmt.Errorf("server.New: %w", err)
 	}

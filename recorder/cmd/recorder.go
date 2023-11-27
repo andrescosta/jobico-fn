@@ -25,7 +25,7 @@ func serviceFunc(ctx context.Context) error {
 	pb.RegisterRecorderServer(s, recorder.NewServer(ctx, ".\\log.log"))
 	reflection.Register(s)
 
-	srv, err := server.New(os.Getenv("recorder.port"))
+	srv, err := server.New(os.Getenv("recorder.addr"))
 	if err != nil {
 		return fmt.Errorf("server.New: %w", err)
 	}

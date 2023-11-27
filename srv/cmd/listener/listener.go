@@ -20,7 +20,7 @@ func main() {
 
 func serviceFunc(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
-	srv, err := server.New(os.Getenv("listener.port"))
+	srv, err := server.New(os.Getenv("listener.addr"))
 	if err != nil {
 		return fmt.Errorf("server.New: %w", err)
 	}
