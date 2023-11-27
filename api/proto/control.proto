@@ -145,11 +145,6 @@ message EventDef {
   string runtimeId = 7;
 }
 
-message JobResult {
-  uint64 Code = 1;
-  string Result=2;
-}
-
 enum DataType {
   Json = 0;
 }

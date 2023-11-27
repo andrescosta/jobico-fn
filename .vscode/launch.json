@@ -24,6 +24,17 @@
         ]
     },
     {
+        "name": "Launch CLI Recorder",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/tools/cmd/cli/cli.go",
+        "args": [
+            "recorder"
+        ]
+    },
+
+    {
         "name": "Launch Admin",
         "type": "go",
         "request": "launch",

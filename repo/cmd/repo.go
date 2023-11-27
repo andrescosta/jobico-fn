@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	service.Start(serviceFunc)
+	service.StartNamed("Repo", serviceFunc)
 }
 
 func serviceFunc(ctx context.Context) error {
@@ -34,8 +34,8 @@ func serviceFunc(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("server.New: %w", err)
 	}
-	logger.Info().Msgf("Repo started at:%s", srv.Addr())
+	logger.Info().Msgf("Started at:%s", srv.Addr())
 	err = srv.ServeGRPC(ctx, s)
-	logger.Info().Msg("Repo stopped")
+	logger.Info().Msg("Stopped")
 	return err
 }

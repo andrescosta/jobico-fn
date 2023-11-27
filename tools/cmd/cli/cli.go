@@ -5,6 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/andrescosta/goico/pkg/config"
 	"github.com/andrescosta/workflew/api/pkg/remote"
@@ -17,6 +20,7 @@ func main() {
 
 	deployCmd := flag.NewFlagSet("deploy", flag.ExitOnError)
 	repoCmd := flag.NewFlagSet("repo", flag.ExitOnError)
+	_ = flag.NewFlagSet("recorder", flag.ExitOnError)
 
 	if len(os.Args) < 2 {
 		fmt.Println("expected 'deploy' or 'repo' subcommands")
@@ -70,6 +74,42 @@ func main() {
 		}
 		c := remote.NewRepoClient()
 		c.AddFile(context.Background(), tenant, name, f)
+	case "recorder":
+		ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		defer func() {
+			done()
+			if r := recover(); r != nil {
+				println("done error")
+			}
+		}()
+		ch := make(chan string)
+		go func(mc <-chan string) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case l := <-mc:
+					fmt.Println(l)
+				}
+			}
+
+		}(ch)
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := remote.NewRecorderClient().GetJobExecutions(ctx, "", ch)
+			if err != nil {
+				fmt.Printf("error getting data %s \n", err)
+			}
+		}()
+		fmt.Printf("getting results at proc: %d \n", os.Getpid())
+		wg.Wait()
+		done()
+		fmt.Println("command stoped.")
+	default:
+		fmt.Printf("illegal option %s \n", os.Args[1])
 	}
+
 	//yaml.Debug()
 }

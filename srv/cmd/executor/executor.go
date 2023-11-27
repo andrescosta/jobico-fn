@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	service.Start(serviceFunc)
+	service.StartNamed("executor", serviceFunc)
 }
 
 func serviceFunc(ctx context.Context) error {

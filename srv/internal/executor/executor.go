@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/andrescosta/workflew/srv/internal/wazero"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -76,7 +78,9 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 					break
 				}
 			}
-			nextStepForEvents[event.EventId] = job.Result
+			if job.Result != nil {
+				nextStepForEvents[event.EventId] = job.Result
+			}
 		}
 		jobPackage.Modules = modulesForEvents
 		jobPackage.NextStep = nextStepForEvents
@@ -151,8 +155,13 @@ func executor(ctx context.Context, tenantId string, queueId string, modules map[
 				if err != nil {
 					logger.Err(err).Msg("error executing")
 				}
-				if err := makeDecisions(ctx, item.EventId, tenantId, code, result, nextSteps[item.EventId]); err != nil {
-					logger.Err(err).Msg("error enqueuing the result")
+				if nextSteps, ok := nextSteps[item.EventId]; ok {
+					if err := reportToRecorder(ctx, queueId, item.EventId, tenantId, code, result); err != nil {
+						logger.Err(err).Msg("error reporting to recorder")
+					}
+					if err := makeDecisions(ctx, item.EventId, tenantId, code, result, nextSteps); err != nil {
+						logger.Err(err).Msg("error enqueuing the result")
+					}
 				}
 			}
 		}
@@ -161,8 +170,8 @@ func executor(ctx context.Context, tenantId string, queueId string, modules map[
 
 func makeDecisions(ctx context.Context, eventId string, tenantId string, code uint64, result string, resultDef *pb.ResultDef) error {
 	r := pb.JobResult{
-		Code:   code,
-		Result: result,
+		Code: code,
+		//Result: result,
 	}
 	bytes1, err := proto.Marshal(&r)
 	if err != nil {
@@ -194,6 +203,29 @@ func makeDecisions(ctx context.Context, eventId string, tenantId string, code ui
 		return err
 	}
 	return nil
+}
+
+func reportToRecorder(ctx context.Context, queueId string, eventId string, tenantId string, code uint64, result string) error {
+	now := time.Now()
+	host, err := os.Hostname()
+	if err != nil {
+		host = "<error>"
+	}
+	ex := &pb.JobExecution{
+		EventId:  eventId,
+		TenantId: tenantId,
+		QueueId:  queueId,
+		Date: &timestamppb.Timestamp{
+			Seconds: now.Unix(),
+			Nanos:   int32(now.Nanosecond()),
+		},
+		Server: host,
+		Result: &pb.JobResult{
+			Code:    code,
+			Message: result,
+		},
+	}
+	return remote.NewRecorderClient().AddJobExecution(ctx, ex)
 }
 
 func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {

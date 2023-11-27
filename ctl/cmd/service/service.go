@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	service.Start(serviceFunc)
+	service.StartNamed("CTL", serviceFunc)
 }
 
 func serviceFunc(ctx context.Context) error {
@@ -33,8 +33,8 @@ func serviceFunc(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("server.New: %w", err)
 	}
-	logger.Info().Msgf("Ctl Server started at:%s", srv.Addr())
+	logger.Info().Msgf("Server started at:%s", srv.Addr())
 	err = srv.ServeGRPC(ctx, s)
-	logger.Info().Msg("Ctl Server stopped")
+	logger.Info().Msg("Server stopped")
 	return err
 }

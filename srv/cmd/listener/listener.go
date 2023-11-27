@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	service.Start(serviceFunc)
+	service.StartNamed("listener", serviceFunc)
 }
 
 func serviceFunc(ctx context.Context) error {
