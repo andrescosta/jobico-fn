@@ -10,7 +10,7 @@ import (
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/workflew/api/pkg/remote"
 	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/srv/internal/wasi"
+	"github.com/andrescosta/workflew/srv/internal/wazero"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 )
@@ -24,8 +24,8 @@ type jobPackage struct {
 	PackageId string
 	TenantId  string
 	Queues    []string
-	Runtime   *wasi.WasmRuntime
-	Modules   map[string]*wasi.WasmModuleString
+	Runtime   *wazero.WasmRuntime
+	Modules   map[string]*wazero.WasmModuleString
 	NextStep  map[string]*pb.ResultDef
 }
 
@@ -42,9 +42,9 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 		jobPackages = append(jobPackages, jobPackage)
 
 		queues := make([]string, 0)
-		modulesForEvents := make(map[string]*wasi.WasmModuleString)
+		modulesForEvents := make(map[string]*wazero.WasmModuleString)
 		nextStepForEvents := make(map[string]*pb.ResultDef)
-		jobPackage.Runtime, err = wasi.NewWasmRuntime(ctx, cacheDir)
+		jobPackage.Runtime, err = wazero.NewWasmRuntime(ctx, cacheDir)
 		if err != nil {
 			return nil, err
 		}
@@ -68,7 +68,7 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 						files[runtime.ModuleRef] = wasmfile
 					}
 					// We create a module per queue because wazero module call is not goroutine compatible
-					wasmModule, err := wasi.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, runtime.MainFuncName)
+					wasmModule, err := wazero.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, runtime.MainFuncName)
 					if err != nil {
 						return nil, err
 					}
@@ -116,7 +116,7 @@ func StartExecutors(ctx context.Context) error {
 	return nil
 }
 
-func executor(ctx context.Context, tenantId string, queueId string, modules map[string]*wasi.WasmModuleString, nextSteps map[string]*pb.ResultDef, w *sync.WaitGroup) {
+func executor(ctx context.Context, tenantId string, queueId string, modules map[string]*wazero.WasmModuleString, nextSteps map[string]*pb.ResultDef, w *sync.WaitGroup) {
 	defer w.Done()
 	logger := zerolog.Ctx(ctx)
 	ticker := time.NewTicker(5 * time.Second)
@@ -200,7 +200,7 @@ func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem,
 	return remote.NewQueueClient().Dequeue(ctx, tenant, queue)
 }
 
-func executeWasm(ctx context.Context, module *wasi.WasmModuleString, data []byte) (uint64, string, error) {
+func executeWasm(ctx context.Context, module *wazero.WasmModuleString, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
 	code, result, err := module.ExecuteMainFunc(ctx, string(data))

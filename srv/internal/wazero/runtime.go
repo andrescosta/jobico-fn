@@ -1,4 +1,4 @@
-package wasi
+package wazero
 
 import (
 	"context"
