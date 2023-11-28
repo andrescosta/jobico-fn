@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
+	iog "github.com/andrescosta/goico/pkg/io"
+	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/nxadm/tail"
 	"github.com/rs/zerolog"
-
-	pb "github.com/andrescosta/workflew/api/types"
 )
 
 type Server struct {
@@ -39,6 +39,16 @@ func (s *Server) GetJobExecutions(g *pb.GetJobExecutionsRequest, r pb.Recorder_G
 		Offset: 0,
 		Whence: io.SeekEnd,
 	}
+	if g.Lines != nil && *g.Lines > 0 {
+		lines, err := iog.GetLastnLines(s.fullpath, int(*g.Lines), true, true)
+		if err == nil {
+			r.Send(&pb.GetJobExecutionsReply{
+				Result: lines,
+			})
+		} else {
+			logger.Warn().Msgf("error getting tail lines %s", err)
+		}
+	}
 	tail, err := tail.TailFile(s.fullpath, tail.Config{Follow: true, ReOpen: true, Poll: true, CompleteLines: true, Location: seekInfo})
 	if err != nil {
 		logger.Err(err).Msg("error tailing file")
@@ -57,7 +67,7 @@ func (s *Server) GetJobExecutions(g *pb.GetJobExecutionsRequest, r pb.Recorder_G
 					return line.Err
 				}
 				err := r.Send(&pb.GetJobExecutionsReply{
-					Result: line.Text,
+					Result: []string{line.Text},
 				})
 				if err != nil {
 					logger.Err(err).Msg("error sending content")

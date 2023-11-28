@@ -20,7 +20,7 @@ func main() {
 
 	deployCmd := flag.NewFlagSet("deploy", flag.ExitOnError)
 	repoCmd := flag.NewFlagSet("repo", flag.ExitOnError)
-	_ = flag.NewFlagSet("recorder", flag.ExitOnError)
+	recorderCmd := flag.NewFlagSet("recorder", flag.ExitOnError)
 
 	if len(os.Args) < 2 {
 		fmt.Println("expected 'deploy' or 'repo' subcommands")
@@ -58,7 +58,6 @@ func main() {
 			}
 		}
 	case "repo":
-		repoCmd.Parse(os.Args[2:])
 		args := repoCmd.Args()
 		if len(args) < 3 {
 			fmt.Println("expected yaml deploy file name")
@@ -75,6 +74,8 @@ func main() {
 		c := remote.NewRepoClient()
 		c.AddFile(context.Background(), tenant, name, f)
 	case "recorder":
+		lines := recorderCmd.Int("lines", 0, "number of lines")
+		recorderCmd.Parse(os.Args[2:])
 		ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 		defer func() {
 			done()
@@ -98,7 +99,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := remote.NewRecorderClient().GetJobExecutions(ctx, "", ch)
+			err := remote.NewRecorderClient().GetJobExecutions(ctx, "", int32(*lines), ch)
 			if err != nil {
 				fmt.Printf("error getting data %s \n", err)
 			}

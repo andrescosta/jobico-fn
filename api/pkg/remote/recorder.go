@@ -26,7 +26,7 @@ func (c *RecorderClient) dial() (*grpc.ClientConn, error) {
 
 }
 
-func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, resChan chan<- string) error {
+func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, lines int32, resChan chan<- string) error {
 	logger := zerolog.Ctx(ctx)
 
 	conn, err := c.dial()
@@ -36,7 +36,9 @@ func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, re
 	defer conn.Close()
 	recorderClient := pb.NewRecorderClient(conn)
 
-	rj, err := recorderClient.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{})
+	rj, err := recorderClient.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{
+		Lines: &lines,
+	})
 	if err != nil {
 		return err
 	}
@@ -53,7 +55,9 @@ func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, re
 			if err != nil {
 				logger.Err(err).Msg("error getting message")
 			} else {
-				resChan <- ress.Result
+				for _, r := range ress.Result {
+					resChan <- r
+				}
 			}
 		}
 	}

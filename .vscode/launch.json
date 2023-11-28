@@ -30,7 +30,8 @@
         "mode": "debug",
         "program": "${workspaceFolder}/tools/cmd/cli/cli.go",
         "args": [
-            "recorder"
+            "recorder",
+            "-lines=3"
         ]
     },
 

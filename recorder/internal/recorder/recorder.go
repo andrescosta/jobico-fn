@@ -31,7 +31,7 @@ func (r *Recorder) AddExecution(ex *pb.JobExecution) error {
 		Str("Queue", ex.QueueId).
 		Uint64("Code", ex.Result.Code).
 		Str("Result", ex.Result.Message).
-		Msg("")
+		Send()
 	return nil
 }
 

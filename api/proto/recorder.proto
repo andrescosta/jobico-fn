@@ -11,10 +11,11 @@ service Recorder {
 
 message GetJobExecutionsRequest{
     optional string tenantId =1;
+    optional int32 lines = 2;
 }
 
 message GetJobExecutionsReply{
-   string result = 1;
+    repeated string result = 1;
 }
 
 message AddJobExecutionRequest{
