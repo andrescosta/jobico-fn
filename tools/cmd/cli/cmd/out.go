@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/andrescosta/goico/pkg/templ"
+	"github.com/andrescosta/goico/pkg/templico"
 )
 
 var usageTemplate = `{{.Long | trim}}
@@ -34,22 +34,19 @@ Details:
 
 func printUsage(w io.Writer, cmd *command) {
 	bw := bufio.NewWriter(w)
-	err := templ.Render(bw, usageTemplate, cmd)
-	if err != nil {
-		panic(err)
-	}
+	templico.Render(bw, usageTemplate, cmd)
 	bw.Flush()
 }
 
 func printHelp(w io.Writer, cmd *command) {
 	bw := bufio.NewWriter(w)
-	templ.Render(bw, helpTemplate, cmd)
+	templico.Render(bw, helpTemplate, cmd)
 	bw.Flush()
 }
 
 func printError(w io.Writer, cmd *command, err error) {
 	bw := bufio.NewWriter(w)
-	templ.Render(bw, errorTemplate, cmd)
+	templico.Render(bw, errorTemplate, cmd)
 	bw.Flush()
 	fmt.Println(err.Error())
 	fmt.Println("")
