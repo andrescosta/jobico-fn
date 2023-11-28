@@ -4,26 +4,31 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/workflew/api/pkg/remote"
 	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/srv/internal/wasi"
+	"github.com/andrescosta/workflew/srv/internal/wazero"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/proto"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
 	cacheDir = ".\\cache"
+	NO_ERROR = 0
 )
 
 type jobPackage struct {
 	PackageId string
 	TenantId  string
 	Queues    []string
-	Runtime   *wasi.WasmRuntime
-	Modules   map[string]*wasi.WasmModuleString
+	Runtime   *wazero.WasmRuntime
+	Modules   map[string]*wazero.WasmModuleString
+	NextStep  map[string]*pb.ResultDef
 }
 
 func getPackages(ctx context.Context) ([]*jobPackage, error) {
@@ -39,9 +44,9 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 		jobPackages = append(jobPackages, jobPackage)
 
 		queues := make([]string, 0)
-		modulesForEvents := make(map[string]*wasi.WasmModuleString)
-
-		jobPackage.Runtime, err = wasi.NewWasmRuntime(ctx, cacheDir)
+		modulesForEvents := make(map[string]*wazero.WasmModuleString)
+		nextStepForEvents := make(map[string]*pb.ResultDef)
+		jobPackage.Runtime, err = wazero.NewWasmRuntime(ctx, cacheDir)
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +57,8 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 
 		repoClient := remote.NewRepoClient()
 		files := make(map[string][]byte)
-		for _, event := range pkg.Events {
+		for _, job := range pkg.Jobs {
+			event := job.Event
 			for _, runtime := range pkg.Runtimes {
 				if runtime.RuntimeId == event.RuntimeId {
 					wasmfile, ok := files[runtime.ModuleRef]
@@ -64,7 +70,7 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 						files[runtime.ModuleRef] = wasmfile
 					}
 					// We create a module per queue because wazero module call is not goroutine compatible
-					wasmModule, err := wasi.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, runtime.MainFuncName)
+					wasmModule, err := wazero.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, runtime.MainFuncName)
 					if err != nil {
 						return nil, err
 					}
@@ -72,8 +78,12 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 					break
 				}
 			}
+			if job.Result != nil {
+				nextStepForEvents[event.EventId] = job.Result
+			}
 		}
 		jobPackage.Modules = modulesForEvents
+		jobPackage.NextStep = nextStepForEvents
 	}
 	return jobPackages, nil
 }
@@ -99,9 +109,9 @@ func StartExecutors(ctx context.Context) error {
 
 	var w sync.WaitGroup
 	for _, pkg := range pkgs {
-		w.Add(1)
 		for _, queue := range pkg.Queues {
-			go executor(ctx, pkg.TenantId, queue, pkg.Modules, &w)
+			w.Add(1)
+			go executor(ctx, pkg.TenantId, queue, pkg.Modules, pkg.NextStep, &w)
 		}
 	}
 	logger.Info().Msg("Workers started")
@@ -110,7 +120,7 @@ func StartExecutors(ctx context.Context) error {
 	return nil
 }
 
-func executor(ctx context.Context, tenantId string, queueId string, modules map[string]*wasi.WasmModuleString, w *sync.WaitGroup) {
+func executor(ctx context.Context, tenantId string, queueId string, modules map[string]*wazero.WasmModuleString, nextSteps map[string]*pb.ResultDef, w *sync.WaitGroup) {
 	defer w.Done()
 	logger := zerolog.Ctx(ctx)
 	ticker := time.NewTicker(5 * time.Second)
@@ -136,30 +146,99 @@ func executor(ctx context.Context, tenantId string, queueId string, modules map[
 			}
 			queueErrors = 0
 			for _, item := range items {
-				module, ok1 := modules[getModuleName(queueId, item.EventId)]
-				if !ok1 {
+				module, ok := modules[getModuleName(queueId, item.EventId)]
+				if !ok {
 					logger.Warn().Msgf("event %s not supported", item.EventId)
 					continue
 				}
-				if execute(ctx, module, item.Data); err != nil {
+				code, result, err := executeWasm(ctx, module, item.Data)
+				if err != nil {
 					logger.Err(err).Msg("error executing")
+				}
+				if nextSteps, ok := nextSteps[item.EventId]; ok {
+					if err := reportToRecorder(ctx, queueId, item.EventId, tenantId, code, result); err != nil {
+						logger.Err(err).Msg("error reporting to recorder")
+					}
+					if err := makeDecisions(ctx, item.EventId, tenantId, code, result, nextSteps); err != nil {
+						logger.Err(err).Msg("error enqueuing the result")
+					}
 				}
 			}
 		}
 	}
 }
 
+func makeDecisions(ctx context.Context, eventId string, tenantId string, code uint64, result string, resultDef *pb.ResultDef) error {
+	r := pb.JobResult{
+		Code: code,
+		//Result: result,
+	}
+	bytes1, err := proto.Marshal(&r)
+	if err != nil {
+		return err
+	}
+	var q *pb.QueueRequest
+	if code == NO_ERROR {
+		q = &pb.QueueRequest{
+			TenantId: tenantId,
+			QueueId:  resultDef.Ok.SupplierQueueId,
+			Items: []*pb.QueueItem{{
+				EventId: resultDef.Ok.EventId,
+				Data:    bytes1,
+			},
+			},
+		}
+	} else {
+		q = &pb.QueueRequest{
+			TenantId: tenantId,
+			QueueId:  resultDef.Error.SupplierQueueId,
+			Items: []*pb.QueueItem{{
+				EventId: resultDef.Error.EventId,
+				Data:    bytes1,
+			},
+			},
+		}
+	}
+	if err := remote.NewQueueClient().Queue(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func reportToRecorder(ctx context.Context, queueId string, eventId string, tenantId string, code uint64, result string) error {
+	now := time.Now()
+	host, err := os.Hostname()
+	if err != nil {
+		host = "<error>"
+	}
+	ex := &pb.JobExecution{
+		EventId:  eventId,
+		TenantId: tenantId,
+		QueueId:  queueId,
+		Date: &timestamppb.Timestamp{
+			Seconds: now.Unix(),
+			Nanos:   int32(now.Nanosecond()),
+		},
+		Server: host,
+		Result: &pb.JobResult{
+			Code:    code,
+			Message: result,
+		},
+	}
+	return remote.NewRecorderClient().AddJobExecution(ctx, ex)
+}
+
 func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
 	return remote.NewQueueClient().Dequeue(ctx, tenant, queue)
 }
 
-func execute(ctx context.Context, module *wasi.WasmModuleString, data []byte) error {
+func executeWasm(ctx context.Context, module *wazero.WasmModuleString, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
-	out, err := module.ExecuteMainFunc(ctx, string(data))
+	code, result, err := module.ExecuteMainFunc(ctx, string(data))
 	if err != nil {
-		return errors.Join(err, fmt.Errorf("error in module %s", mod))
+		return 0, "", errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}
-	logger.Debug().Msg(out)
-	return nil
+	logger.Debug().Msgf("%d | %s", code, result)
+	return code, result, nil
 }

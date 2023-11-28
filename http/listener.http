@@ -4,8 +4,8 @@ Content-Type: application/json
 {
     "data": [
        {
-            "firstName": "Santhosh Kumar",
-            "lastName": "Tekuri1"
+            "firstName": "Andres",
+            "lastName": "C"
         }
     ]
 }
@@ -17,8 +17,8 @@ Content-Type: application/json
 {
     "data": [
        {
-            "firstName": "SSanthosh Kumar2",
-            "lastName": "Tekuri12"
+            "firstName": "Maria",
+            "lastName": "C"
         }
     ]
 }

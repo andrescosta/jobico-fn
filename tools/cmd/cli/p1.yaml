@@ -7,25 +7,69 @@ queues:
   - queueid: queue2
     name: queue2
 
-events:
-  - name: ev1
-    eventid: ev1
-    datatype: 0
-    schema:
-      schemaid: sche1
-      name: sche1
-      schemaref: schema.json
-    supplierqueueid: queue1
-    runtimeid: runtime1
-  - name: ev2
-    eventid: ev2
-    datatype: 0
-    schema:
-      schemaid: sche1
-      name: sche1
-      schemaref: schema.json
-    supplierqueueid: queue2
-    runtimeid: runtime1
+jobs:
+  - event:
+      name: ev1
+      eventid: ev1
+      datatype: 0
+      schema:
+        schemaid: sche1
+        name: sche1
+        schemaref: schema.json
+      supplierqueueid: queue1
+      runtimeid: runtime1
+    result:
+      ok:
+        name: ev1_ok
+        eventid: ev1_ok
+        datatype: 0
+        schema:
+          schemaid: sche1
+          name: sche1
+          schemaref: schema.json
+        supplierqueueid: queue1
+        runtimeid: runtime1
+      error:
+        name: ev1_err
+        eventid: ev1_err
+        datatype: 0
+        schema:
+          schemaid: sche1
+          name: sche1
+          schemaref: schema.json
+        supplierqueueid: queue1
+        runtimeid: runtime1
+  - event:
+      name: ev2
+      eventid: ev2
+      datatype: 0
+      schema:
+        schemaid: sche1
+        name: sche1
+        schemaref: schema.json
+      supplierqueueid: queue1
+      runtimeid: runtime1
+    result:
+      ok:
+        name: ev2_ok
+        eventid: ev2_ok
+        datatype: 0
+        schema:
+          schemaid: sche1
+          name: sche1
+          schemaref: schema.json
+        supplierqueueid: queue1
+        runtimeid: runtime1
+      error:
+        name: ev2_err
+        eventid: ev2_err
+        datatype: 0
+        schema:
+          schemaid: sche1
+          name: sche1
+          schemaref: schema.json
+        supplierqueueid: queue1
+        runtimeid: runtime1
 
 runtimes:
   - runtimeid: runtime1
