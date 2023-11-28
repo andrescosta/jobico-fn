@@ -20,17 +20,20 @@ func main() {
 
 func serviceFunc(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
-	s := grpc.NewServer()
-
-	pb.RegisterRecorderServer(s, recorder.NewServer(ctx, ".\\log.log"))
-	reflection.Register(s)
+	sgrpc := grpc.NewServer()
+	svr, err := recorder.NewServer(ctx, ".\\log.log")
+	if err != nil {
+		return err
+	}
+	pb.RegisterRecorderServer(sgrpc, svr)
+	reflection.Register(sgrpc)
 
 	srv, err := server.New(os.Getenv("recorder.addr"))
 	if err != nil {
 		return fmt.Errorf("server.New: %w", err)
 	}
 	logger.Info().Msgf("Started at:%s", srv.Addr())
-	err = srv.ServeGRPC(ctx, s)
+	err = srv.ServeGRPC(ctx, sgrpc)
 	logger.Info().Msg("Stopped")
 	return err
 }

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/andrescosta/goico/pkg/io"
+	"github.com/andrescosta/goico/pkg/iohelper"
 )
 
 const (
@@ -52,7 +52,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	// sync the access to the "queue"
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	bdata, filename, err := io.GetOldestFile(f.directory, preffix, suffix)
+	bdata, filename, err := iohelper.GetOldestFile(f.directory, preffix, suffix)
 	if err != nil {
 		var d T
 		return d, errors.Join(errors.New("error removing file"), err)
@@ -66,10 +66,10 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	var data T
 	if err = decoder.Decode(&data); err != nil {
 		var d T
-		io.RenameFile(*filename, *filename+".error")
+		iohelper.RenameFile(*filename, *filename+".error")
 		return d, errors.Join(errors.New("error decoding"), err)
 	}
-	io.RemoveFile(*filename)
+	iohelper.RemoveFile(*filename)
 	return data, nil
 }
 
@@ -80,7 +80,7 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 	if err != nil {
 		return errors.Join(errors.New("error encoding"), err)
 	}
-	err = io.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes())
+	err = iohelper.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes())
 	if err != nil {
 		return err
 	}
@@ -88,5 +88,5 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 }
 
 func queueDirectory(directory string, id Id) string {
-	return io.BuildFullPath([]string{directory, id.TenantId, id.QueueId})
+	return iohelper.BuildFullPath([]string{directory, id.TenantId, id.QueueId})
 }
