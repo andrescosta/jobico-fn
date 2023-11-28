@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/andrescosta/goico/pkg/io"
+	"github.com/andrescosta/goico/pkg/iohelper"
 	"github.com/tetratelabs/wazero"
 )
 
@@ -19,7 +19,7 @@ func NewWasmRuntime(ctx context.Context, tempDir string) (*WasmRuntime, error) {
 	wruntime := &WasmRuntime{}
 
 	// Creates a directory to store wazero cache
-	if err := io.CreateDirIfNotExist(tempDir); err != nil {
+	if err := iohelper.CreateDirIfNotExist(tempDir); err != nil {
 		return nil, err
 	}
 	cacheDir, err := os.MkdirTemp(tempDir, "cache")
