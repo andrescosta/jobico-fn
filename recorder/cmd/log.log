@@ -39,3 +39,4 @@
 {"level":"info","Event":"ev1","Queue":"queue1","Code":1,"Result":"ok","time":"2023-11-27T22:27:49-05:00"}
 {"level":"info","Event":"ev1","Queue":"queue1","Code":1,"Result":"ok","time":"2023-11-27T22:28:49-05:00"}
 {"level":"info","Event":"ev1","Queue":"queue1","Code":1,"Result":"ok","time":"2023-11-27T22:29:14-05:00"}
+{"level":"info","Event":"ev1","Queue":"queue1","Code":1,"Result":"ok","time":"2023-11-28T15:25:43-05:00"}
