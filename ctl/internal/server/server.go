@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/andrescosta/goico/pkg/convertico"
 	"github.com/andrescosta/goico/pkg/database"
@@ -43,9 +42,8 @@ func NewCotrolServer(ctx context.Context) (*ControlServer, error) {
 func (s *ControlServer) Close(ctx context.Context) {
 	s.db.Close(ctx)
 }
-
-func (s *ControlServer) GetPackages(ctx context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
-	mydao, err := s.getDao(ctx, in.TenantId, TBL_PACKAGE, &pb.JobPackage{})
+func (s *ControlServer) getPackages(ctx context.Context, tenantId string) ([]*pb.JobPackage, error) {
+	mydao, err := s.getDao(ctx, tenantId, TBL_PACKAGE, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +54,42 @@ func (s *ControlServer) GetPackages(ctx context.Context, in *pb.GetJobPackagesRe
 	}
 	packages := convertico.ConvertSlices[proto.Message, *pb.JobPackage](ms)
 
-	return &pb.GetJobPackagesReply{Packages: packages}, nil
+	return packages, nil
+}
+func (s *ControlServer) getPackage(ctx context.Context, tenantId string, id string) (*pb.JobPackage, error) {
+	mydao, err := s.getDao(ctx, tenantId, TBL_PACKAGE, &pb.JobPackage{})
+	if err != nil {
+		return nil, err
+	}
+	ms, err := mydao.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if ms != nil {
+		return (*ms).(*pb.JobPackage), nil
+	} else {
+		return nil, nil
+	}
+}
+
+func (s *ControlServer) GetPackages(ctx context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
+	if in.ID != nil {
+		p, err := s.getPackage(ctx, in.TenantId, *in.ID)
+		if err != nil {
+			return nil, err
+		}
+		if p != nil {
+			return &pb.GetJobPackagesReply{Packages: []*pb.JobPackage{p}}, nil
+		} else {
+			return &pb.GetJobPackagesReply{}, nil
+		}
+	} else {
+		packages, err := s.getPackages(ctx, in.TenantId)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.GetJobPackagesReply{Packages: packages}, nil
+	}
 }
 
 func (s *ControlServer) GetAllPackages(ctx context.Context, in *pb.GetAllJobPackagesRequest) (*pb.GetAllJobPackagesReply, error) {
@@ -66,7 +99,7 @@ func (s *ControlServer) GetAllPackages(ctx context.Context, in *pb.GetAllJobPack
 	}
 	packages := make([]*pb.JobPackage, 0)
 	for _, me := range ms {
-		mydao, err := s.getDao(ctx, me.TenantId, TBL_PACKAGE, &pb.JobPackage{})
+		mydao, err := s.getDao(ctx, me.ID, TBL_PACKAGE, &pb.JobPackage{})
 		if err != nil {
 			return nil, err
 		}
@@ -87,21 +120,32 @@ func (s *ControlServer) AddPackage(ctx context.Context, in *pb.AddJobPackageRequ
 		return nil, err
 	}
 	var m proto.Message = in.Package
-	ms, err := mydao.Add(ctx, m)
+	_, err = mydao.Add(ctx, m)
 	if err != nil {
 		return nil, err
 	}
-	in.Package.ID = &ms
 	return &pb.AddJobPackageReply{Package: in.Package}, nil
 
 }
 
 func (s *ControlServer) GetTenants(ctx context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
-	m, err := s.getTenants(ctx)
-	if err != nil {
-		return nil, err
+	if in.ID != nil {
+		t, err := s.getTenant(ctx, *in.ID)
+		if err != nil {
+			return nil, err
+		}
+		if t != nil {
+			return &pb.GetTenantsReply{Tenants: []*pb.Tenant{t}}, nil
+		} else {
+			return &pb.GetTenantsReply{}, nil
+		}
+	} else {
+		m, err := s.getTenants(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.GetTenantsReply{Tenants: m}, nil
 	}
-	return &pb.GetTenantsReply{Tenants: m}, nil
 }
 
 func (s *ControlServer) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
@@ -114,9 +158,26 @@ func (s *ControlServer) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
 	if err != nil {
 		return nil, err
 	}
-	Tenants := convertico.ConvertSlices[proto.Message, *pb.Tenant](ms)
+	tenants := convertico.ConvertSlices[proto.Message, *pb.Tenant](ms)
 
-	return Tenants, nil
+	return tenants, nil
+}
+
+func (s *ControlServer) getTenant(ctx context.Context, id string) (*pb.Tenant, error) {
+	mydao, err := s.getDaoGen(ctx, TBL_MERCHANT, &pb.Tenant{})
+	if err != nil {
+		return nil, err
+	}
+
+	ms, err := mydao.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if ms != nil {
+		return (*ms).(*pb.Tenant), nil
+	} else {
+		return nil, nil
+	}
 }
 
 func (s *ControlServer) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
@@ -125,11 +186,10 @@ func (s *ControlServer) AddTenant(ctx context.Context, in *pb.AddTenantRequest) 
 		return nil, err
 	}
 	var m proto.Message = in.Tenant
-	ms, err := mydao.Add(ctx, m)
+	_, err = mydao.Add(ctx, m)
 	if err != nil {
 		return nil, err
 	}
-	in.Tenant.ID = &ms
 	return &pb.AddTenantReply{Tenant: in.Tenant}, nil
 }
 
@@ -138,18 +198,16 @@ func (s *ControlServer) AddEnviroment(ctx context.Context, in *pb.AddEnviromentR
 	if err != nil {
 		return nil, err
 	}
+	in.Environment.ID = "enviroment_1"
 	var m proto.Message = in.Environment
-	ms, err := mydao.Add(ctx, m)
+	_, err = mydao.Add(ctx, m)
 	if err != nil {
 		return nil, err
 	}
-	in.Environment.ID = &ms
 	return &pb.AddEnviromentReply{Environment: in.Environment}, nil
 }
 func (s *ControlServer) UpdateEnviroment(ctx context.Context, in *pb.UpdateEnviromentRequest) (*pb.UpdateEnviromentReply, error) {
-	if in.Environment.ID == nil {
-		return nil, fmt.Errorf("ID is empty")
-	}
+	in.Environment.ID = "enviroment_1"
 	mydao, err := s.getDaoGen(ctx, TBL_ENVIRONMENT, &pb.Environment{})
 	if err != nil {
 		return nil, err
@@ -168,13 +226,13 @@ func (s *ControlServer) GetEnviroment(ctx context.Context, in *pb.GetEnviromentR
 		return nil, err
 	}
 
-	ms, err := mydao.All(ctx)
+	ms, err := mydao.Get(ctx, "enviroment_1")
 	if err != nil {
 		return nil, err
 	}
-	environment := &pb.Environment{}
-	if len(ms) > 0 {
-		environment = ms[0].(*pb.Environment)
+	var environment *pb.Environment = nil
+	if ms != nil {
+		environment = (*ms).(*pb.Environment)
 	}
 	return &pb.GetEnviromentReply{Environment: environment}, nil
 }

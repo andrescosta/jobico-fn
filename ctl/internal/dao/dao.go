@@ -25,7 +25,7 @@ func (q *DAO[T]) All(ctx context.Context) ([]T, error) {
 	return q.table.All(ctx)
 }
 
-func (q *DAO[T]) Get(ctx context.Context, id uint64) (T, error) {
+func (q *DAO[T]) Get(ctx context.Context, id string) (*T, error) {
 	return q.table.Get(ctx, id)
 }
 

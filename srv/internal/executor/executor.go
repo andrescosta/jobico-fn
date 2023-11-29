@@ -40,7 +40,7 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 	for _, pkg := range ps {
 		jobPackage := &jobPackage{}
 		jobPackage.TenantId = pkg.TenantId
-		jobPackage.PackageId = pkg.JobPackageId
+		jobPackage.PackageId = pkg.ID
 		jobPackages = append(jobPackages, jobPackage)
 
 		queues := make([]string, 0)
@@ -51,7 +51,7 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 			return nil, err
 		}
 		for _, q := range pkg.Queues {
-			queues = append(queues, q.QueueId)
+			queues = append(queues, q.ID)
 		}
 		jobPackage.Queues = queues
 
@@ -60,7 +60,7 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 		for _, job := range pkg.Jobs {
 			event := job.Event
 			for _, runtime := range pkg.Runtimes {
-				if runtime.RuntimeId == event.RuntimeId {
+				if runtime.ID == event.RuntimeId {
 					wasmfile, ok := files[runtime.ModuleRef]
 					if !ok {
 						wasmfile, err = repoClient.GetFile(ctx, pkg.TenantId, runtime.ModuleRef)
@@ -74,12 +74,12 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 					if err != nil {
 						return nil, err
 					}
-					modulesForEvents[getModuleName(event.SupplierQueueId, event.EventId)] = wasmModule
+					modulesForEvents[getModuleName(event.SupplierQueueId, event.ID)] = wasmModule
 					break
 				}
 			}
 			if job.Result != nil {
-				nextStepForEvents[event.EventId] = job.Result
+				nextStepForEvents[event.ID] = job.Result
 			}
 		}
 		jobPackage.Modules = modulesForEvents
@@ -183,7 +183,7 @@ func makeDecisions(ctx context.Context, eventId string, tenantId string, code ui
 			TenantId: tenantId,
 			QueueId:  resultDef.Ok.SupplierQueueId,
 			Items: []*pb.QueueItem{{
-				EventId: resultDef.Ok.EventId,
+				EventId: resultDef.Ok.ID,
 				Data:    bytes1,
 			},
 			},
@@ -193,7 +193,7 @@ func makeDecisions(ctx context.Context, eventId string, tenantId string, code ui
 			TenantId: tenantId,
 			QueueId:  resultDef.Error.SupplierQueueId,
 			Items: []*pb.QueueItem{{
-				EventId: resultDef.Error.EventId,
+				EventId: resultDef.Error.ID,
 				Data:    bytes1,
 			},
 			},

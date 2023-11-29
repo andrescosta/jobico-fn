@@ -10,12 +10,16 @@ func initCliCommand() *command {
 	initDeploy()
 	initRecorder()
 	initRepo()
+	initShow()
+	initEnv()
 
 	cliCommand.commands = []*command{
 		cmdHelp,
 		cmdRepo,
 		cmdDeploy,
 		cmdRecorder,
+		cmdShow,
+		cmdEnv,
 	}
 
 	cliCommand.run = runCli

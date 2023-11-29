@@ -69,13 +69,20 @@ func (c *ControlClient) UpdateEnvironment(ctx context.Context, environment *pb.E
 }
 
 func (c *ControlClient) GetTenants(ctx context.Context) ([]*pb.Tenant, error) {
+	return c.getTenants(ctx, nil)
+}
+
+func (c *ControlClient) GetTenant(ctx context.Context, id *string) ([]*pb.Tenant, error) {
+	return c.getTenants(ctx, id)
+}
+func (c *ControlClient) getTenants(ctx context.Context, id *string) ([]*pb.Tenant, error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 	client := pb.NewControlClient(conn)
-	r, err := client.GetTenants(ctx, &pb.GetTenantsRequest{})
+	r, err := client.GetTenants(ctx, &pb.GetTenantsRequest{ID: id})
 	if err != nil {
 		return nil, err
 	}
@@ -97,6 +104,14 @@ func (c *ControlClient) AddTenant(ctx context.Context, tenant *pb.Tenant) (*pb.T
 }
 
 func (c *ControlClient) GetPackages(ctx context.Context, tenant string) ([]*pb.JobPackage, error) {
+	return c.getPackages(ctx, tenant, nil)
+}
+
+func (c *ControlClient) GetPackage(ctx context.Context, tenant string, id string) ([]*pb.JobPackage, error) {
+	return c.getPackages(ctx, tenant, &id)
+}
+
+func (c *ControlClient) getPackages(ctx context.Context, tenant string, id *string) ([]*pb.JobPackage, error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -104,6 +119,7 @@ func (c *ControlClient) GetPackages(ctx context.Context, tenant string) ([]*pb.J
 	defer conn.Close()
 	client := pb.NewControlClient(conn)
 	r, err := client.GetPackages(ctx, &pb.GetJobPackagesRequest{
+		ID:       id,
 		TenantId: tenant,
 	})
 	if err != nil {

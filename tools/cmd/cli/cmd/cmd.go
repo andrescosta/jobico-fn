@@ -23,6 +23,9 @@ func (c *command) LongName() string {
 		if i := strings.Index(name, " <"); i >= 0 {
 			name = name[:i]
 		}
+		if i := strings.Index(name, " <"); i >= 0 {
+			name = name[:i]
+		}
 	}
 	if name == "cli" {
 		return ""

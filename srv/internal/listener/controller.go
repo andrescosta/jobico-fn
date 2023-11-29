@@ -48,15 +48,15 @@ func New(ctx context.Context) (*Controller, error) {
 				return nil, err
 			}
 			comp := jsonschema.NewCompiler()
-			if err := comp.AddResource(getFullEventId(tenantId, event.EventId), bytes.NewReader(f)); err != nil {
+			if err := comp.AddResource(getFullEventId(tenantId, event.ID), bytes.NewReader(f)); err != nil {
 				return nil, err
 			}
-			compiledSchema, err := comp.Compile(getFullEventId(tenantId, event.EventId))
+			compiledSchema, err := comp.Compile(getFullEventId(tenantId, event.ID))
 			if err != nil {
 				return nil, err
 			}
 
-			events[getFullEventId(tenantId, event.EventId)] = &Event{
+			events[getFullEventId(tenantId, event.ID)] = &Event{
 				event:  event,
 				schema: compiledSchema,
 			}

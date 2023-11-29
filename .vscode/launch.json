@@ -24,6 +24,40 @@
         ]
     },
     {
+        "name": "Launch CLI Deploy",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/tools/cmd/cli/cli.go",
+        "args": [
+            "deploy",
+            "-update",
+            "./p1.yaml",
+        ]
+    },
+    {
+        "name": "Launch CLI Env",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/tools/cmd/cli/cli.go",
+        "args": [
+            "env1",
+            "./e.yml",
+        ]
+    },
+    {
+        "name": "Launch CLI Show",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/tools/cmd/cli/cli.go",
+        "args": [
+            "show",
+            "env",
+        ]
+    },
+    {
         "name": "Launch CLI Recorder",
         "type": "go",
         "request": "launch",
