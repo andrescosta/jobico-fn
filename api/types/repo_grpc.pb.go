@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Repo_GetFile_FullMethodName = "/Repo/GetFile"
-	Repo_AddFile_FullMethodName = "/Repo/AddFile"
+	Repo_GetFile_FullMethodName         = "/Repo/GetFile"
+	Repo_AddFile_FullMethodName         = "/Repo/AddFile"
+	Repo_GetAllFileNames_FullMethodName = "/Repo/GetAllFileNames"
 )
 
 // RepoClient is the client API for Repo service.
@@ -29,6 +30,7 @@ const (
 type RepoClient interface {
 	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileReply, error)
 	AddFile(ctx context.Context, in *AddFileRequest, opts ...grpc.CallOption) (*AddFileReply, error)
+	GetAllFileNames(ctx context.Context, in *GetAllFileNamesRequest, opts ...grpc.CallOption) (*GetAllFileNamesReply, error)
 }
 
 type repoClient struct {
@@ -57,12 +59,22 @@ func (c *repoClient) AddFile(ctx context.Context, in *AddFileRequest, opts ...gr
 	return out, nil
 }
 
+func (c *repoClient) GetAllFileNames(ctx context.Context, in *GetAllFileNamesRequest, opts ...grpc.CallOption) (*GetAllFileNamesReply, error) {
+	out := new(GetAllFileNamesReply)
+	err := c.cc.Invoke(ctx, Repo_GetAllFileNames_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RepoServer is the server API for Repo service.
 // All implementations must embed UnimplementedRepoServer
 // for forward compatibility
 type RepoServer interface {
 	GetFile(context.Context, *GetFileRequest) (*GetFileReply, error)
 	AddFile(context.Context, *AddFileRequest) (*AddFileReply, error)
+	GetAllFileNames(context.Context, *GetAllFileNamesRequest) (*GetAllFileNamesReply, error)
 	mustEmbedUnimplementedRepoServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedRepoServer) GetFile(context.Context, *GetFileRequest) (*GetFi
 }
 func (UnimplementedRepoServer) AddFile(context.Context, *AddFileRequest) (*AddFileReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddFile not implemented")
+}
+func (UnimplementedRepoServer) GetAllFileNames(context.Context, *GetAllFileNamesRequest) (*GetAllFileNamesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllFileNames not implemented")
 }
 func (UnimplementedRepoServer) mustEmbedUnimplementedRepoServer() {}
 
@@ -125,6 +140,24 @@ func _Repo_AddFile_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Repo_GetAllFileNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllFileNamesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepoServer).GetAllFileNames(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Repo_GetAllFileNames_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepoServer).GetAllFileNames(ctx, req.(*GetAllFileNamesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Repo_ServiceDesc is the grpc.ServiceDesc for Repo service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var Repo_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddFile",
 			Handler:    _Repo_AddFile_Handler,
+		},
+		{
+			MethodName: "GetAllFileNames",
+			Handler:    _Repo_GetAllFileNames_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

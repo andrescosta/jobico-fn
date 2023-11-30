@@ -67,3 +67,18 @@ func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([
 
 	return r.File, nil
 }
+
+func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, error) {
+	conn, err := c.dial()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	repo := pb.NewRepoClient(conn)
+	reply, err := repo.GetAllFileNames(ctx, &pb.GetAllFileNamesRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	return reply.Files, nil
+}

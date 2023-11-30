@@ -82,13 +82,31 @@ message AddTenantReply {
 
 message Environment{
   string ID = 1;
-  map<string, Host> servers = 2;
-  map<string, string> directories = 3;
+  repeated Service services=2;
+  optional Tenant tenant=3; // for future
+}
+
+message Service {
+  string ID = 1;
+  optional string Name = 2;
+  repeated Host servers = 3;
+  repeated Storage storages = 4;
+}
+
+message Storage {
+  string ID = 1;
+  optional string Name = 2;
+  string reference = 3;
+  StorageType type = 4;
+}
+
+enum StorageType {
+  LocalDirectory = 0;
 }
 
 message JobPackage {
     string ID = 1;
-    string name = 2;
+    optional string name = 2;
     string tenantId = 3;
     repeated QueueDef queues = 4;
     repeated JobDef jobs = 5;
@@ -97,18 +115,18 @@ message JobPackage {
 
 message Tenant {
   string ID = 1;
-  string Name = 2;
+  optional string Name = 2;
 }
 
 message QueueDef {
   string ID = 1;
-  string name = 2;
+  optional string name = 2;
 }
 
 
 message RuntimeDef{
   string ID = 1;
-  string name = 2;
+  optional string name = 2;
   string moduleRef = 3;
   string mainFuncName = 4;
   RuntimeType type = 5;
@@ -136,7 +154,7 @@ message ResultDef {
 
 message EventDef {
   string ID = 1;
-  string name = 2;
+  optional string name = 2;
   DataType dataType = 3;
   optional SchemaDef schema = 4;
   string supplierQueueId = 5;
@@ -149,6 +167,6 @@ enum DataType {
 
 message SchemaDef {
     string ID = 1;
-    string name = 2;
+    optional string name = 2;
     string schemaRef = 3;
 }

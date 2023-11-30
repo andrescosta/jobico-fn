@@ -9,6 +9,7 @@ import (
 )
 
 var cmdRepo = &command{
+	name:      "repo",
 	usageLine: "cli repo <tenant> <file id> <file>.wasm|<file>.json",
 	short:     "updloas the wasm or json schema file ",
 	long:      `Repo updloas the wasm or json schema file`,

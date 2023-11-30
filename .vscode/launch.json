@@ -42,7 +42,7 @@
         "mode": "debug",
         "program": "${workspaceFolder}/tools/cmd/cli/cli.go",
         "args": [
-            "env1",
+            "env",
             "./e.yml",
         ]
     },
@@ -79,11 +79,11 @@
         ]
     },
     {
-        "name": "Launch Admin",
+        "name": "Launch Dashboard",
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/tools/cmd/admin/admin.go",
+        "program": "${workspaceFolder}/tools/cmd/dashboard/dashboard.go",
         "console": "integratedTerminal"
     },
 ]

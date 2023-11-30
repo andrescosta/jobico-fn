@@ -13,7 +13,7 @@ import (
 )
 
 var cmdDeploy = &command{
-
+	name:      "deploy",
 	usageLine: `cli deploy < deployment file >.yaml`,
 	short:     "deploy the specified by the deployment file ",
 	long:      `Deploy the file`,
@@ -65,7 +65,7 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 		return
 	}
 	if len(t) == 0 {
-		c.AddTenant(context.Background(), &pb.Tenant{ID: f.ID})
+		c.AddTenant(context.Background(), &pb.Tenant{ID: f.TenantId})
 	}
 	_, err = c.AddPackage(context.Background(), &f)
 	if err != nil {

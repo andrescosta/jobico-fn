@@ -27,6 +27,7 @@ func initCliCommand() *command {
 }
 
 var cliCommand = &command{
+	name:      "cli",
 	usageLine: "cli",
 	long:      "Cli is the command line admin tool.",
 }

@@ -11,7 +11,7 @@ import (
 )
 
 var cmdShow = &command{
-
+	name:      "show",
 	usageLine: `cli show <deploy|tenant|env> <tenant id> <deploy id>`,
 	short:     "display information of the specified entity ",
 	long:      `deployDisplay information`,

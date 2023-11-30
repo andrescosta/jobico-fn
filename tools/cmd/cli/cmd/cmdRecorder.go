@@ -10,6 +10,7 @@ import (
 )
 
 var cmdRecorder = &command{
+	name:      "recorder",
 	usageLine: "cli recorder [tenant] [-lines <number>]",
 	short:     "gets result information for the tenant",
 	long: `

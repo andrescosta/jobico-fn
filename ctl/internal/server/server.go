@@ -16,7 +16,7 @@ const (
 	TBL_QUEUE       = "queue"
 	TBL_PACKAGE     = "package"
 	TBL_LISTENER    = "listener"
-	TBL_MERCHANT    = "tenant"
+	TBL_TENANT      = "tenant"
 	TBL_ENVIRONMENT = "environment"
 	TBL_EXECUTOR    = "executor"
 	GEN_MERCHANT    = "[Generic]"
@@ -149,7 +149,7 @@ func (s *ControlServer) GetTenants(ctx context.Context, in *pb.GetTenantsRequest
 }
 
 func (s *ControlServer) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_MERCHANT, &pb.Tenant{})
+	mydao, err := s.getDaoGen(ctx, TBL_TENANT, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (s *ControlServer) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
 }
 
 func (s *ControlServer) getTenant(ctx context.Context, id string) (*pb.Tenant, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_MERCHANT, &pb.Tenant{})
+	mydao, err := s.getDaoGen(ctx, TBL_TENANT, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (s *ControlServer) getTenant(ctx context.Context, id string) (*pb.Tenant, e
 }
 
 func (s *ControlServer) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_MERCHANT, &pb.Tenant{})
+	mydao, err := s.getDaoGen(ctx, TBL_TENANT, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (s *ControlServer) GetEnviroment(ctx context.Context, in *pb.GetEnviromentR
 }
 
 func (s *ControlServer) getDaoGen(ctx context.Context, entity string, message proto.Message) (*dao.DAO[proto.Message], error) {
-	return s.getDao(ctx, GEN_MERCHANT, entity, message)
+	return s.getDao(ctx, entity, entity, message)
 }
 
 func (s *ControlServer) getDao(ctx context.Context, tenant string, entity string, message proto.Message) (*dao.DAO[proto.Message], error) {

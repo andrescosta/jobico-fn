@@ -13,8 +13,8 @@ import (
 )
 
 var cmdEnv = &command{
-
-	usageLine: `cli env1 <ll>`,
+	name:      "env",
+	usageLine: `cli env <ll>`,
 	short:     "display enviroment information",
 	long:      `Display env information`,
 }
@@ -46,5 +46,8 @@ func runEnv(ctx context.Context, cmd *command, args []string) {
 		return
 	}
 	c := remote.NewControlClient()
-	c.AddEnvironment(ctx, environ)
+	_, err = c.AddEnvironment(ctx, environ)
+	if err != nil {
+		printError(os.Stdout, cmd, err)
+	}
 }

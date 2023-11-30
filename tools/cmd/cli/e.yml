@@ -1,10 +1,20 @@
-servers:
-  server1:
-    ip: 10
-    port: 2020
-  server2:
-    ip: 10
-    port: 3030
-directories:
-  listener: /a
-  worker: /b
+name: env_1
+services:
+  - id: listener
+    servers:
+      - server1:
+        ip: 10
+        port: 2020
+      - server2:
+        ip: 10
+        port: 3030
+    storages:
+      - id: queues
+        type: 0
+        reference: ./db.db
+      - id: wasm
+        type: 0
+        reference: files
+      - id: wasm1
+        reference: filesst
+        type: 0
