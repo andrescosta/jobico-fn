@@ -28,8 +28,8 @@ type ControlServer struct {
 	db   *database.Database
 }
 
-func NewCotrolServer(ctx context.Context) (*ControlServer, error) {
-	db, err := database.Open(ctx, DB_PATH)
+func NewCotrolServer() (*ControlServer, error) {
+	db, err := database.Open(DB_PATH)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +39,8 @@ func NewCotrolServer(ctx context.Context) (*ControlServer, error) {
 	}, nil
 }
 
-func (s *ControlServer) Close(ctx context.Context) {
-	s.db.Close(ctx)
+func (s *ControlServer) Close() error {
+	return s.db.Close()
 }
 func (s *ControlServer) getPackages(ctx context.Context, tenantId string) ([]*pb.JobPackage, error) {
 	mydao, err := s.getDao(ctx, tenantId, TBL_PACKAGE, &pb.JobPackage{})

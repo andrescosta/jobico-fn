@@ -2,40 +2,29 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"log"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/server"
 	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/workflew/api/types"
 	repo "github.com/andrescosta/workflew/repo/internal"
-	"github.com/rs/zerolog"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 func main() {
-	service.StartNamed("Repo", serviceFunc)
-}
+	svc, err := service.NewGrpService(context.Background(), "repo",
+		&pb.Repo_ServiceDesc, func(ctx context.Context) (any, error) {
+			return &repo.Server{
+				Repo: &repo.FileRepo{
+					Dir: env.GetAsString("repo.dir", "./"),
+				},
+			}, nil
+		})
 
-func serviceFunc(ctx context.Context) error {
-	logger := zerolog.Ctx(ctx)
-	s := grpc.NewServer()
-
-	pb.RegisterRepoServer(s, &repo.Server{
-		Repo: &repo.FileRepo{
-			Dir: env.GetAsString("repo.dir", "./"),
-		},
-	})
-	reflection.Register(s)
-
-	srv, err := server.New(os.Getenv("repo.addr"))
 	if err != nil {
-		return fmt.Errorf("server.New: %w", err)
+		log.Panicf("error starting repo service: %s", err)
 	}
-	logger.Info().Msgf("Started at:%s", srv.Addr())
-	err = srv.ServeGRPC(ctx, s)
-	logger.Info().Msg("Stopped")
-	return err
+	if err = svc.Serve(); err != nil {
+		log.Fatalf("error serving repo service: %s", err)
+	}
+
 }

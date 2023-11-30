@@ -2,39 +2,23 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"log"
 
-	"github.com/andrescosta/goico/pkg/server"
 	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/workflew/api/types"
 	server1 "github.com/andrescosta/workflew/ctl/internal/server"
-	"github.com/rs/zerolog"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 func main() {
-	service.StartNamed("CTL", serviceFunc)
-}
-
-func serviceFunc(ctx context.Context) error {
-	logger := zerolog.Ctx(ctx)
-	s := grpc.NewServer()
-	svr, err := server1.NewCotrolServer(ctx)
+	svc, err := service.NewGrpService(context.Background(), "ctl", &pb.Control_ServiceDesc,
+		func(ctx context.Context) (any, error) {
+			return server1.NewCotrolServer()
+		})
+	defer svc.Dispose()
 	if err != nil {
-		return err
+		log.Panicf("error starting ctl service: %s", err)
 	}
-	defer svr.Close(ctx)
-	pb.RegisterControlServer(s, svr)
-	reflection.Register(s)
-
-	srv, err := server.New(os.Getenv("ctl.addr"))
-	if err != nil {
-		return fmt.Errorf("server.New: %w", err)
+	if err = svc.Serve(); err != nil {
+		log.Fatalf("error serving ctl service %s", err)
 	}
-	logger.Info().Msgf("Server started at:%s", srv.Addr())
-	err = srv.ServeGRPC(ctx, s)
-	logger.Info().Msg("Server stopped")
-	return err
 }

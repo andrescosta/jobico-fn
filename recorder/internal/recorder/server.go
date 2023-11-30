@@ -15,12 +15,9 @@ type Server struct {
 	pb.UnimplementedRecorderServer
 	recorder *Recorder
 	fullpath string
-	ctx      context.Context
-	//Repo *FileRepo
-
 }
 
-func NewServer(ctx context.Context, fullpath string) (*Server, error) {
+func NewServer(fullpath string) (*Server, error) {
 	r, err := NewRecorder(fullpath)
 	if err != nil {
 		return nil, err
@@ -28,7 +25,6 @@ func NewServer(ctx context.Context, fullpath string) (*Server, error) {
 	return &Server{
 		recorder: r,
 		fullpath: fullpath,
-		ctx:      ctx,
 	}, nil
 }
 
@@ -63,8 +59,6 @@ func (s *Server) GetJobExecutions(g *pb.GetJobExecutionsRequest, r pb.Recorder_G
 	for {
 		select {
 		case <-r.Context().Done():
-			return nil
-		case <-s.ctx.Done():
 			return nil
 		case line := <-tail.Lines:
 			if line != nil && strings.TrimSpace(line.Text) != "" {

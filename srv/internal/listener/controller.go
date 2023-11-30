@@ -77,9 +77,10 @@ func (rr Controller) getEventDef(tenantId string, eventId string) (*Event, error
 	return ev, nil
 }
 
-func (rr Controller) Routes(logger zerolog.Logger) chi.Router {
+func (rr Controller) Routes(ctx context.Context) chi.Router {
+	logger := zerolog.Ctx(ctx)
 	r := chi.NewRouter()
-	r.Use(httplog.RequestLogger(logger))
+	r.Use(httplog.RequestLogger(*logger))
 	r.Route("/{tenant_id}/{event_id}", func(r2 chi.Router) {
 		r2.Post("/", rr.Post)
 		r2.Get("/", rr.Get)
