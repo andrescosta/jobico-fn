@@ -41,7 +41,10 @@ type CliApp struct {
 	controlClient *remote.ControlClient
 	repoClient    *remote.RepoClient
 	mainView      *tview.Pages
+	app           *tview.Application
+	lastNode      *tview.TreeNode
 	*pb.Environment
+	//currFocus tview.Primitive
 }
 
 func main() {
@@ -53,6 +56,7 @@ func main() {
 	cli := &CliApp{
 		controlClient: remote.NewControlClient(),
 		repoClient:    remote.NewRepoClient(),
+		app:           app,
 	}
 	cli.render(app)
 	if err := app.Run(); err != nil {
@@ -84,6 +88,8 @@ func (c *CliApp) render(app *tview.Application) *tview.Pages {
 
 	pages.AddPage("Mainn", grid, true, true)
 
+	app.SetFocus(menu)
+
 	return pages
 }
 
@@ -98,14 +104,13 @@ func (c *CliApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 
 			if len(target.children) > 0 {
 				target.text = "+ " + target.text
-				target.expand = false
 				target.color = tcell.ColorGreen
 			} else {
 				target.color = tcell.ColorWhite
 			}
 		}
 		node := tview.NewTreeNode(target.text).
-			SetExpanded(target.expand).
+			SetExpanded(false).
 			SetReference(target).
 			SetColor(target.color)
 		for _, child := range target.children {
@@ -128,6 +133,7 @@ func (c *CliApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 	r := add(rootNode(e, ep, fs))
 	menu := tview.NewTreeView()
 	menu.SetRoot(r)
+	menu.SetCurrentNode(r)
 	var m = map[bool]string{
 		true:  "-",
 		false: "+",
@@ -147,28 +153,19 @@ func (c *CliApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 			original.selected(c)
 		}
 	})
-	menu.SetBlurFunc(func() {
-		if c.mainView.HasPage("empty") {
-			c.mainView.SwitchToPage("empty")
-		} else {
-			tv := tview.NewTextView()
-			fmt.Fprint(tv, "content")
-			c.mainView.AddAndSwitchToPage("empty", tv, true)
-		}
-	})
-	menu.SetFocusFunc(func() {
-		/*n := menu.GetCurrentNode()
-		if n != nil {
-			ref := n.GetReference()
-			if ref != nil {
-				if reflectico.CanConvert[*node](ref) {
-					original := ref.(*node)
-					if original.focus != nil {
-						original.focus(c)
-					}
-				}
+	// This function simulates the focus and blur event handlers for the tree's nodes
+	menu.SetChangedFunc(func(n *tview.TreeNode) {
+		if c.lastNode != nil {
+			nl := c.lastNode.GetReference().(*node)
+			if nl.blur != nil {
+				nl.blur(c)
 			}
-		}*/
+		}
+		ref := n.GetReference().(*node)
+		if ref.focus != nil {
+			ref.focus(c)
+		}
+		c.lastNode = n
 	})
 
 	return menu
@@ -176,7 +173,6 @@ func (c *CliApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 
 type node struct {
 	text     string
-	expand   bool
 	selected func(*CliApp)
 	focus    func(*CliApp)
 	blur     func(*CliApp)
@@ -186,8 +182,7 @@ type node struct {
 
 var rootNode = func(e *pb.Environment, j []*pb.JobPackage, r []*pb.TenantFiles) *node {
 	return &node{
-		text:   "Jobico Manager",
-		expand: false,
+		text: "Jobico Manager",
 		children: []*node{
 			{text: "Packages", children: jobPackagesNode(j)},
 			{text: "Enviroment", children: []*node{
@@ -204,7 +199,6 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, r []*pb.TenantFiles) 
 					fmt.Fprint(tv, "content")
 					c.mainView.AddAndSwitchToPage("empty", tv, true)
 				}
-
 			}},
 		},
 	}
@@ -244,26 +238,27 @@ var tenantFileNode = func(e *pb.TenantFiles) *node {
 	}
 }
 
-var fileNode = func(tenant string, e string) *node {
-	if strings.HasSuffix(e, ".json") {
+var fileNode = func(tenant string, file string) *node {
+	if strings.HasSuffix(file, ".json") {
 		return &node{
-			text: e, selected: func(c *CliApp) {
-				pageName := tenant + "/" + e
+			text: file, focus: func(c *CliApp) {
+				pageName := tenant + "/" + file
 				if c.mainView.HasPage(pageName) {
 					c.mainView.SwitchToPage(pageName)
 				} else {
-					f, err := c.repoClient.GetFile(context.Background(), tenant, e)
+					f, err := c.repoClient.GetFile(context.Background(), tenant, file)
 					if err == nil {
-						pp := RenderJson(string(f))
-						c.mainView.AddAndSwitchToPage(pageName, pp, true)
+						cv := getContentView(string(f))
+						c.mainView.AddAndSwitchToPage(pageName, cv, true)
 					}
 				}
 
 			},
+			blur: func(c *CliApp) { switchToEmptyPage(c.mainView) },
 		}
 	} else {
 		return &node{
-			text: e,
+			text: file,
 		}
 	}
 
@@ -319,45 +314,24 @@ var tenantFilesNode = func(e []*pb.TenantFiles) []*node {
 
 }
 
-// TextView2 demonstrates the extended text view.
-func RenderJson(content string) *tview.TextView {
+func getContentView(content string) *tview.TextView {
 	textView := tview.NewTextView()
 	textView.SetDynamicColors(true).
 		SetWrap(false).
 		SetRegions(true)
-		/*SetDoneFunc(func(key tcell.Key) {
-			if key == tcell.KeyEscape {
-				return
-			}
-			highlights := textView.GetHighlights()
-			hasHighlights := len(highlights) > 0
-			switch key {
-			case tcell.KeyEnter:
-				if hasHighlights {
-					textView.Highlight()
-				} else {
-					textView.Highlight("0").
-						ScrollToHighlight()
-				}
-			case tcell.KeyTab:
-				if hasHighlights {
-					current, _ := strconv.Atoi(highlights[0])
-					next := (current + 1) % 9
-					textView.Highlight(strconv.Itoa(next)).
-						ScrollToHighlight()
-				}
-			case tcell.KeyBacktab:
-				if hasHighlights {
-					current, _ := strconv.Atoi(highlights[0])
-					next := (current - 1 + 9) % 9
-					textView.Highlight(strconv.Itoa(next)).
-						ScrollToHighlight()
-				}
-			}
-		})*/
 	fmt.Fprint(textView, content)
-	textView.SetBorder(true).SetTitle("Content")
+	textView.SetBorder(false)
 	return textView
+}
+
+func switchToEmptyPage(t *tview.Pages) {
+	if t.HasPage("empty") {
+		t.SwitchToPage("empty")
+	} else {
+		tv := tview.NewTextView()
+		fmt.Fprint(tv, "")
+		t.AddAndSwitchToPage("empty", tv, true)
+	}
 }
 
 // func (c *CliApp) renderSideMenu() *tview.TreeView {
