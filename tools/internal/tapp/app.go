@@ -1,4 +1,4 @@
-package tui
+package tapp
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-type App struct {
+type TApp struct {
 	*pb.Environment
 	controlClient          *remote.ControlClient
 	repoClient             *remote.RepoClient
@@ -26,7 +26,7 @@ type App struct {
 	cancelJobResultsGetter context.CancelFunc
 }
 
-func NewApp() (*App, error) {
+func New() (*TApp, error) {
 	err := config.LoadEnvVariables()
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func NewApp() (*App, error) {
 	}
 	app := tview.NewApplication().EnableMouse(true)
 
-	return &App{
+	return &TApp{
 		controlClient:     controlClient,
 		repoClient:        repoClient,
 		recorderClient:    recorderClient,
@@ -55,7 +55,7 @@ func NewApp() (*App, error) {
 	}, nil
 }
 
-func (c *App) Run() error {
+func (c *TApp) Run() error {
 	c.render()
 	if err := c.app.Run(); err != nil {
 		return err
@@ -64,7 +64,7 @@ func (c *App) Run() error {
 	return nil
 }
 
-func (c *App) Close() {
+func (c *TApp) Close() {
 	c.controlClient.Close()
 	c.repoClient.Close()
 	for _, v := range c.infoClients {
@@ -75,7 +75,7 @@ func (c *App) Close() {
 	}
 }
 
-func (c *App) render() *tview.Pages {
+func (c *TApp) render() *tview.Pages {
 	pages := tview.NewPages()
 	c.mainView = tview.NewPages()
 	c.app.SetRoot(pages, true)
@@ -104,11 +104,11 @@ func (c *App) render() *tview.Pages {
 	return pages
 }
 
-func (c *App) newPrimitive(text string) tview.Primitive {
+func (c *TApp) newPrimitive(text string) tview.Primitive {
 	return tview.NewTextView().
 		SetText(text)
 }
-func (c *App) renderSideMenu(ctx context.Context) *tview.TreeView {
+func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 	var add func(target *node) *tview.TreeNode
 	add = func(target *node) *tview.TreeNode {
 		if target.color == tcell.ColorDefault {

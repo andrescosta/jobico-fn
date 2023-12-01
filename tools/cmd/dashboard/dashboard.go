@@ -1,16 +1,16 @@
 package main
 
 import (
-	"github.com/andrescosta/workflew/tools/internal/tui"
+	"github.com/andrescosta/workflew/tools/internal/tapp"
 )
 
 func main() {
-	cli, err := tui.NewApp()
+	app, err := tapp.New()
 	if err != nil {
 		panic(err)
 	}
-	defer cli.Close()
-	if err := cli.Run(); err != nil {
+	defer app.Close()
+	if err := app.Run(); err != nil {
 		panic(err)
 	}
 }
