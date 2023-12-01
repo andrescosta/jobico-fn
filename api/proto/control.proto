@@ -88,7 +88,7 @@ message Environment{
 
 message Service {
   string ID = 1;
-  optional string Name = 2;
+  optional string name = 2;
   repeated Host servers = 3;
   repeated Storage storages = 4;
 }

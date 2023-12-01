@@ -49,8 +49,12 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	c := remote.NewControlClient()
-	p, err := c.GetPackage(ctx, f.TenantId, f.ID)
+	client, err := remote.NewControlClient()
+	if err != nil {
+		return
+	}
+
+	p, err := client.GetPackage(ctx, f.TenantId, f.ID)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
@@ -59,15 +63,15 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 		fmt.Printf("package %s exists. use -update command to override.\n", f.ID)
 		return
 	}
-	t, err := c.GetTenant(ctx, &f.TenantId)
+	t, err := client.GetTenant(ctx, &f.TenantId)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
 	}
 	if len(t) == 0 {
-		c.AddTenant(context.Background(), &pb.Tenant{ID: f.TenantId})
+		client.AddTenant(context.Background(), &pb.Tenant{ID: f.TenantId})
 	}
-	_, err = c.AddPackage(context.Background(), &f)
+	_, err = client.AddPackage(context.Background(), &f)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return

@@ -21,14 +21,8 @@ func NewRecorder(fullpath string) (*Recorder, error) {
 	logger := zerolog.New(writer).With().Timestamp().Logger()
 	logger.Level(zerolog.InfoLevel)
 	// we create the file if not exists because tail has issues when the file is not present
-	e, err := iohelper.FileExists(fullpath)
-	if err != nil {
+	if err := iohelper.CreateEmptyIfNotExists(fullpath); err != nil {
 		return nil, err
-	}
-	if !e {
-		if err := iohelper.Touch(fullpath); err != nil {
-			return nil, err
-		}
 	}
 	return &Recorder{
 		logger: logger,

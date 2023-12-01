@@ -16,6 +16,6 @@ func main() {
 			}
 			return nil
 		}).Serve(); err != nil {
-		log.Fatalf("error running executor service %s", err)
+		log.Fatalf("error running the executor service %s", err)
 	}
 }

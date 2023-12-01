@@ -32,7 +32,11 @@ type jobPackage struct {
 }
 
 func getPackages(ctx context.Context) ([]*jobPackage, error) {
-	ps, err := remote.NewControlClient().GetAllPackages(ctx)
+	c, err := remote.NewControlClient()
+	if err != nil {
+		return nil, err
+	}
+	ps, err := c.GetAllPackages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +59,10 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 		}
 		jobPackage.Queues = queues
 
-		repoClient := remote.NewRepoClient()
+		repoClient, err := remote.NewRepoClient()
+		if err != nil {
+			return nil, err
+		}
 		files := make(map[string][]byte)
 		for _, job := range pkg.Jobs {
 			event := job.Event
@@ -199,7 +206,11 @@ func makeDecisions(ctx context.Context, eventId string, tenantId string, code ui
 			},
 		}
 	}
-	if err := remote.NewQueueClient().Queue(ctx, q); err != nil {
+	client, err := remote.NewQueueClient()
+	if err != nil {
+		return err
+	}
+	if err := client.Queue(ctx, q); err != nil {
 		return err
 	}
 	return nil
@@ -225,11 +236,21 @@ func reportToRecorder(ctx context.Context, queueId string, eventId string, tenan
 			Message: result,
 		},
 	}
-	return remote.NewRecorderClient().AddJobExecution(ctx, ex)
+	client, err := remote.NewRecorderClient()
+	if err != nil {
+		return err
+	}
+
+	return client.AddJobExecution(ctx, ex)
 }
 
 func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
-	return remote.NewQueueClient().Dequeue(ctx, tenant, queue)
+	client, err := remote.NewQueueClient()
+	if err != nil {
+		return nil, err
+	}
+
+	return client.Dequeue(ctx, tenant, queue)
 }
 
 func executeWasm(ctx context.Context, module *wazero.WasmModuleString, data []byte) (uint64, string, error) {

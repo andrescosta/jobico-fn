@@ -14,7 +14,7 @@ func main() {
 		&pb.Recorder_ServiceDesc,
 		func(ctx context.Context) (any, error) {
 			return recorder.NewServer(".\\log.log")
-		})
+		}, service.EmptyhealthCheckHandler)
 	if err != nil {
 		log.Panicf("error starting recorder service: %s", err)
 	}

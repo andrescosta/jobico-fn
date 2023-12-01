@@ -35,8 +35,11 @@ func runRepo(_ context.Context, cmd *command, args []string) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	c := remote.NewRepoClient()
-	if err = c.AddFile(context.Background(), tenant, name, f); err != nil {
+	client, err := remote.NewRepoClient()
+	if err != nil {
+		return
+	}
+	if err = client.AddFile(context.Background(), tenant, name, f); err != nil {
 		printError(os.Stderr, cmd, err)
 		return
 	}

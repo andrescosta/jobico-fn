@@ -26,16 +26,25 @@ type Event struct {
 }
 
 func New(ctx context.Context) (*Controller, error) {
-	client := remote.NewControlClient()
-	repoClient := remote.NewRepoClient()
-
+	controlClient, err := remote.NewControlClient()
+	if err != nil {
+		return nil, err
+	}
+	repoClient, err := remote.NewRepoClient()
+	if err != nil {
+		return nil, err
+	}
+	queueClient, err := remote.NewQueueClient()
+	if err != nil {
+		return nil, err
+	}
 	events := make(map[string]*Event)
 	con := Controller{
 		events:      events,
-		queueClient: remote.NewQueueClient(),
+		queueClient: queueClient,
 	}
 
-	pkgs, err := client.GetAllPackages(ctx)
+	pkgs, err := controlClient.GetAllPackages(ctx)
 	if err != nil {
 		return nil, err
 	}

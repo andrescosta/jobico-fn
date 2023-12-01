@@ -18,7 +18,7 @@ func main() {
 					Dir: env.GetAsString("repo.dir", "./"),
 				},
 			}, nil
-		})
+		}, service.EmptyhealthCheckHandler)
 
 	if err != nil {
 		log.Panicf("error starting repo service: %s", err)

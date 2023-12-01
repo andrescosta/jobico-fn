@@ -43,8 +43,12 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 	}
 	tenant := args[1]
 	id := args[2]
-	c := remote.NewControlClient()
-	p, err := c.GetPackage(ctx, tenant, id)
+	client, err := remote.NewControlClient()
+	if err != nil {
+		return
+	}
+
+	p, err := client.GetPackage(ctx, tenant, id)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 	}
@@ -61,8 +65,11 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 }
 
 func showEnv(ctx context.Context, args []string, cmd *command) {
-	c := remote.NewControlClient()
-	p, err := c.GetEnviroment(ctx)
+	client, err := remote.NewControlClient()
+	if err != nil {
+		return
+	}
+	p, err := client.GetEnviroment(ctx)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 	}
