@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
-func onFocusFileNode(c *CliApp, n *tview.TreeNode) {
+func onFocusFileNode(c *App, n *tview.TreeNode) {
 	f := (n.GetReference().(*node)).entity.(*sFile)
 	if strings.HasSuffix(f.file, ".json") {
 		pageName := f.tenant + "/" + f.file
@@ -30,7 +30,7 @@ func onFocusFileNode(c *CliApp, n *tview.TreeNode) {
 	}
 }
 
-func onFocusServerNode(c *CliApp, n *tview.TreeNode) {
+func onFocusServerNode(c *App, n *tview.TreeNode) {
 	h := (n.GetReference().(*node)).entity.(*sServerNode)
 	addr := h.host.Ip + ":" + strconv.Itoa(int(h.host.Port))
 	trySwitchToPage(addr, c.mainView, func() (tview.Primitive, error) {
@@ -62,21 +62,21 @@ func onFocusServerNode(c *CliApp, n *tview.TreeNode) {
 	})
 }
 
-func onSelectedGettingJobResults(ca *CliApp, n *tview.TreeNode) {
+func onSelectedGettingJobResults(ca *App, n *tview.TreeNode) {
 	n.SetText("<< stop >>")
 	nl := n.GetReference().(*node)
 	nl.selected = onSelectedStopGettingJobResults
 	startGettingJobResults(ca)
 }
 
-func onSelectedStopGettingJobResults(ca *CliApp, n *tview.TreeNode) {
+func onSelectedStopGettingJobResults(ca *App, n *tview.TreeNode) {
 	ca.cancelJobResultsGetter()
 	nl := n.GetReference().(*node)
 	n.SetText("<< start >>")
 	nl.selected = onSelectedGettingJobResults
 }
 
-func onFocusJobPackageNode(ca *CliApp, n *tview.TreeNode) {
+func onFocusJobPackageNode(ca *App, n *tview.TreeNode) {
 	p := (n.GetReference().(*node)).entity.(*pb.JobPackage)
 	pn := "package/" + p.TenantId + "/" + p.ID
 	trySwitchToPage(pn, ca.mainView, func() (tview.Primitive, error) {
@@ -92,7 +92,7 @@ func onFocusJobPackageNode(ca *CliApp, n *tview.TreeNode) {
 	})
 }
 
-func startGettingJobResults(ca *CliApp) {
+func startGettingJobResults(ca *App) {
 	var textView *tview.TextView
 	lines := int32(5)
 	if ca.mainView.HasPage("results") {

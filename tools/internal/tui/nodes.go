@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"strconv"
@@ -13,11 +13,11 @@ type node struct {
 	// true if this node has children and does not allow expansion
 	expanded bool
 	entity   any
-	selected func(*CliApp, *tview.TreeNode)
+	selected func(*App, *tview.TreeNode)
 	// the handler recv the node getting the focus
-	focus func(*CliApp, *tview.TreeNode)
+	focus func(*App, *tview.TreeNode)
 	// the handler recv the node loosing the focus and the one getting it
-	blur     func(*CliApp, *tview.TreeNode, *tview.TreeNode)
+	blur     func(*App, *tview.TreeNode, *tview.TreeNode)
 	children []*node
 	color    tcell.Color
 }
@@ -47,7 +47,7 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, r []*pb.TenantFiles) 
 				children: []*node{
 					{text: "<< start >>", entity: e,
 						selected: onSelectedGettingJobResults,
-						focus:    func(c *CliApp, _ *tview.TreeNode) { switchToPageIfExists(c.mainView, "results") },
+						focus:    func(c *App, _ *tview.TreeNode) { switchToPageIfExists(c.mainView, "results") },
 					},
 				}},
 		},
