@@ -54,7 +54,7 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 		return
 	}
 
-	p, err := client.GetPackage(ctx, f.TenantId, f.ID)
+	p, err := client.GetPackage(ctx, f.TenantId, &f.ID)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return

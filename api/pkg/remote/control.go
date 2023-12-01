@@ -83,8 +83,8 @@ func (c *ControlClient) GetPackages(ctx context.Context, tenant string) ([]*pb.J
 	return c.getPackages(ctx, tenant, nil)
 }
 
-func (c *ControlClient) GetPackage(ctx context.Context, tenant string, id string) ([]*pb.JobPackage, error) {
-	return c.getPackages(ctx, tenant, &id)
+func (c *ControlClient) GetPackage(ctx context.Context, tenant string, id *string) ([]*pb.JobPackage, error) {
+	return c.getPackages(ctx, tenant, id)
 }
 
 func (c *ControlClient) getPackages(ctx context.Context, tenant string, id *string) ([]*pb.JobPackage, error) {

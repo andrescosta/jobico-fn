@@ -48,7 +48,7 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 		return
 	}
 
-	p, err := client.GetPackage(ctx, tenant, id)
+	p, err := client.GetPackage(ctx, tenant, &id)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 	}

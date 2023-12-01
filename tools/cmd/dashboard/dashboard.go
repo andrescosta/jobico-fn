@@ -171,23 +171,17 @@ func (c *CliApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 		if c.lastNode != nil {
 			nl := c.lastNode.GetReference().(*node)
 			if nl.blur != nil {
-				nl.blur(c)
+				nl.blur(c, c.lastNode, n)
 			}
 		}
 		ref := n.GetReference().(*node)
 		if ref.focus != nil {
-			ref.focus(c)
+			ref.focus(c, n)
 		}
 		c.lastNode = n
 	})
 
 	return menu
-}
-
-func switchToPageIfExists(t *tview.Pages, page string) {
-	if t.HasPage(page) {
-		t.SwitchToPage(page)
-	}
 }
 
 func createContentView(content string) *tview.TextView {
@@ -200,12 +194,35 @@ func createContentView(content string) *tview.TextView {
 	return textView
 }
 
-func switchToEmptyPage(t *tview.Pages) {
-	/*if t.HasPage("empty") {
-		t.SwitchToPage("empty")
-	} else {
-		tv := tview.NewTextView()
-		fmt.Fprint(tv, "")
-		t.AddAndSwitchToPage("empty", tv, true)
-	}*/
+func switchToPageIfExists(t *tview.Pages, page string) bool {
+	if t.HasPage(page) {
+		t.SwitchToPage(page)
+		return true
+	}
+	return false
+}
+
+func trySwitchToPage(name string, pages *tview.Pages, c func() (tview.Primitive, error)) {
+	if !switchToPageIfExists(pages, name) {
+		p, err := c()
+		if err != nil {
+			pages.AddAndSwitchToPage(name, p, true)
+		}
+	}
+}
+
+func generator[T, Y any](d []T, g func(T) Y) []Y {
+	r := make([]Y, 0)
+	for _, ee := range d {
+		r = append(r, g(ee))
+	}
+	return r
+}
+
+func generatorNamed[T, Y any](name string, d []T, g func(string, T) Y) []Y {
+	r := make([]Y, 0)
+	for _, ee := range d {
+		r = append(r, g(name, ee))
+	}
+	return r
 }
