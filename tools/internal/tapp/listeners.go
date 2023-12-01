@@ -2,15 +2,19 @@ package tapp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/andrescosta/goico/pkg/service"
 	info "github.com/andrescosta/goico/pkg/service/info/grpc"
 	"github.com/andrescosta/goico/pkg/yamlico"
 	pb "github.com/andrescosta/workflew/api/types"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/rs/zerolog/log"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -18,10 +22,10 @@ func onFocusFileNode(c *TApp, n *tview.TreeNode) {
 	f := (n.GetReference().(*node)).entity.(*sFile)
 	if strings.HasSuffix(f.file, ".json") {
 		pageName := f.tenant + "/" + f.file
-		trySwitchToPage(pageName, c.mainView, func() (tview.Primitive, error) {
+		trySwitchToPage(pageName, c.mainView, c, func() (tview.Primitive, error) {
 			f, err := c.repoClient.GetFile(context.Background(), f.tenant, f.file)
 			if err != nil {
-				return nil, err
+				return nil, errors.Join(errors.New(`"Repo" service down`), err)
 			} else {
 				cv := createContentView(string(f))
 				return cv, nil
@@ -33,19 +37,19 @@ func onFocusFileNode(c *TApp, n *tview.TreeNode) {
 func onFocusServerNode(c *TApp, n *tview.TreeNode) {
 	h := (n.GetReference().(*node)).entity.(*sServerNode)
 	addr := h.host.Ip + ":" + strconv.Itoa(int(h.host.Port))
-	trySwitchToPage(addr, c.mainView, func() (tview.Primitive, error) {
+	trySwitchToPage(addr, c.mainView, c, func() (tview.Primitive, error) {
 		helthCheckClient := c.helthCheckClients[addr]
 		infoClient, ok := c.infoClients[addr]
 		if !ok {
 			var err error
 			infoClient, err = service.NewGrpcServerInfoClient(addr)
 			if err != nil {
-				return nil, err
+				return nil, errors.Join(errors.New(`"Server Info" service down`), err)
 			}
 			c.infoClients[addr] = infoClient
 			helthCheckClient, err = service.NewGrpcServerHelthCheckClient(addr)
 			if err != nil {
-				return nil, err
+				return nil, errors.Join(errors.New(`"Healcheck" service down`), err)
 			}
 			c.helthCheckClients[addr] = helthCheckClient
 		}
@@ -66,7 +70,7 @@ func onSelectedGettingJobResults(ca *TApp, n *tview.TreeNode) {
 	n.SetText("<< stop >>")
 	nl := n.GetReference().(*node)
 	nl.selected = onSelectedStopGettingJobResults
-	startGettingJobResults(ca)
+	startGettingJobResults(ca, n)
 }
 
 func onSelectedStopGettingJobResults(ca *TApp, n *tview.TreeNode) {
@@ -76,23 +80,23 @@ func onSelectedStopGettingJobResults(ca *TApp, n *tview.TreeNode) {
 	nl.selected = onSelectedGettingJobResults
 }
 
-func onFocusJobPackageNode(ca *TApp, n *tview.TreeNode) {
+func onFocusJobPackageNode(c *TApp, n *tview.TreeNode) {
 	p := (n.GetReference().(*node)).entity.(*pb.JobPackage)
 	pn := "package/" + p.TenantId + "/" + p.ID
-	trySwitchToPage(pn, ca.mainView, func() (tview.Primitive, error) {
-		pkg, err := ca.controlClient.GetPackage(context.Background(), p.TenantId, &p.ID)
+	trySwitchToPage(pn, c.mainView, c, func() (tview.Primitive, error) {
+		pkg, err := c.controlClient.GetPackage(context.Background(), p.TenantId, &p.ID)
 		if err != nil {
-			return nil, err
+			return nil, errors.Join(errors.New(`"Ctl" service down`), err)
 		}
 		yaml, err := yamlico.Encode(pkg[0])
 		if err != nil {
-			return nil, err
+			return nil, errors.Join(errors.New(`package cannot displayed`), err)
 		}
 		return createContentView(*yaml), nil
 	})
 }
 
-func startGettingJobResults(ca *TApp) {
+func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 	var textView *tview.TextView
 	lines := int32(5)
 	if ca.mainView.HasPage("results") {
@@ -121,13 +125,23 @@ func startGettingJobResults(ca *TApp) {
 					ca.app.QueueUpdateDraw(func() {
 						fmt.Fprintln(textView, l)
 					})
+				} else {
+					return
 				}
 			}
 		}
 	}(ch)
 	go func() {
 		defer close(ch)
-		ca.recorderClient.GetJobExecutions(ca.ctxJobResultsGetter, "", lines, ch)
+		err := ca.recorderClient.GetJobExecutions(ca.ctxJobResultsGetter, "", lines, ch)
+		if err != nil {
+			log.Err(err)
+			showText(ca.status, "Error getting results", tcell.ColorRed, 3*time.Second, ca)
+			ca.app.QueueUpdateDraw(func() {
+				onSelectedStopGettingJobResults(ca, n)
+				disableTreeNode(n)
+			})
+		}
 	}()
 }
 

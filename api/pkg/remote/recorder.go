@@ -31,6 +31,10 @@ func NewRecorderClient() (*RecorderClient, error) {
 	}, nil
 }
 
+func (c *RecorderClient) Close() {
+	c.conn.Close()
+}
+
 func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, lines int32, resChan chan<- string) error {
 	logger := zerolog.Ctx(ctx)
 	rj, err := c.client.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{

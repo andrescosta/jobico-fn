@@ -5,12 +5,12 @@ import (
 )
 
 func main() {
-	app, err := tapp.New()
+	tapp, err := tapp.New()
 	if err != nil {
 		panic(err)
 	}
-	defer app.Close()
-	if err := app.Run(); err != nil {
+	defer tapp.Dispose()
+	if err := tapp.Run(); err != nil {
 		panic(err)
 	}
 }

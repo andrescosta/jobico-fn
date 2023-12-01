@@ -52,7 +52,7 @@ func (s *ControlServer) getPackages(ctx context.Context, tenantId string) ([]*pb
 	if err != nil {
 		return nil, err
 	}
-	packages := convertico.ConvertSlices[proto.Message, *pb.JobPackage](ms)
+	packages := convertico.SliceWithSlice[proto.Message, *pb.JobPackage](ms)
 
 	return packages, nil
 }
@@ -108,7 +108,7 @@ func (s *ControlServer) GetAllPackages(ctx context.Context, in *pb.GetAllJobPack
 		if err != nil {
 			return nil, err
 		}
-		ps := convertico.ConvertSlices[proto.Message, *pb.JobPackage](ms)
+		ps := convertico.SliceWithSlice[proto.Message, *pb.JobPackage](ms)
 		packages = append(packages, ps...)
 	}
 	return &pb.GetAllJobPackagesReply{Packages: packages}, nil
@@ -158,7 +158,7 @@ func (s *ControlServer) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
 	if err != nil {
 		return nil, err
 	}
-	tenants := convertico.ConvertSlices[proto.Message, *pb.Tenant](ms)
+	tenants := convertico.SliceWithSlice[proto.Message, *pb.Tenant](ms)
 
 	return tenants, nil
 }

@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/andrescosta/goico/pkg/config"
-	"github.com/andrescosta/workflew/tools/cmd/cli/cmd"
+	"github.com/andrescosta/workflew/tools/internal/cmd"
 )
 
 func main() {
@@ -20,6 +20,6 @@ func main() {
 			fmt.Printf("%v\n", r)
 		}
 	}()
-	cmd.RunApp(ctx, os.Args)
+	cmd.RunCli(ctx, os.Args)
 	done()
 }

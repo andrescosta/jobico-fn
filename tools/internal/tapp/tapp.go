@@ -22,6 +22,7 @@ type TApp struct {
 	app                    *tview.Application
 	mainView               *tview.Pages
 	lastNode               *tview.TreeNode
+	status                 *tview.TextView
 	ctxJobResultsGetter    context.Context
 	cancelJobResultsGetter context.CancelFunc
 }
@@ -56,15 +57,14 @@ func New() (*TApp, error) {
 }
 
 func (c *TApp) Run() error {
-	c.render()
+	c.app.SetRoot(c.render(), true)
 	if err := c.app.Run(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (c *TApp) Close() {
+func (c *TApp) Dispose() {
 	c.controlClient.Close()
 	c.repoClient.Close()
 	for _, v := range c.infoClients {
@@ -78,41 +78,73 @@ func (c *TApp) Close() {
 func (c *TApp) render() *tview.Pages {
 	pages := tview.NewPages()
 	c.mainView = tview.NewPages()
-	c.app.SetRoot(pages, true)
-
+	c.mainView.SetBorderPadding(0, 0, 0, 0)
+	c.mainView.SetBorder(true)
 	menu := c.renderSideMenu(context.Background())
+	c.status = newTextView("")
+	c.status.SetTextAlign(tview.AlignCenter)
+
+	helpTxt := "<Esc> - To Exit | <Tab> to switch views | <Arrows> to navigate"
+	f := tview.NewFlex().
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(c.status, 0, 1, false).
+			AddItem(nil, 0, 1, false).
+			AddItem(newTextView(helpTxt), 0, 1, false), 0, 1, false)
 
 	grid := tview.NewGrid().
 		SetRows(3, 0, 3).
 		SetColumns(25, 30).
 		SetBorders(true).
-		AddItem(c.newPrimitive("Function as a Processor"), 0, 0, 1, 4, 0, 0, false).
-		AddItem(c.newPrimitive("Help"), 2, 0, 1, 4, 0, 0, false)
+		AddItem(newTextView("Jobico Dashboard"), 0, 0, 1, 4, 0, 0, false).
+		AddItem(f, 2, 0, 1, 4, 0, 0, false)
 
 	// Layout for screens narrower than 100 cells (menu and side bar are hidden).
-	grid.AddItem(menu, 1, 0, 1, 1, 0, 0, false).
+	grid.AddItem(menu, 1, 0, 1, 1, 0, 0, true).
 		AddItem(c.mainView, 1, 1, 1, 3, 0, 0, false)
 
 	// Layout for screens wider than 100 cells.
-	grid.AddItem(menu, 1, 0, 1, 0, 0, 40, false).
+	grid.AddItem(menu, 1, 0, 1, 0, 0, 40, true).
 		AddItem(c.mainView, 1, 1, 0, 0, 0, 160, false)
 
-	pages.AddPage("Mainn", grid, true, true)
+	const quitPageModal = "quit"
+	const mainPage = "main"
+	pages.AddPage(mainPage, grid, true, true)
+	pages.AddPage(quitPageModal, newModal(
+		tview.NewModal().SetText("Do you want to quit the application?").
+			AddButtons([]string{"Quit", "Cancel"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				if buttonLabel == "Quit" {
+					c.app.Stop()
+				} else {
+					pages.HidePage(quitPageModal)
+					c.app.SetFocus(menu)
+				}
+			}), 40, 10), true, false)
 
-	c.app.SetFocus(menu)
+	c.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyTAB {
+			if menu.HasFocus() {
+				c.app.SetFocus(c.mainView)
+			} else {
+				c.app.SetFocus(menu)
+			}
+			return nil
+		}
+		if event.Key() == tcell.KeyCtrlC ||
+			event.Key() == tcell.KeyEscape {
+			pages.ShowPage(quitPageModal)
+			return nil
+		}
+		return event
+	})
 
 	return pages
 }
 
-func (c *TApp) newPrimitive(text string) tview.Primitive {
-	return tview.NewTextView().
-		SetText(text)
-}
 func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 	var add func(target *node) *tview.TreeNode
 	add = func(target *node) *tview.TreeNode {
 		if target.color == tcell.ColorDefault {
-
 			if len(target.children) > 0 {
 				if !target.expanded {
 					target.text = "+ " + target.text

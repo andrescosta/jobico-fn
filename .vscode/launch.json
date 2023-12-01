@@ -83,7 +83,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/tools/cmd/dashboard/dashboard.go",
+        "program": "${workspaceFolder}/tools/cmd/dashboard/main.go",
         "console": "integratedTerminal"
     },
 ]

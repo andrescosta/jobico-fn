@@ -3,6 +3,7 @@ package tapp
 import (
 	"strconv"
 
+	"github.com/andrescosta/goico/pkg/convertico"
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -34,15 +35,15 @@ type sServerNode struct {
 
 var rootNode = func(e *pb.Environment, j []*pb.JobPackage, r []*pb.TenantFiles) *node {
 	return &node{
-		text: "Jobico Manager",
+		text: "Jobico",
 		children: []*node{
-			{text: "Packages", entity: e, children: generator(j, jobPackageNode)},
+			{text: "Packages", entity: e, children: convertico.SliceWithFunc(j, jobPackageNode)},
 			{text: "Enviroment", entity: e, children: []*node{
 				{text: e.ID, entity: e, children: []*node{
-					{text: "Services", children: generator(e.Services, serviceNode)},
+					{text: "Services", children: convertico.SliceWithFunc(e.Services, serviceNode)},
 				}},
 			}},
-			{text: "Files", entity: e, children: generator(r, tenantFileNode)},
+			{text: "Files", entity: e, children: convertico.SliceWithFunc(r, tenantFileNode)},
 			{text: "(*) Job Results", color: tcell.ColorGreen, expanded: true,
 				children: []*node{
 					{text: "<< start >>", entity: e,
@@ -58,8 +59,8 @@ var serviceNode = func(e *pb.Service) *node {
 	return &node{
 		text: e.ID, entity: e,
 		children: []*node{
-			{text: "Servers", children: generatorNamed(e.ID, e.Servers, serverNode)},
-			{text: "Storages", children: generator(e.Storages, storageNode)},
+			{text: "Servers", children: convertico.SliceWithFuncName(e.ID, e.Servers, serverNode)},
+			{text: "Storages", children: convertico.SliceWithFunc(e.Storages, storageNode)},
 		},
 	}
 }
@@ -86,7 +87,7 @@ var storageNode = func(s *pb.Storage) *node {
 var tenantFileNode = func(e *pb.TenantFiles) *node {
 	return &node{
 		text: e.TenantId, entity: e,
-		children: generatorNamed(e.TenantId, e.Files, fileNode),
+		children: convertico.SliceWithFuncName(e.TenantId, e.Files, fileNode),
 	}
 }
 
