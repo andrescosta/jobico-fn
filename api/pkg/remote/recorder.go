@@ -4,39 +4,40 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/env"
+	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/workflew/api/types"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type RecorderClient struct {
 	serverAddr string
+	conn       *grpc.ClientConn
+	client     pb.RecorderClient
 }
 
-func NewRecorderClient() *RecorderClient {
-	return &RecorderClient{
-		serverAddr: env.GetAsString("recorder.host"),
+func NewRecorderClient() (*RecorderClient, error) {
+	addr := env.GetAsString("recorder.host")
+	conn, err := service.Dial(addr)
+	if err != nil {
+		return nil, err
 	}
+	client := pb.NewRecorderClient(conn)
+
+	return &RecorderClient{
+		serverAddr: addr,
+		conn:       conn,
+		client:     client,
+	}, nil
 }
 
-func (c *RecorderClient) dial() (*grpc.ClientConn, error) {
-	ops := grpc.WithTransportCredentials(insecure.NewCredentials())
-	return grpc.Dial(c.serverAddr, ops)
-
+func (c *RecorderClient) Close() {
+	c.conn.Close()
 }
 
 func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, lines int32, resChan chan<- string) error {
 	logger := zerolog.Ctx(ctx)
-
-	conn, err := c.dial()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	recorderClient := pb.NewRecorderClient(conn)
-
-	rj, err := recorderClient.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{
+	rj, err := c.client.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{
 		Lines: &lines,
 	})
 	if err != nil {
@@ -53,7 +54,7 @@ func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, li
 		default:
 			ress, err := rj.Recv()
 			if err != nil {
-				logger.Err(err).Msg("error getting message")
+				logger.Warn().Msgf("error getting message %s", err)
 			} else {
 				for _, r := range ress.Result {
 					resChan <- r
@@ -64,16 +65,7 @@ func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, li
 }
 
 func (c *RecorderClient) AddJobExecution(ctx context.Context, ex *pb.JobExecution) error {
-	conn, err := c.dial()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	recorderClient := pb.NewRecorderClient(conn)
-	_, err = recorderClient.AddJobExecution(ctx, &pb.AddJobExecutionRequest{
-		Execution: ex,
-	})
-	if err != nil {
+	if _, err := c.client.AddJobExecution(ctx, &pb.AddJobExecutionRequest{Execution: ex}); err != nil {
 		return err
 	}
 	return nil

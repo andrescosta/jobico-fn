@@ -1,19 +1,20 @@
 name: mypackage
-jobpackageid: mypackage
+id: mypackage
 tenantid: m1
 queues:
-  - queueid: queue1
+  - id: queue1
     name: queue1
-  - queueid: queue2
+  - id: queue2
     name: queue2
-
+  - id: queue3
+    name: queue3
 jobs:
   - event:
       name: ev1
-      eventid: ev1
+      id: ev1
       datatype: 0
       schema:
-        schemaid: sche1
+        id: sche1
         name: sche1
         schemaref: schema.json
       supplierqueueid: queue1
@@ -21,30 +22,30 @@ jobs:
     result:
       ok:
         name: ev1_ok
-        eventid: ev1_ok
+        id: ev1_ok
         datatype: 0
         schema:
-          schemaid: sche1
+          id: sche1
           name: sche1
           schemaref: schema.json
         supplierqueueid: queue1
         runtimeid: runtime1
       error:
         name: ev1_err
-        eventid: ev1_err
+        id: ev1_err
         datatype: 0
         schema:
-          schemaid: sche1
+          id: sche1
           name: sche1
           schemaref: schema.json
         supplierqueueid: queue1
         runtimeid: runtime1
   - event:
       name: ev2
-      eventid: ev2
+      id: ev2
       datatype: 0
       schema:
-        schemaid: sche1
+        id: sche1
         name: sche1
         schemaref: schema.json
       supplierqueueid: queue1
@@ -72,7 +73,7 @@ jobs:
         runtimeid: runtime1
 
 runtimes:
-  - runtimeid: runtime1
+  - id: runtime1
     name: greet.wasm
     moduleref: greet.wasm
     mainfuncname: event

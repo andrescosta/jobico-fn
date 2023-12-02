@@ -29,6 +29,7 @@ message GetAllJobPackagesReply{
 }
 message GetJobPackagesRequest{
   string tenantId = 1;  
+  optional string ID = 2; 
 }
 message GetJobPackagesReply{
   repeated JobPackage packages = 1;
@@ -42,7 +43,7 @@ message GetEnviromentRequest {
 }
 
 message GetEnviromentReply {
-  Environment environment = 1;
+  optional Environment environment = 1;
 }
 
 message AddEnviromentRequest {
@@ -62,6 +63,8 @@ message AddEnviromentReply {
 
 
 message GetTenantsRequest {
+  optional string ID = 1;
+  optional string tenantId=2;
 }
 
 message GetTenantsReply {
@@ -78,42 +81,56 @@ message AddTenantReply {
 
 
 message Environment{
-  optional uint64 ID = 1;
-  map<string, Host> servers = 2;
+  string ID = 1;
+  repeated Service services=2;
+  optional Tenant tenant=3; // for future
 }
 
-  
+message Service {
+  string ID = 1;
+  optional string name = 2;
+  repeated Host servers = 3;
+  repeated Storage storages = 4;
+}
+
+message Storage {
+  string ID = 1;
+  optional string Name = 2;
+  string reference = 3;
+  StorageType type = 4;
+}
+
+enum StorageType {
+  LocalDirectory = 0;
+}
+
 message JobPackage {
-    optional uint64 ID = 1;
-    string jobPackageId = 2;
-    string name = 3;
-    string tenantId = 4;
-    repeated QueueDef queues = 5;
-    repeated JobDef jobs = 6;
-    repeated RuntimeDef runtimes = 7;
+    string ID = 1;
+    optional string name = 2;
+    string tenantId = 3;
+    repeated QueueDef queues = 4;
+    repeated JobDef jobs = 5;
+    repeated RuntimeDef runtimes = 6;
 }
 
 message Tenant {
-  optional uint64 ID = 1;
-  string tenantId=2;
-  string Name = 3;
+  string ID = 1;
+  optional string Name = 2;
 }
 
 message QueueDef {
-  optional uint64 ID  = 1; 
-  string queueId = 2;
-  string name = 3;
+  string ID = 1;
+  optional string name = 2;
 }
 
 
 message RuntimeDef{
-  optional uint64 ID = 1;
-  string runtimeId = 2;
-  string name = 3;
-  string moduleRef = 4;
-  string mainFuncName = 5;
-  RuntimeType type = 6;
-  optional Platform platform = 7;
+  string ID = 1;
+  optional string name = 2;
+  string moduleRef = 3;
+  string mainFuncName = 4;
+  RuntimeType type = 5;
+  optional Platform platform = 6;
 }
 
 enum RuntimeType {
@@ -136,13 +153,12 @@ message ResultDef {
 }
 
 message EventDef {
-  optional uint64 ID = 1;
-  string eventId = 2;
-  string name = 3;
-  DataType dataType = 4;
-  optional SchemaDef schema = 5;
-  string supplierQueueId = 6;
-  string runtimeId = 7;
+  string ID = 1;
+  optional string name = 2;
+  DataType dataType = 3;
+  optional SchemaDef schema = 4;
+  string supplierQueueId = 5;
+  string runtimeId = 6;
 }
 
 enum DataType {
@@ -150,64 +166,7 @@ enum DataType {
 }
 
 message SchemaDef {
-    optional uint64 ID = 1;
-    string schemaId = 2;
-    string name = 3;
-    string schemaRef = 4;
+    string ID = 1;
+    optional string name = 2;
+    string schemaRef = 3;
 }
-
-/*
-  
-  rpc GetEventDefs (GetEventDefsRequest) returns (GetEventDefsReply) {}
-  rpc AddEventDef (AddEventDefRequest) returns (AddEventDefReply) {}
-  rpc GetQueueDefs(GetQueueDefsRequest) returns (GetQueueDefsReply){}
-  rpc AddQueueDef(AddQueueDefRequest) returns (AddQueueDefReply){}
-  
-
-message GetQueueDefsRequest {
-  string tenantId=1;
-}
-
-message GetQueueDefsReply {
-  repeated QueueDef queues = 1;
-}
-
-message AddQueueDefRequest {
-  QueueDef queue = 1;
-}
-
-message AddQueueDefReply {
-  QueueDef queue = 1;  
-}
-message GetEventDefsRequest {
-  string tenantId=1;
-}
-  
-message GetEventDefsReply {
-	repeated EventDef events = 1;
-}
-
-message AddEventDefRequest {
-	EventDef event = 1;
-}
-  
-message AddEventDefReply {
-	EventDef event = 1;
-}
-
-message AddExecutorDefRequest {
-	ExecutorDef executor = 1;
-}
-  
-message AddExecutorDefReply {
-	ExecutorDef executor = 1;
-}
-
-message GetExecutorDefsRequest {
-  string tenantId=1;
-}
-  
-message GetExecutorDefsReply {
-	repeated ExecutorDef executors = 1;
-}
-*/

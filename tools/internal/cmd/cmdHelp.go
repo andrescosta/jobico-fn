@@ -8,6 +8,7 @@ import (
 )
 
 var cmdHelp = &command{
+	name:      "help",
 	usageLine: "cli help < command >",
 	short:     "display help for the provided command",
 	long:      `Help displays usage information`,

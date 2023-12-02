@@ -10,12 +10,16 @@ func initCliCommand() *command {
 	initDeploy()
 	initRecorder()
 	initRepo()
+	initShow()
+	initEnv()
 
 	cliCommand.commands = []*command{
 		cmdHelp,
 		cmdRepo,
 		cmdDeploy,
 		cmdRecorder,
+		cmdShow,
+		cmdEnv,
 	}
 
 	cliCommand.run = runCli
@@ -23,6 +27,7 @@ func initCliCommand() *command {
 }
 
 var cliCommand = &command{
+	name:      "cli",
 	usageLine: "cli",
 	long:      "Cli is the command line admin tool.",
 }

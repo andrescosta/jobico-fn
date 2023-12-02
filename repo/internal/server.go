@@ -28,3 +28,13 @@ func (s *Server) GetFile(ctx context.Context, r *pb.GetFileRequest) (*pb.GetFile
 		File: f,
 	}, nil
 }
+
+func (s *Server) GetAllFileNames(ctx context.Context, r *pb.GetAllFileNamesRequest) (*pb.GetAllFileNamesReply, error) {
+	f, err := s.Repo.Files()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetAllFileNamesReply{
+		Files: f,
+	}, nil
+}

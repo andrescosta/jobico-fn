@@ -11,12 +11,11 @@ type ProtoMessageMarshaler struct {
 	newMessage newProtoMessage
 }
 
-func (s *ProtoMessageMarshaler) Marshal(id uint64, q proto.Message) ([]byte, error) {
-	reflectico.SetFieldUInt(q, "ID", &id)
+func (s *ProtoMessageMarshaler) Marshal(q proto.Message) ([]byte, error) {
 	return proto.Marshal(q)
 }
 
-func (s *ProtoMessageMarshaler) Unmarshal(id uint64, d []byte) (proto.Message, error) {
+func (s *ProtoMessageMarshaler) Unmarshal(d []byte) (proto.Message, error) {
 	dd := s.newMessage()
 	if err := proto.Unmarshal(d, dd); err != nil {
 		return nil, err
@@ -24,8 +23,8 @@ func (s *ProtoMessageMarshaler) Unmarshal(id uint64, d []byte) (proto.Message, e
 	return dd, nil
 }
 
-func (s *ProtoMessageMarshaler) MarshalObj(q proto.Message) (uint64, []byte, error) {
-	id := reflectico.GetFieldUInt(q, "ID")
+func (s *ProtoMessageMarshaler) MarshalObj(q proto.Message) (string, []byte, error) {
+	id := reflectico.GetFieldString(q, "ID")
 	r, err := proto.Marshal(q)
 	return id, r, err
 

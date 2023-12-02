@@ -5,6 +5,19 @@ option go_package = "/types";
 service Repo {
   rpc GetFile (GetFileRequest) returns (GetFileReply);
   rpc AddFile (AddFileRequest) returns (AddFileReply);
+  rpc GetAllFileNames (GetAllFileNamesRequest) returns (GetAllFileNamesReply);
+}
+
+message GetAllFileNamesRequest{
+}
+
+message GetAllFileNamesReply {
+    repeated TenantFiles files = 1;
+}
+
+message TenantFiles  {
+	string tenantId=1; 
+	repeated string files=2; 
 }
 
 message AddFileRequest{

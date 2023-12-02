@@ -1,0 +1,34 @@
+name: env_1
+services:
+  - id: ctl
+    servers:
+      - ip: localhost
+        port: 50052
+  - id: repo
+    servers:
+      - ip: localhost
+        port: 50053
+  - id: recorder
+    servers:
+      - ip: localhost
+        port: 50054
+#      - name: listener
+#        ip: localhost
+#        port: 8080
+#      - name: executor
+#        ip: localhost
+#        port: 9090
+  - id: queue
+    servers:
+      - ip: localhost
+        port: 50051
+    storages:
+      - id: queues
+        type: 0
+        reference: ./db.db
+      - id: wasm
+        type: 0
+        reference: files
+      - id: wasm1
+        reference: filesst
+        type: 0

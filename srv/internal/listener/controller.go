@@ -26,16 +26,25 @@ type Event struct {
 }
 
 func New(ctx context.Context) (*Controller, error) {
-	client := remote.NewControlClient()
-	repoClient := remote.NewRepoClient()
-
+	controlClient, err := remote.NewControlClient()
+	if err != nil {
+		return nil, err
+	}
+	repoClient, err := remote.NewRepoClient()
+	if err != nil {
+		return nil, err
+	}
+	queueClient, err := remote.NewQueueClient()
+	if err != nil {
+		return nil, err
+	}
 	events := make(map[string]*Event)
 	con := Controller{
 		events:      events,
-		queueClient: remote.NewQueueClient(),
+		queueClient: queueClient,
 	}
 
-	pkgs, err := client.GetAllPackages(ctx)
+	pkgs, err := controlClient.GetAllPackages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,15 +57,15 @@ func New(ctx context.Context) (*Controller, error) {
 				return nil, err
 			}
 			comp := jsonschema.NewCompiler()
-			if err := comp.AddResource(getFullEventId(tenantId, event.EventId), bytes.NewReader(f)); err != nil {
+			if err := comp.AddResource(getFullEventId(tenantId, event.ID), bytes.NewReader(f)); err != nil {
 				return nil, err
 			}
-			compiledSchema, err := comp.Compile(getFullEventId(tenantId, event.EventId))
+			compiledSchema, err := comp.Compile(getFullEventId(tenantId, event.ID))
 			if err != nil {
 				return nil, err
 			}
 
-			events[getFullEventId(tenantId, event.EventId)] = &Event{
+			events[getFullEventId(tenantId, event.ID)] = &Event{
 				event:  event,
 				schema: compiledSchema,
 			}
@@ -77,9 +86,10 @@ func (rr Controller) getEventDef(tenantId string, eventId string) (*Event, error
 	return ev, nil
 }
 
-func (rr Controller) Routes(logger zerolog.Logger) chi.Router {
+func (rr Controller) Routes(ctx context.Context) chi.Router {
+	logger := zerolog.Ctx(ctx)
 	r := chi.NewRouter()
-	r.Use(httplog.RequestLogger(logger))
+	r.Use(httplog.RequestLogger(*logger))
 	r.Route("/{tenant_id}/{event_id}", func(r2 chi.Router) {
 		r2.Post("/", rr.Post)
 		r2.Get("/", rr.Get)

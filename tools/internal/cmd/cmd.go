@@ -10,35 +10,21 @@ type command struct {
 	run       func(ctx context.Context, cmd *command, args []string)
 	usageLine string
 	short     string
+	name      string
 	long      string
 	flag      flag.FlagSet
 	commands  []*command
 }
 
 func (c *command) LongName() string {
-	name := c.usageLine
-	if i := strings.Index(name, " ["); i >= 0 {
-		name = name[:i]
-	} else {
-		if i := strings.Index(name, " <"); i >= 0 {
-			name = name[:i]
-		}
-	}
-	if name == "cli" {
-		return ""
-	}
-	return strings.TrimPrefix(name, "cli ")
-}
-
-func (c *command) Name() string {
-	name := c.LongName()
-	if i := strings.LastIndex(name, " "); i >= 0 {
-		name = name[i+1:]
-	}
-	return name
+	return strings.TrimPrefix(c.name, "cli ")
 }
 
 // Attributes exported here for to satisfy the template engine
+func (c *command) Name() string {
+	return c.name
+}
+
 func (c *command) Long() string {
 	return c.long
 }

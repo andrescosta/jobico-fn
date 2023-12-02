@@ -5,41 +5,43 @@ import (
 	"io"
 
 	"github.com/andrescosta/goico/pkg/env"
+	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/workflew/api/types"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type RepoClient struct {
 	serverAddr string
+	conn       *grpc.ClientConn
+	client     pb.RepoClient
 }
 
-func NewRepoClient() *RepoClient {
-	return &RepoClient{
-		serverAddr: env.GetAsString("repo.host"),
+func NewRepoClient() (*RepoClient, error) {
+	addr := env.GetAsString("repo.host")
+	conn, err := service.Dial(addr)
+	if err != nil {
+		return nil, err
 	}
+	client := pb.NewRepoClient(conn)
+
+	return &RepoClient{
+		serverAddr: addr,
+		conn:       conn,
+		client:     client,
+	}, nil
 }
 
-func (c *RepoClient) dial() (*grpc.ClientConn, error) {
-	ops := grpc.WithTransportCredentials(insecure.NewCredentials())
-	return grpc.Dial(c.serverAddr, ops)
-
+func (c *RepoClient) Close() {
+	c.conn.Close()
 }
 
 func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, reader io.Reader) error {
-	conn, err := c.dial()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	repo := pb.NewRepoClient(conn)
-
 	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
-	_, err = repo.AddFile(ctx, &pb.AddFileRequest{
+	_, err = c.client.AddFile(ctx, &pb.AddFileRequest{
 		TenantId: tenant,
 		Name:     name,
 		File:     bytes,
@@ -51,13 +53,7 @@ func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, re
 }
 
 func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([]byte, error) {
-	conn, err := c.dial()
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	repo := pb.NewRepoClient(conn)
-	r, err := repo.GetFile(ctx, &pb.GetFileRequest{
+	r, err := c.client.GetFile(ctx, &pb.GetFileRequest{
 		TenantId: tenant,
 		Name:     name,
 	})
@@ -66,4 +62,13 @@ func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([
 	}
 
 	return r.File, nil
+}
+
+func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, error) {
+	reply, err := c.client.GetAllFileNames(ctx, &pb.GetAllFileNamesRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	return reply.Files, nil
 }
