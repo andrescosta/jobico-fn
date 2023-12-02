@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -92,8 +93,27 @@ func onFocusJobPackageNode(c *TApp, n *tview.TreeNode) {
 		if err != nil {
 			return nil, errors.Join(errors.New(`package cannot displayed`), err)
 		}
-		return createContentView(*yaml), nil
+		textView := createContentView(decorate(*yaml))
+		textView.SetRegions(true)
+		textView.SetDynamicColors(true)
+		return textView, nil
 	})
+}
+
+func decorate(yaml string) string {
+
+	reAttributes := regexp.MustCompile(`(?:^|\n).*:`)
+
+	yaml = reAttributes.ReplaceAllStringFunc(yaml, func(match string) string {
+		return "[#ff8282]" + match[:len(match)-1] + "[white:black]:"
+	})
+
+	reValues := regexp.MustCompile(`: .+\n`)
+	yaml = reValues.ReplaceAllStringFunc(yaml, func(match string) string {
+		return ": [#d1ffbd]" + match[2:]
+	})
+
+	return yaml
 }
 
 func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
