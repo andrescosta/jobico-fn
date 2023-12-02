@@ -93,9 +93,8 @@ func onFocusJobPackageNode(c *TApp, n *tview.TreeNode) {
 		if err != nil {
 			return nil, errors.Join(errors.New(`package cannot displayed`), err)
 		}
+
 		textView := createContentView(decorate(*yaml))
-		textView.SetRegions(true)
-		textView.SetDynamicColors(true)
 		return textView, nil
 	})
 }
