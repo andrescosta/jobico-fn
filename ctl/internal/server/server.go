@@ -12,15 +12,16 @@ import (
 )
 
 const (
-	DB_PATH         = ".\\db.db"
-	TBL_EVENT       = "event"
-	TBL_QUEUE       = "queue"
-	TBL_PACKAGE     = "package"
-	TBL_LISTENER    = "listener"
-	TBL_TENANT      = "tenant"
-	TBL_ENVIRONMENT = "environment"
-	TBL_EXECUTOR    = "executor"
-	GEN_MERCHANT    = "[Generic]"
+	dbPath         = ".\\db.db"
+	tblEvent       = "event"
+	tblQueue       = "queue"
+	tblPackage     = "package"
+	tblListener    = "listener"
+	tblTenant      = "tenant"
+	tblEnvironment = "environment"
+	tblExecutor    = "executor"
+	genMerchant    = "[Generic]"
+	environmentId  = "enviroment_1"
 )
 
 type ControlServer struct {
@@ -32,7 +33,7 @@ type ControlServer struct {
 }
 
 func NewCotrolServer(ctx context.Context) (*ControlServer, error) {
-	db, err := database.Open(DB_PATH)
+	db, err := database.Open(dbPath)
 	if err != nil {
 		return nil, err
 	}
@@ -49,36 +50,6 @@ func (s *ControlServer) Close() error {
 	s.bEnviroment.Stop()
 	return s.db.Close()
 }
-func (s *ControlServer) getPackages(ctx context.Context, tenantId string) ([]*pb.JobPackage, error) {
-	mydao, err := s.getDao(ctx, tenantId, TBL_PACKAGE, &pb.JobPackage{})
-	if err != nil {
-		return nil, err
-	}
-
-	ms, err := mydao.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-	packages := convertico.SliceWithSlice[proto.Message, *pb.JobPackage](ms)
-
-	return packages, nil
-}
-func (s *ControlServer) getPackage(ctx context.Context, tenantId string, id string) (*pb.JobPackage, error) {
-	mydao, err := s.getDao(ctx, tenantId, TBL_PACKAGE, &pb.JobPackage{})
-	if err != nil {
-		return nil, err
-	}
-	ms, err := mydao.Get(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if ms != nil {
-		return (*ms).(*pb.JobPackage), nil
-	} else {
-		return nil, nil
-	}
-}
-
 func (s *ControlServer) GetPackages(ctx context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
 	if in.ID != nil {
 		p, err := s.getPackage(ctx, in.TenantId, *in.ID)
@@ -106,7 +77,7 @@ func (s *ControlServer) GetAllPackages(ctx context.Context, in *pb.GetAllJobPack
 	}
 	packages := make([]*pb.JobPackage, 0)
 	for _, me := range ms {
-		mydao, err := s.getDao(ctx, me.ID, TBL_PACKAGE, &pb.JobPackage{})
+		mydao, err := s.getDao(ctx, me.ID, tblPackage, &pb.JobPackage{})
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +93,7 @@ func (s *ControlServer) GetAllPackages(ctx context.Context, in *pb.GetAllJobPack
 }
 
 func (s *ControlServer) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (*pb.AddJobPackageReply, error) {
-	mydao, err := s.getDao(ctx, in.Package.TenantId, TBL_PACKAGE, &pb.JobPackage{})
+	mydao, err := s.getDao(ctx, in.Package.TenantId, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
 	}
@@ -132,10 +103,38 @@ func (s *ControlServer) AddPackage(ctx context.Context, in *pb.AddJobPackageRequ
 		return nil, err
 	}
 
-	//s.bJobPackage.BroadCastAdd(in.Package)
 	s.broadcastAdd(in.Package)
 	return &pb.AddJobPackageReply{Package: in.Package}, nil
 
+}
+func (s *ControlServer) getPackages(ctx context.Context, tenantId string) ([]*pb.JobPackage, error) {
+	mydao, err := s.getDao(ctx, tenantId, tblPackage, &pb.JobPackage{})
+	if err != nil {
+		return nil, err
+	}
+
+	ms, err := mydao.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	packages := convertico.SliceWithSlice[proto.Message, *pb.JobPackage](ms)
+
+	return packages, nil
+}
+func (s *ControlServer) getPackage(ctx context.Context, tenantId string, id string) (*pb.JobPackage, error) {
+	mydao, err := s.getDao(ctx, tenantId, tblPackage, &pb.JobPackage{})
+	if err != nil {
+		return nil, err
+	}
+	ms, err := mydao.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if ms != nil {
+		return (*ms).(*pb.JobPackage), nil
+	} else {
+		return nil, nil
+	}
 }
 
 func (s *ControlServer) GetTenants(ctx context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
@@ -159,7 +158,7 @@ func (s *ControlServer) GetTenants(ctx context.Context, in *pb.GetTenantsRequest
 }
 
 func (s *ControlServer) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_TENANT, &pb.Tenant{})
+	mydao, err := s.getDaoGen(ctx, tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +173,7 @@ func (s *ControlServer) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
 }
 
 func (s *ControlServer) getTenant(ctx context.Context, id string) (*pb.Tenant, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_TENANT, &pb.Tenant{})
+	mydao, err := s.getDaoGen(ctx, tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +190,7 @@ func (s *ControlServer) getTenant(ctx context.Context, id string) (*pb.Tenant, e
 }
 
 func (s *ControlServer) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_TENANT, &pb.Tenant{})
+	mydao, err := s.getDaoGen(ctx, tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -200,15 +199,16 @@ func (s *ControlServer) AddTenant(ctx context.Context, in *pb.AddTenantRequest) 
 	if err != nil {
 		return nil, err
 	}
+	s.broadcastAdd(in.Tenant)
 	return &pb.AddTenantReply{Tenant: in.Tenant}, nil
 }
 
 func (s *ControlServer) AddEnviroment(ctx context.Context, in *pb.AddEnviromentRequest) (*pb.AddEnviromentReply, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_ENVIRONMENT, &pb.Environment{})
+	mydao, err := s.getDaoGen(ctx, tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
 	}
-	in.Environment.ID = "enviroment_1"
+	in.Environment.ID = environmentId
 	var m proto.Message = in.Environment
 	_, err = mydao.Add(ctx, m)
 	if err != nil {
@@ -218,8 +218,8 @@ func (s *ControlServer) AddEnviroment(ctx context.Context, in *pb.AddEnviromentR
 	return &pb.AddEnviromentReply{Environment: in.Environment}, nil
 }
 func (s *ControlServer) UpdateEnviroment(ctx context.Context, in *pb.UpdateEnviromentRequest) (*pb.UpdateEnviromentReply, error) {
-	in.Environment.ID = "enviroment_1"
-	mydao, err := s.getDaoGen(ctx, TBL_ENVIRONMENT, &pb.Environment{})
+	in.Environment.ID = environmentId
+	mydao, err := s.getDaoGen(ctx, tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
 	}
@@ -234,12 +234,12 @@ func (s *ControlServer) UpdateEnviroment(ctx context.Context, in *pb.UpdateEnvir
 }
 
 func (s *ControlServer) GetEnviroment(ctx context.Context, in *pb.GetEnviromentRequest) (*pb.GetEnviromentReply, error) {
-	mydao, err := s.getDaoGen(ctx, TBL_ENVIRONMENT, &pb.Environment{})
+	mydao, err := s.getDaoGen(ctx, tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
 	}
 
-	ms, err := mydao.Get(ctx, "enviroment_1")
+	ms, err := mydao.Get(ctx, environmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -252,48 +252,10 @@ func (s *ControlServer) GetEnviroment(ctx context.Context, in *pb.GetEnviromentR
 
 func (s *ControlServer) UpdateToPackagesStr(in *pb.UpdateToPackagesStrRequest, r pb.Control_UpdateToPackagesStrServer) error {
 	return s.bJobPackage.RcvAndDispatchUpdates(r)
-
-	// l := s.bJobPackage.b.Subscribe()
-	// logger := zerolog.Ctx(r.Context())
-	// for {
-	// 	select {
-	// 	case <-r.Context().Done():
-	// 		s.bJobPackage.b.Unsubscribe(l)
-	// 		return nil
-	// 	case d, ok := <-l.C:
-	// 		if !ok {
-	// 			return ErrListeningData
-	// 		}
-	// 		err := r.Send(d)
-	// 		if err != nil {
-	// 			logger.Err(err).Msg("error sending data")
-	// 			return ErrPublishingData
-	// 		}
-	// 	}
-	// }
 }
 
 func (s *ControlServer) UpdateToEnviromentStr(in *pb.UpdateToEnviromentStrRequest, r pb.Control_UpdateToEnviromentStrServer) error {
 	return s.bEnviroment.RcvAndDispatchUpdates(r)
-
-	// l := s.bEnviroment.b.Subscribe()
-	// logger := zerolog.Ctx(r.Context())
-	// for {
-	// 	select {
-	// 	case <-r.Context().Done():
-	// 		s.bEnviroment.b.Unsubscribe(l)
-	// 		return nil
-	// 	case d, ok := <-l.C:
-	// 		if !ok {
-	// 			return ErrListeningData
-	// 		}
-	// 		err := r.Send(d)
-	// 		if err != nil {
-	// 			logger.Err(err).Msg("error sending data")
-	// 			return ErrPublishingData
-	// 		}
-	// 	}
-	// }
 }
 
 func (s *ControlServer) getDaoGen(ctx context.Context, entity string, message proto.Message) (*dao.DAO[proto.Message], error) {
