@@ -16,7 +16,7 @@ type Server struct {
 
 func NewServer(ctx context.Context, dir string) *Server {
 	return &Server{
-		repo:        &FileRepo{Dir: dir},
+		repo:        NewFileRepo(dir),
 		bJobPackage: grpchelper.StartBroadcaster[*pb.UpdateToFileStrReply, proto.Message](ctx),
 	}
 }

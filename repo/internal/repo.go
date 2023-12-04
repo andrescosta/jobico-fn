@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/andrescosta/goico/pkg/iohelper"
@@ -18,15 +19,29 @@ var (
 
 const (
 	metFileExt = ".met"
+	dirMeta    = "meta"
+	dirFiles   = "content"
 )
 
 type FileRepo struct {
-	Dir string
+	dirFile string
+	dirMeta string
+}
+
+func NewFileRepo(baseDir string) *FileRepo {
+	return &FileRepo{
+		dirFile: filepath.Join(baseDir, dirFiles),
+		dirMeta: filepath.Join(baseDir, dirMeta),
+	}
 }
 
 func (f *FileRepo) File(tenantId string, name string) ([]byte, error) {
-	dirs := iohelper.BuildFullPath([]string{f.Dir, tenantId})
-	res, err := os.ReadFile(iohelper.BuildPathWithFile(dirs, name))
+	return file(name, f.dirFile, tenantId)
+}
+
+func file(name string, dirs ...string) ([]byte, error) {
+	full := iohelper.BuildFullPath(dirs)
+	res, err := os.ReadFile(iohelper.BuildPathWithFile(full, name))
 	if err != nil {
 		return nil, err
 	} else {
@@ -35,13 +50,13 @@ func (f *FileRepo) File(tenantId string, name string) ([]byte, error) {
 }
 
 func (f *FileRepo) Files() ([]*pb.TenantFiles, error) {
-	dirs, err := iohelper.GetDirs(f.Dir)
+	dirs, err := iohelper.GetDirs(f.dirFile)
 	if err != nil {
 		return nil, err
 	}
 	ts := make([]*pb.TenantFiles, 0)
 	for _, dir := range dirs {
-		fd := iohelper.BuildFullPath([]string{f.Dir, dir.Name()})
+		fd := iohelper.BuildFullPath([]string{f.dirFile, dir.Name()})
 		files, err := iohelper.GetFiles(fd)
 		if err != nil {
 			return nil, err
@@ -60,7 +75,7 @@ func (f *FileRepo) Files() ([]*pb.TenantFiles, error) {
 	return ts, nil
 }
 func (f *FileRepo) AddFile(tenantId string, name string, fileType int32, bytes []byte) error {
-	if err := f.addFile(tenantId, name, bytes); err != nil {
+	if err := addFile(name, bytes, f.dirFile, tenantId); err != nil {
 		return err
 	}
 	if err := f.WriteMetadataForFile(tenantId, name, fileType); err != nil {
@@ -69,12 +84,12 @@ func (f *FileRepo) AddFile(tenantId string, name string, fileType int32, bytes [
 	return nil
 }
 
-func (f *FileRepo) addFile(tenantId string, name string, bytes []byte) error {
-	dirs := iohelper.BuildFullPath([]string{f.Dir, tenantId})
-	if err := iohelper.CreateDirIfNotExist(dirs); err != nil {
+func addFile(name string, bytes []byte, dirs ...string) error {
+	full := iohelper.BuildFullPath(dirs)
+	if err := iohelper.CreateDirIfNotExist(full); err != nil {
 		return err
 	}
-	fulPath := iohelper.BuildPathWithFile(dirs, name)
+	fulPath := iohelper.BuildPathWithFile(full, name)
 	e, err := iohelper.FileExists(fulPath)
 	if err != nil {
 		return err
@@ -98,15 +113,15 @@ func (f *FileRepo) WriteMetadataForFile(tenantId string, name string, fileType i
 	if err := enc.Encode(Metadata{FileType: fileType}); err != nil {
 		return err
 	}
-	if err := f.addFile(tenantId, name+metFileExt, buf.Bytes()); err != nil {
+	if err := addFile(name+metFileExt, buf.Bytes(), f.dirMeta, tenantId); err != nil {
 		return err
 
 	}
 	return nil
 }
 
-func (f *FileRepo) GetMetadataForFile(tenant string, name string) (*Metadata, error) {
-	c, err := f.File(tenant, name+metFileExt)
+func (f *FileRepo) GetMetadataForFile(tenantId string, name string) (*Metadata, error) {
+	c, err := file(name+metFileExt, f.dirMeta, tenantId)
 	if err != nil {
 		pe, ok := err.(*fs.PathError)
 		if ok && errors.Is(syscall.ERROR_FILE_NOT_FOUND, pe.Unwrap()) {
