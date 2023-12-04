@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"os"
 
 	"github.com/andrescosta/jobico/tools/internal/tapp"
 )
@@ -16,10 +15,8 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	if len(os.Args) > 1 {
-		if *debugFlag {
-			tapp.CollectDebugInfo()
-		}
+	if *debugFlag {
+		tapp.DebugOn()
 	}
 	defer tapp.Dispose()
 	if err := tapp.Run(); err != nil {

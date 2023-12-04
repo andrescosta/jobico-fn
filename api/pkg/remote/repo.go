@@ -36,16 +36,21 @@ func (c *RepoClient) Close() {
 	c.conn.Close()
 }
 
-func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, reader io.Reader) error {
+func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, fileType pb.File_FileType, reader io.Reader) error {
 	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
 	_, err = c.client.AddFile(ctx, &pb.AddFileRequest{
-		TenantId: tenant,
-		Name:     name,
-		File:     bytes,
+		TenantFile: &pb.TenantFile{
+			TenantId: tenant,
+			File: &pb.File{
+				Type:    fileType,
+				Name:    name,
+				Content: bytes,
+			},
+		},
 	})
 	if err != nil {
 		return err
@@ -55,14 +60,18 @@ func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, re
 
 func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([]byte, error) {
 	r, err := c.client.GetFile(ctx, &pb.GetFileRequest{
-		TenantId: tenant,
-		Name:     name,
+		TenantFile: &pb.TenantFile{
+			TenantId: tenant,
+			File: &pb.File{
+				Name: name,
+			},
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return r.File, nil
+	return r.File.Content, nil
 }
 
 func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, error) {
@@ -70,8 +79,11 @@ func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, er
 	if err != nil {
 		return nil, err
 	}
-
-	return reply.Files, nil
+	ret := make([]*pb.TenantFiles, 0)
+	for _, tf := range reply.TenantFiles {
+		ret = append(ret, tf)
+	}
+	return ret, nil
 }
 
 func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.UpdateToFileStrReply) error {

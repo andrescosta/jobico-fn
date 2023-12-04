@@ -12,7 +12,7 @@ import (
 const Name = "Queue"
 
 func main() {
-	svc, err := service.NewGrpService(context.Background(), "queue",
+	svc, err := service.NewGrpcService(context.Background(), "queue",
 		&pb.Queue_ServiceDesc,
 		func(ctx context.Context) (any, error) {
 			return &queue.Server{}, nil

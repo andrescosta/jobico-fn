@@ -35,7 +35,7 @@ const (
 
 type sFile struct {
 	tenant string
-	file   string
+	file   *pb.File
 }
 
 type sServerNode struct {
@@ -47,12 +47,12 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, f []*pb.TenantFiles) 
 	return &node{
 		text: "Jobico",
 		children: []*node{
-			{text: "Packages", entity: e, children: packageChildrenNodes(j), rootNodeType: RootNodePackage},
+			{text: "Packages", entity: j, children: packageChildrenNodes(j), rootNodeType: RootNodePackage},
 			{text: "Enviroment", entity: e, children: environmentChildrenNodes(e), rootNodeType: RootNodeEnv},
-			{text: "Files", entity: e, children: fileChildrenNodes(f), rootNodeType: RootNodeFile},
+			{text: "Files", entity: f, children: tenantFileChildrenNodes(f), rootNodeType: RootNodeFile},
 			{text: "(*) Job Results", color: tcell.ColorGreen, expanded: true,
 				children: []*node{
-					{text: "<< start >>", entity: e,
+					{text: "<< start >>",
 						selected: onSelectedGettingJobResults,
 						focus:    func(c *TApp, _ *tview.TreeNode) { switchToPageIfExists(c.mainView, "results") },
 					},
@@ -73,8 +73,8 @@ var environmentChildrenNodes = func(e *pb.Environment) []*node {
 	}
 }
 
-var fileChildrenNodes = func(r []*pb.TenantFiles) []*node {
-	return convertico.SliceWithFunc(r, tenantFileNode)
+var tenantFileChildrenNodes = func(r []*pb.TenantFiles) []*node {
+	return convertico.SliceWithFunc(r, tenantFilesNode)
 }
 
 var serviceNode = func(e *pb.Service) *node {
@@ -106,16 +106,16 @@ var storageNode = func(s *pb.Storage) *node {
 	}
 }
 
-var tenantFileNode = func(e *pb.TenantFiles) *node {
+var tenantFilesNode = func(e *pb.TenantFiles) *node {
 	return &node{
 		text: e.TenantId, entity: e,
-		children: convertico.SliceWithFuncName(e.TenantId, e.Files, fileNode),
+		children: convertico.SliceWithFuncName(e.TenantId, e.Files, tenantFileNode),
 	}
 }
 
-var fileNode = func(tenant string, file string) *node {
+var tenantFileNode = func(tenant string, file *pb.File) *node {
 	return &node{
-		text: file, entity: &sFile{tenant, file},
+		text: file.Name, entity: &sFile{tenant, file},
 		focus: onFocusFileNode,
 	}
 }

@@ -11,48 +11,58 @@ service Repo {
   rpc GetAllFileNames (GetAllFileNamesRequest) returns (GetAllFileNamesReply);
 }
 
+
 message UpdateToFileStrRequest{
     string tenantId = 1; //not used
 }
 
-message UpdatedFile{
-    string tenantId = 2;
-    string name = 3;
-    bytes file = 4;
-}
 
 message UpdateToFileStrReply{
     UpdateType type = 1;
-    UpdatedFile object = 2;
+    TenantFile object = 2;
 }
 
 message GetAllFileNamesRequest{
 }
 
 message GetAllFileNamesReply {
-    repeated TenantFiles files = 1;
+    repeated TenantFiles tenantFiles = 1;
 }
 
-message TenantFiles  {
-	string tenantId=1; 
-	repeated string files=2; 
-}
 
 message AddFileRequest{
-    string tenantId = 1;
-    string name = 2;
-    bytes file = 3;
+    TenantFile tenantFile = 1;
 }
 
 message AddFileReply {
-    bytes file = 1; 
+    bytes content = 1; 
 }
 
 message GetFileRequest{
-    string tenantId = 1;
-    string name = 2;
+    TenantFile tenantFile = 1;
 }
 
 message GetFileReply {
-    bytes file = 1; 
+    File file = 1; 
+}
+
+message TenantFiles {
+	string tenantId=1; 
+	repeated File files=2; 
+}
+
+message TenantFile {
+	string tenantId=1; 
+	File file=2; 
+}
+
+message File {
+    enum FileType {
+        NoType = 0;
+        JsonSchema = 1;
+        Wasm = 2;
+    }
+    FileType type = 1;
+    string name = 2;
+    bytes content = 3;
 }

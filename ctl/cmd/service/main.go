@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	svc, err := service.NewGrpService(context.Background(), "ctl", &pb.Control_ServiceDesc,
+	svc, err := service.NewGrpcService(context.Background(), "ctl", &pb.Control_ServiceDesc,
 		func(ctx context.Context) (any, error) {
 			return server1.NewCotrolServer(ctx)
 		}, nil)

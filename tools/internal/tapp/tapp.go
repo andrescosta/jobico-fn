@@ -29,21 +29,21 @@ const (
 
 type TApp struct {
 	*pb.Environment
-	controlClient          *remote.ControlClient
-	repoClient             *remote.RepoClient
-	recorderClient         *remote.RecorderClient
-	infoClients            map[string]*service.GrpcServerInfoClient
-	helthCheckClients      map[string]*service.GrpcHelthCheckClient
-	app                    *tview.Application
-	mainView               *tview.Pages
-	lastNode               *tview.TreeNode
-	root                   *tview.TreeNode
-	status                 *tview.TextView
-	debugTextView          *tview.TextView
-	collectDebug           bool
-	ctxJobResultsGetter    context.Context
-	cancelJobResultsGetter context.CancelFunc
-	sync                   bool
+	controlClient           *remote.ControlClient
+	repoClient              *remote.RepoClient
+	recorderClient          *remote.RecorderClient
+	infoClients             map[string]*service.GrpcServerInfoClient
+	helthCheckClients       map[string]*service.GrpcHelthCheckClient
+	app                     *tview.Application
+	mainView                *tview.Pages
+	lastNode                *tview.TreeNode
+	root                    *tview.TreeNode
+	status                  *tview.TextView
+	debugTextView           *tview.TextView
+	debug                   bool
+	cancelJobResultsGetter  context.CancelFunc
+	cancelStreamUpdatesFunc context.CancelFunc
+	sync                    bool
 }
 
 func New(sync bool) (*TApp, error) {
@@ -75,44 +75,25 @@ func New(sync bool) (*TApp, error) {
 		sync:              sync,
 	}, nil
 }
-func (c *TApp) CollectDebugInfo() {
-	c.collectDebug = true
-}
 
-func (c *TApp) debugError(err error) {
-	log.Err(err)
-	fmt.Fprintln(c.debugTextView, err)
-}
-
-func (c *TApp) debugErrorFromGoRoutine(err error) {
-	c.app.QueueUpdateDraw(func() {
-		c.debugError(err)
-	})
-}
-
-func (c *TApp) debugInfo(info string) {
-	if c.collectDebug {
-		fmt.Fprintln(c.debugTextView, info)
-	}
-}
-func (c *TApp) debugInfoFromGoRoutine(info string) {
-	if c.collectDebug {
-		c.app.QueueUpdateDraw(func() {
-			c.debugInfo(info)
-		})
-	}
+func (c *TApp) DebugOn() {
+	c.debug = true
 }
 
 func (c *TApp) Run() error {
-	c.app.SetRoot(c.render(), true)
+
+	ctx, done := context.WithCancel(context.Background())
+	defer done()
+	c.app.SetRoot(c.render(ctx), true)
 	if c.sync {
-		c.startSyncWithServices()
+		c.startStreamingUpdates(ctx)
 	}
 	if err := c.app.Run(); err != nil {
 		return err
 	}
 	return nil
 }
+
 func (c *TApp) Dispose() {
 	c.controlClient.Close()
 	c.repoClient.Close()
@@ -124,7 +105,7 @@ func (c *TApp) Dispose() {
 	}
 }
 
-func (c *TApp) render() *tview.Pages {
+func (c *TApp) render(ctx context.Context) *tview.Pages {
 	// sets the main pages
 	pages := tview.NewPages()
 
@@ -133,7 +114,7 @@ func (c *TApp) render() *tview.Pages {
 	c.mainView.SetBorder(true)
 	c.mainView.AddPage(emptyPage, buildTextView(""), true, true)
 
-	menu := c.renderSideMenu(context.Background())
+	menu := c.renderSideMenu(ctx)
 	c.status = newTextView("")
 	c.status.SetTextAlign(tview.AlignCenter)
 
@@ -208,6 +189,10 @@ func (c *TApp) render() *tview.Pages {
 				pages.SwitchToPage(debugPage)
 			}
 			return nil
+		case tcell.KeyCtrlP:
+			if c.debug {
+				c.stopStreamingUpdates()
+			}
 		}
 		return event
 	})
@@ -215,7 +200,7 @@ func (c *TApp) render() *tview.Pages {
 	return pages
 }
 
-func add(target *node) *tview.TreeNode {
+func renderNode(target *node) *tview.TreeNode {
 	if target.color == tcell.ColorDefault {
 		if len(target.children) > 0 {
 			if !target.expanded {
@@ -231,7 +216,7 @@ func add(target *node) *tview.TreeNode {
 		SetReference(target).
 		SetColor(target.color)
 	for _, child := range target.children {
-		node.AddChild(add(child))
+		node.AddChild(renderNode(child))
 	}
 	return node
 }
@@ -250,7 +235,7 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 	if err != nil {
 		panic(err)
 	}
-	r := add(rootNode(e, ep, fs))
+	r := renderNode(rootNode(e, ep, fs))
 	c.root = r
 	menu := tview.NewTreeView()
 	menu.SetRoot(r)
@@ -300,7 +285,7 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 
 func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 	original := n.GetReference().(*node)
-	c.mainView.SwitchToPage(emptyPage)
+	switchToEmptyPage(c)
 	switch original.rootNodeType {
 	case RootNodePackage:
 		ep, err := c.controlClient.GetAllPackages(ctx)
@@ -323,7 +308,7 @@ func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 	case RootNodeFile:
 		fs, err := c.repoClient.GetAllFileNames(ctx)
 		if err == nil {
-			g := fileChildrenNodes(fs)
+			g := tenantFileChildrenNodes(fs)
 			original.children = g
 			refreshTreeNode(n)
 		} else {
@@ -332,40 +317,24 @@ func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 	}
 }
 
-func refreshTreeNode(n *tview.TreeNode) {
-	n.ClearChildren()
-	for _, child := range n.GetReference().(*node).children {
-		n.AddChild(add(child))
-	}
-}
-
-func (c *TApp) showErrorStr(e string, ds ...time.Duration) {
-	d := utilico.ValueOrDefault(ds, durationError)
-	showText(c, c.status, e, tcell.ColorRed, d)
-}
-
-func (c *TApp) showError(err error, ds ...time.Duration) {
-	errStr := utilico.UnwrapError(err)[0].Error()
-	c.showErrorStr(errStr, utilico.ValueOrDefault(ds, durationError))
-}
-
-func (c *TApp) startSyncWithServices() {
-
+func (c *TApp) startStreamingUpdates(ctx context.Context) {
 	jpc := make(chan *pb.UpdateToPackagesStrReply)
 	ec := make(chan *pb.UpdateToEnviromentStrReply)
-	//file := make(chan *pb.UpdatedFile)
-	ctx, done := context.WithCancel(context.Background())
+	fc := make(chan *pb.UpdateToFileStrReply)
+	ctx, done := context.WithCancel(ctx)
+	c.cancelStreamUpdatesFunc = done
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
+				c.debugInfoFromGoRoutine("update to package channel stopped")
 				return
 			case j := <-jpc:
 				c.app.QueueUpdateDraw(func() {
 					r, n := getChidren(RootNodePackage, c.root)
 					nn := jobPackageNode(j.Object)
 					n.children = append(n.children, nn)
-					r.AddChild(add(nn))
+					r.AddChild(renderNode(nn))
 				})
 			}
 		}
@@ -374,6 +343,7 @@ func (c *TApp) startSyncWithServices() {
 		for {
 			select {
 			case <-ctx.Done():
+				c.debugInfoFromGoRoutine("update to enviroment channel stopped")
 				return
 			case e := <-ec:
 				c.app.QueueUpdateDraw(func() {
@@ -386,14 +356,95 @@ func (c *TApp) startSyncWithServices() {
 			}
 		}
 	}()
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				c.debugInfoFromGoRoutine("update to file channel stopped")
+				return
+			case e := <-fc:
+				c.app.QueueUpdateDraw(func() {
+					r, _ := getChidren(RootNodeFile, c.root)
+					tr, tn := getTenantNode(e.Object.TenantId, r)
+					ns := tenantFileNode(e.Object.TenantId, e.Object.File)
+					tn.children = append(tn.children, ns)
+					tr.AddChild(renderNode(ns))
+				})
+
+			}
+		}
+	}()
 	//job
 	go func() {
-		c.controlClient.UpdateToPackagesStr(ctx, jpc)
-		done()
+		err := c.controlClient.UpdateToPackagesStr(ctx, jpc)
+		if err != nil {
+			c.debugErrorFromGoRoutine(err)
+		}
+		c.debugInfoFromGoRoutine("updates to package stream stopped")
+		c.stopStreamingUpdates()
 	}()
 	//env
 	go func() {
-		c.controlClient.UpdateToEnviromentStr(ctx, ec)
-		done()
+		err := c.controlClient.UpdateToEnviromentStr(ctx, ec)
+		if err != nil {
+			c.debugErrorFromGoRoutine(err)
+		}
+		c.debugInfoFromGoRoutine("updates to environment stream stopped")
+		c.stopStreamingUpdates()
 	}()
+	//file
+	go func() {
+		err := c.repoClient.UpdateToFileStr(ctx, fc)
+		if err != nil {
+			c.debugErrorFromGoRoutine(err)
+		}
+		c.debugInfoFromGoRoutine("updates to file stream stopped")
+		c.stopStreamingUpdates()
+	}()
+}
+
+func (c *TApp) stopStreamingUpdates() {
+	c.cancelStreamUpdatesFunc()
+	c.debugInfo("Sync services stopped")
+}
+
+func refreshTreeNode(n *tview.TreeNode) {
+	n.ClearChildren()
+	for _, child := range n.GetReference().(*node).children {
+		n.AddChild(renderNode(child))
+	}
+}
+
+func (c *TApp) showErrorStr(e string, ds ...time.Duration) {
+	d := utilico.FirstOrDefault(ds, durationError)
+	showText(c, c.status, e, tcell.ColorRed, d)
+}
+
+func (c *TApp) showError(err error, ds ...time.Duration) {
+	errStr := utilico.UnwrapError(err)[0].Error()
+	c.showErrorStr(errStr, utilico.FirstOrDefault(ds, durationError))
+}
+
+func (c *TApp) debugError(err error) {
+	log.Err(err)
+	fmt.Fprintln(c.debugTextView, err)
+}
+
+func (c *TApp) debugErrorFromGoRoutine(err error) {
+	c.app.QueueUpdateDraw(func() {
+		c.debugError(err)
+	})
+}
+
+func (c *TApp) debugInfo(info string) {
+	if c.debug {
+		fmt.Fprintln(c.debugTextView, info)
+	}
+}
+func (c *TApp) debugInfoFromGoRoutine(info string) {
+	if c.debug {
+		c.app.QueueUpdateDraw(func() {
+			c.debugInfo(info)
+		})
+	}
 }

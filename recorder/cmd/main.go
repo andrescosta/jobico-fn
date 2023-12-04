@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	svc, err := service.NewGrpService(context.Background(), "recorder",
+	svc, err := service.NewGrpcService(context.Background(), "recorder",
 		&pb.Recorder_ServiceDesc,
 		func(ctx context.Context) (any, error) {
 			return recorder.NewServer(".\\log.log")

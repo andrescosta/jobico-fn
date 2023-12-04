@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -36,6 +37,10 @@ func trySwitchToPage(name string, pages *tview.Pages, app *TApp, c func() (tview
 			pages.AddAndSwitchToPage(name, p, true)
 		}
 	}
+}
+
+func switchToEmptyPage(app *TApp) {
+	app.mainView.SwitchToPage(emptyPage)
 }
 
 func showText(app *TApp, status *tview.TextView, text string, color tcell.Color, d time.Duration) {
@@ -76,6 +81,17 @@ func getChidren(type1 RootNodeType, tn *tview.TreeNode) (*tview.TreeNode, *node)
 	for _, t := range tn.GetChildren() {
 		n := t.GetReference().(*node)
 		if n.rootNodeType == type1 {
+			return t, n
+		}
+	}
+	return nil, nil
+}
+
+func getTenantNode(tenant string, tn *tview.TreeNode) (*tview.TreeNode, *node) {
+	for _, t := range tn.GetChildren() {
+		n := t.GetReference().(*node)
+		e, ok := n.entity.(*pb.TenantFiles)
+		if ok && e.TenantId == tenant {
 			return t, n
 		}
 	}

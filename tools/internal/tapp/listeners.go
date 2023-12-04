@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/goico/pkg/svcmeta"
+	"github.com/andrescosta/goico/pkg/service/svcmeta"
 	"github.com/andrescosta/goico/pkg/yamlico"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rivo/tview"
@@ -19,10 +18,10 @@ import (
 
 func onFocusFileNode(c *TApp, n *tview.TreeNode) {
 	f := (n.GetReference().(*node)).entity.(*sFile)
-	if strings.HasSuffix(f.file, ".json") {
-		pageName := f.tenant + "/" + f.file
+	if f.file.Type == pb.File_JsonSchema {
+		pageName := f.tenant + "/" + f.file.Name
 		trySwitchToPage(pageName, c.mainView, c, func() (tview.Primitive, error) {
-			f, err := c.repoClient.GetFile(context.Background(), f.tenant, f.file)
+			f, err := c.repoClient.GetFile(context.Background(), f.tenant, f.file.Name)
 			if err != nil {
 				return nil, errors.Join(errors.New(`"Repo" service down`), err)
 			} else {
@@ -30,6 +29,8 @@ func onFocusFileNode(c *TApp, n *tview.TreeNode) {
 				return cv, nil
 			}
 		})
+	} else {
+		switchToEmptyPage(c)
 	}
 }
 
@@ -93,12 +94,12 @@ func onFocusJobPackageNode(c *TApp, n *tview.TreeNode) {
 			return nil, errors.Join(errors.New(`package cannot displayed`), err)
 		}
 
-		textView := buildTextView(decorate(*yaml))
+		textView := buildTextView(syntaxHighlightYaml(*yaml))
 		return textView, nil
 	})
 }
 
-func decorate(yaml string) string {
+func syntaxHighlightYaml(yaml string) string {
 
 	reAttributes := regexp.MustCompile(`(?:^|\n).*:`)
 
@@ -132,11 +133,12 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 		ca.mainView.AddAndSwitchToPage("results", textView, true)
 	}
 	ch := make(chan string)
-	ca.ctxJobResultsGetter, ca.cancelJobResultsGetter = context.WithCancel(context.Background())
+	var ctxJobResultsGetter context.Context
+	ctxJobResultsGetter, ca.cancelJobResultsGetter = context.WithCancel(context.Background())
 	go func(mc <-chan string) {
 		for {
 			select {
-			case <-ca.ctxJobResultsGetter.Done():
+			case <-ctxJobResultsGetter.Done():
 				ca.debugInfoFromGoRoutine("collector context is done. stopping results collector ")
 				return
 			case l, ok := <-mc:
@@ -153,7 +155,7 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 	}(ch)
 	go func() {
 		defer close(ch)
-		err := ca.recorderClient.GetJobExecutions(ca.ctxJobResultsGetter, "", lines, ch)
+		err := ca.recorderClient.GetJobExecutions(ctxJobResultsGetter, "", lines, ch)
 		if err != nil {
 			ca.debugErrorFromGoRoutine(err)
 			ca.showErrorStr("Error getting results", 3*time.Second)

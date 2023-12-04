@@ -1,5 +1,5 @@
-name: mypackage33
-id: mypackage33
+name: mypackage37
+id: mypackage37
 tenantid: m1
 queues:
   - id: queue12

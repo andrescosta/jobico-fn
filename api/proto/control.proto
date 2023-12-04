@@ -154,7 +154,7 @@ message RuntimeDef{
 }
 
 enum RuntimeType {
-  Wasm = 0;
+  Wasm10 = 0;
   Go = 1;
 }
 
