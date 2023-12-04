@@ -5,7 +5,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/andrescosta/workflew/api/pkg/remote"
+	"github.com/andrescosta/jobico/api/pkg/remote"
 )
 
 var cmdRepo = &command{

@@ -5,8 +5,9 @@ import (
 
 	"github.com/andrescosta/goico/pkg/convertico"
 	"github.com/andrescosta/goico/pkg/database"
-	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/ctl/internal/dao"
+	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/ctl/internal/dao"
+	"github.com/andrescosta/jobico/pkg/grpchelper"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -24,22 +25,28 @@ const (
 
 type ControlServer struct {
 	pb.UnimplementedControlServer
-	daos map[string]*dao.DAO[proto.Message]
-	db   *database.Database
+	daos        map[string]*dao.DAO[proto.Message]
+	db          *database.Database
+	bJobPackage *grpchelper.GrpcBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message]
+	bEnviroment *grpchelper.GrpcBroadcaster[*pb.UpdateToEnviromentStrReply, proto.Message]
 }
 
-func NewCotrolServer() (*ControlServer, error) {
+func NewCotrolServer(ctx context.Context) (*ControlServer, error) {
 	db, err := database.Open(DB_PATH)
 	if err != nil {
 		return nil, err
 	}
 	return &ControlServer{
-		daos: make(map[string]*dao.DAO[proto.Message]),
-		db:   db,
+		daos:        make(map[string]*dao.DAO[proto.Message]),
+		db:          db,
+		bJobPackage: grpchelper.StartBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message](ctx),
+		bEnviroment: grpchelper.StartBroadcaster[*pb.UpdateToEnviromentStrReply, proto.Message](ctx),
 	}, nil
 }
 
 func (s *ControlServer) Close() error {
+	s.bJobPackage.Stop()
+	s.bEnviroment.Stop()
 	return s.db.Close()
 }
 func (s *ControlServer) getPackages(ctx context.Context, tenantId string) ([]*pb.JobPackage, error) {
@@ -124,6 +131,9 @@ func (s *ControlServer) AddPackage(ctx context.Context, in *pb.AddJobPackageRequ
 	if err != nil {
 		return nil, err
 	}
+
+	//s.bJobPackage.BroadCastAdd(in.Package)
+	s.broadcastAdd(in.Package)
 	return &pb.AddJobPackageReply{Package: in.Package}, nil
 
 }
@@ -204,6 +214,7 @@ func (s *ControlServer) AddEnviroment(ctx context.Context, in *pb.AddEnviromentR
 	if err != nil {
 		return nil, err
 	}
+	s.broadcastAdd(in.Environment)
 	return &pb.AddEnviromentReply{Environment: in.Environment}, nil
 }
 func (s *ControlServer) UpdateEnviroment(ctx context.Context, in *pb.UpdateEnviromentRequest) (*pb.UpdateEnviromentReply, error) {
@@ -217,6 +228,8 @@ func (s *ControlServer) UpdateEnviroment(ctx context.Context, in *pb.UpdateEnvir
 	if err != nil {
 		return nil, err
 	}
+	s.broadcastUpdate(in.Environment)
+
 	return &pb.UpdateEnviromentReply{}, nil
 }
 
@@ -237,6 +250,52 @@ func (s *ControlServer) GetEnviroment(ctx context.Context, in *pb.GetEnviromentR
 	return &pb.GetEnviromentReply{Environment: environment}, nil
 }
 
+func (s *ControlServer) UpdateToPackagesStr(in *pb.UpdateToPackagesStrRequest, r pb.Control_UpdateToPackagesStrServer) error {
+	return s.bJobPackage.RcvAndDispatchUpdates(r)
+
+	// l := s.bJobPackage.b.Subscribe()
+	// logger := zerolog.Ctx(r.Context())
+	// for {
+	// 	select {
+	// 	case <-r.Context().Done():
+	// 		s.bJobPackage.b.Unsubscribe(l)
+	// 		return nil
+	// 	case d, ok := <-l.C:
+	// 		if !ok {
+	// 			return ErrListeningData
+	// 		}
+	// 		err := r.Send(d)
+	// 		if err != nil {
+	// 			logger.Err(err).Msg("error sending data")
+	// 			return ErrPublishingData
+	// 		}
+	// 	}
+	// }
+}
+
+func (s *ControlServer) UpdateToEnviromentStr(in *pb.UpdateToEnviromentStrRequest, r pb.Control_UpdateToEnviromentStrServer) error {
+	return s.bEnviroment.RcvAndDispatchUpdates(r)
+
+	// l := s.bEnviroment.b.Subscribe()
+	// logger := zerolog.Ctx(r.Context())
+	// for {
+	// 	select {
+	// 	case <-r.Context().Done():
+	// 		s.bEnviroment.b.Unsubscribe(l)
+	// 		return nil
+	// 	case d, ok := <-l.C:
+	// 		if !ok {
+	// 			return ErrListeningData
+	// 		}
+	// 		err := r.Send(d)
+	// 		if err != nil {
+	// 			logger.Err(err).Msg("error sending data")
+	// 			return ErrPublishingData
+	// 		}
+	// 	}
+	// }
+}
+
 func (s *ControlServer) getDaoGen(ctx context.Context, entity string, message proto.Message) (*dao.DAO[proto.Message], error) {
 	return s.getDao(ctx, entity, entity, message)
 }
@@ -247,9 +306,7 @@ func (s *ControlServer) getDao(ctx context.Context, tenant string, entity string
 		var err error
 		mydao, err = dao.NewDAO(ctx, s.db, tenant+"/"+entity,
 			&ProtoMessageMarshaler{
-				newMessage: func() proto.Message {
-					return message
-				},
+				prototype: message,
 			})
 		if err != nil {
 			return nil, err
@@ -259,63 +316,28 @@ func (s *ControlServer) getDao(ctx context.Context, tenant string, entity string
 	return mydao, nil
 }
 
-/*
-	func (s *ControlServer) GetQueueDefs(ctx context.Context, in *pb.GetQueueDefsRequest) (*pb.GetQueueDefsReply, error) {
-		mydao, err := s.getDao(ctx, in.TenantId.Id, TBL_QUEUE, &pb.QueueDef{})
-		if err != nil {
-			return nil, err
-		}
-
-		ms, err := mydao.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		queues := convertico.ConvertSlices[proto.Message, *pb.QueueDef](ms)
-
-		return &pb.GetQueueDefsReply{Queues: queues}, nil
+func (c *ControlServer) broadcastAdd(m proto.Message) {
+	j, ok := m.(*pb.JobPackage)
+	if ok {
+		c.bJobPackage.Broadcast(j, pb.UpdateType_New)
+		return
 	}
-
-	func (s *ControlServer) AddQueueDef(ctx context.Context, in *pb.AddQueueDefRequest) (*pb.AddQueueDefReply, error) {
-		mydao, err := s.getDao(ctx, in.Queue.TenantId.Id, TBL_QUEUE, &pb.QueueDef{})
-		if err != nil {
-			return nil, err
-		}
-		var m proto.Message = in.Queue
-		ms, err := mydao.Add(ctx, m)
-		if err != nil {
-			return nil, err
-		}
-		in.Queue.ID = strconv.FormatUint(ms, 10)
-		return &pb.AddQueueDefReply{Queue: in.Queue}, nil
-
+	e, ok := m.(*pb.Environment)
+	if ok {
+		c.bEnviroment.Broadcast(e, pb.UpdateType_New)
+		return
+	}
 }
 
-	func (s *ControlServer) GetEventDefs(ctx context.Context, in *pb.GetEventDefsRequest) (*pb.GetEventDefsReply, error) {
-		mydao, err := s.getDao(ctx, in.TenantId.Id, TBL_EVENT, &pb.EventDef{})
-		if err != nil {
-			return nil, err
-		}
-
-		ms, err := mydao.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		events := convertico.ConvertSlices[proto.Message, *pb.EventDef](ms)
-
-		return &pb.GetEventDefsReply{Events: events}, nil
+func (c *ControlServer) broadcastUpdate(m proto.Message) {
+	j, ok := m.(*pb.JobPackage)
+	if ok {
+		c.bJobPackage.Broadcast(j, pb.UpdateType_Update)
+		return
 	}
-
-	func (s *ControlServer) AddEventDef(ctx context.Context, in *pb.AddEventDefRequest) (*pb.AddEventDefReply, error) {
-		mydao, err := s.getDao(ctx, in.Event.TenantId.Id, TBL_EVENT, &pb.EventDef{})
-		if err != nil {
-			return nil, err
-		}
-		var m proto.Message = in.Event
-		ms, err := mydao.Add(ctx, m)
-		if err != nil {
-			return nil, err
-		}
-		in.Event.ID = strconv.FormatUint(ms, 10)
-		return &pb.AddEventDefReply{Event: in.Event}, nil
+	e, ok := m.(*pb.Environment)
+	if ok {
+		c.bEnviroment.Broadcast(e, pb.UpdateType_Update)
+		return
 	}
-*/
+}

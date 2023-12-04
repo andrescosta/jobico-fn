@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/andrescosta/goico/pkg/service"
-	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/srv/internal/queue"
+	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/srv/internal/queue"
 )
 
 const Name = "Queue"

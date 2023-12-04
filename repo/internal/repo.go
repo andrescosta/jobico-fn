@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/andrescosta/goico/pkg/iohelper"
-	pb "github.com/andrescosta/workflew/api/types"
+	pb "github.com/andrescosta/jobico/api/types"
 )
 
 type FileRepo struct {

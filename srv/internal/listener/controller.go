@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/andrescosta/workflew/api/pkg/remote"
-	pb "github.com/andrescosta/workflew/api/types"
+	"github.com/andrescosta/jobico/api/pkg/remote"
+	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog"
 	"github.com/rs/zerolog"

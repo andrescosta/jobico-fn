@@ -8,8 +8,8 @@ import (
 
 	"github.com/andrescosta/goico/pkg/iohelper"
 	"github.com/andrescosta/goico/pkg/yamlico"
-	"github.com/andrescosta/workflew/api/pkg/remote"
-	pb "github.com/andrescosta/workflew/api/types"
+	"github.com/andrescosta/jobico/api/pkg/remote"
+	pb "github.com/andrescosta/jobico/api/types"
 )
 
 var cmdEnv = &command{

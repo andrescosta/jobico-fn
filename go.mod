@@ -1,4 +1,4 @@
-module github.com/andrescosta/workflew
+module github.com/andrescosta/jobico
 
 go 1.21.4
 

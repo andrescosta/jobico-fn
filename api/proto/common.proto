@@ -7,3 +7,8 @@ message Host {
     uint32 port=2; 
   }
   
+enum UpdateType {
+  New = 0;
+  Update = 1;
+  Delete =2;
+}

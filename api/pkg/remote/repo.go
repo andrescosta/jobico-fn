@@ -6,7 +6,8 @@ import (
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
-	pb "github.com/andrescosta/workflew/api/types"
+	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/pkg/grpchelper"
 	"google.golang.org/grpc"
 )
 
@@ -71,4 +72,12 @@ func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, er
 	}
 
 	return reply.Files, nil
+}
+
+func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.UpdateToFileStrReply) error {
+	s, err := c.client.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
+	if err != nil {
+		return err
+	}
+	return grpchelper.Recv(ctx, s, resChan)
 }

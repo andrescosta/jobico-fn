@@ -2,10 +2,28 @@ syntax = "proto3";
 
 option go_package = "/types";
 
+import "common.proto";
+
 service Repo {
   rpc GetFile (GetFileRequest) returns (GetFileReply);
   rpc AddFile (AddFileRequest) returns (AddFileReply);
+  rpc UpdateToFileStr (UpdateToFileStrRequest) returns (stream UpdateToFileStrReply) {}
   rpc GetAllFileNames (GetAllFileNamesRequest) returns (GetAllFileNamesReply);
+}
+
+message UpdateToFileStrRequest{
+    string tenantId = 1; //not used
+}
+
+message UpdatedFile{
+    string tenantId = 2;
+    string name = 3;
+    bytes file = 4;
+}
+
+message UpdateToFileStrReply{
+    UpdateType type = 1;
+    UpdatedFile object = 2;
 }
 
 message GetAllFileNamesRequest{

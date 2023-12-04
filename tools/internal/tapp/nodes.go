@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/andrescosta/goico/pkg/convertico"
-	pb "github.com/andrescosta/workflew/api/types"
+	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -18,10 +18,20 @@ type node struct {
 	// the handler recv the node getting the focus
 	focus func(*TApp, *tview.TreeNode)
 	// the handler recv the node loosing the focus and the one getting it
-	blur     func(*TApp, *tview.TreeNode, *tview.TreeNode)
-	children []*node
-	color    tcell.Color
+	blur         func(*TApp, *tview.TreeNode, *tview.TreeNode)
+	children     []*node
+	rootNodeType RootNodeType
+	color        tcell.Color
 }
+
+type RootNodeType int
+
+const (
+	NoRootNode RootNodeType = iota
+	RootNodeEnv
+	RootNodePackage
+	RootNodeFile
+)
 
 type sFile struct {
 	tenant string
@@ -33,17 +43,13 @@ type sServerNode struct {
 	host *pb.Host
 }
 
-var rootNode = func(e *pb.Environment, j []*pb.JobPackage, r []*pb.TenantFiles) *node {
+var rootNode = func(e *pb.Environment, j []*pb.JobPackage, f []*pb.TenantFiles) *node {
 	return &node{
 		text: "Jobico",
 		children: []*node{
-			{text: "Packages", entity: e, children: convertico.SliceWithFunc(j, jobPackageNode)},
-			{text: "Enviroment", entity: e, children: []*node{
-				{text: e.ID, entity: e, children: []*node{
-					{text: "Services", children: convertico.SliceWithFunc(e.Services, serviceNode)},
-				}},
-			}},
-			{text: "Files", entity: e, children: convertico.SliceWithFunc(r, tenantFileNode)},
+			{text: "Packages", entity: e, children: packageChildrenNodes(j), rootNodeType: RootNodePackage},
+			{text: "Enviroment", entity: e, children: environmentChildrenNodes(e), rootNodeType: RootNodeEnv},
+			{text: "Files", entity: e, children: fileChildrenNodes(f), rootNodeType: RootNodeFile},
 			{text: "(*) Job Results", color: tcell.ColorGreen, expanded: true,
 				children: []*node{
 					{text: "<< start >>", entity: e,
@@ -53,6 +59,22 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, r []*pb.TenantFiles) 
 				}},
 		},
 	}
+}
+
+var packageChildrenNodes = func(j []*pb.JobPackage) []*node {
+	return convertico.SliceWithFunc(j, jobPackageNode)
+}
+
+var environmentChildrenNodes = func(e *pb.Environment) []*node {
+	return []*node{
+		{text: e.ID, entity: e, children: []*node{
+			{text: "Services", children: convertico.SliceWithFunc(e.Services, serviceNode)},
+		}},
+	}
+}
+
+var fileChildrenNodes = func(r []*pb.TenantFiles) []*node {
+	return convertico.SliceWithFunc(r, tenantFileNode)
 }
 
 var serviceNode = func(e *pb.Service) *node {

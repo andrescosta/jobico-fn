@@ -6,15 +6,14 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rs/zerolog/log"
 )
 
-func createContentView(content string) *tview.TextView {
+func buildTextView(text string) *tview.TextView {
 	textView := tview.NewTextView()
 	textView.SetDynamicColors(true).
 		SetWrap(false).
 		SetRegions(true)
-	fmt.Fprint(textView, content)
+	fmt.Fprint(textView, text)
 	textView.SetBorder(false)
 	return textView
 }
@@ -31,23 +30,15 @@ func trySwitchToPage(name string, pages *tview.Pages, app *TApp, c func() (tview
 	if !switchToPageIfExists(pages, name) {
 		p, err := c()
 		if err != nil {
-			log.Err(err)
-			errtxt := err.Error()
-			e, ok := err.(interface {
-				Unwrap() []error
-			})
-			if ok {
-				errtxt = e.Unwrap()[0].Error()
-			}
-			showText(app.status, errtxt, tcell.ColorRed, 6*time.Second, app)
-		}
-		if err == nil {
+			app.debugError(err)
+			app.showError(err)
+		} else {
 			pages.AddAndSwitchToPage(name, p, true)
 		}
 	}
 }
 
-func showText(status *tview.TextView, text string, color tcell.Color, d time.Duration, app *TApp) {
+func showText(app *TApp, status *tview.TextView, text string, color tcell.Color, d time.Duration) {
 	status.SetTextColor(color)
 	status.SetText(text)
 	c := time.NewTimer(d)
@@ -79,4 +70,14 @@ func newModal(p tview.Primitive, width, height int) tview.Primitive {
 func newTextView(text string) *tview.TextView {
 	return tview.NewTextView().
 		SetText(text)
+}
+
+func getChidren(type1 RootNodeType, tn *tview.TreeNode) (*tview.TreeNode, *node) {
+	for _, t := range tn.GetChildren() {
+		n := t.GetReference().(*node)
+		if n.rootNodeType == type1 {
+			return t, n
+		}
+	}
+	return nil, nil
 }

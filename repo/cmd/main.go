@@ -6,8 +6,8 @@ import (
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
-	pb "github.com/andrescosta/workflew/api/types"
-	repo "github.com/andrescosta/workflew/repo/internal"
+	pb "github.com/andrescosta/jobico/api/types"
+	repo "github.com/andrescosta/jobico/repo/internal"
 )
 
 func main() {

@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/andrescosta/goico/pkg/config"
-	"github.com/andrescosta/workflew/tools/internal/cmd"
+	"github.com/andrescosta/jobico/tools/internal/cmd"
 )
 
 func main() {

@@ -84,7 +84,11 @@
         "request": "launch",
         "mode": "debug",
         "program": "${workspaceFolder}/tools/cmd/dashboard/main.go",
-        "console": "integratedTerminal"
+        "console": "integratedTerminal",
+        "args": [
+            "-sync",
+            "-debug",
+        ]
     },
 ]
 }

@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/andrescosta/goico/pkg/yamlico"
-	"github.com/andrescosta/workflew/api/pkg/remote"
+	"github.com/andrescosta/jobico/api/pkg/remote"
 )
 
 var cmdShow = &command{

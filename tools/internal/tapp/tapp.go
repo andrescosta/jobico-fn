@@ -2,14 +2,29 @@ package tapp
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/andrescosta/goico/pkg/config"
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/workflew/api/pkg/remote"
-	pb "github.com/andrescosta/workflew/api/types"
+	"github.com/andrescosta/goico/pkg/utilico"
+	"github.com/andrescosta/jobico/api/pkg/remote"
+	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/rs/zerolog/log"
+)
+
+const (
+	durationError  = 6 * time.Second
+	emptyPage      = "emptyPage"
+	quitPageModal  = "quit"
+	mainPage       = "main"
+	debugPage      = "debug"
+	iconContracted = "+"
+	iconExpanded   = "-"
 )
 
 type TApp struct {
@@ -18,16 +33,20 @@ type TApp struct {
 	repoClient             *remote.RepoClient
 	recorderClient         *remote.RecorderClient
 	infoClients            map[string]*service.GrpcServerInfoClient
-	helthCheckClients      map[string]*service.GrpcServerHelthCheckClient
+	helthCheckClients      map[string]*service.GrpcHelthCheckClient
 	app                    *tview.Application
 	mainView               *tview.Pages
 	lastNode               *tview.TreeNode
+	root                   *tview.TreeNode
 	status                 *tview.TextView
+	debugTextView          *tview.TextView
+	collectDebug           bool
 	ctxJobResultsGetter    context.Context
 	cancelJobResultsGetter context.CancelFunc
+	sync                   bool
 }
 
-func New() (*TApp, error) {
+func New(sync bool) (*TApp, error) {
 	err := config.LoadEnvVariables()
 	if err != nil {
 		return nil, err
@@ -51,19 +70,49 @@ func New() (*TApp, error) {
 		repoClient:        repoClient,
 		recorderClient:    recorderClient,
 		infoClients:       make(map[string]*service.GrpcServerInfoClient),
-		helthCheckClients: make(map[string]*service.GrpcServerHelthCheckClient),
+		helthCheckClients: make(map[string]*service.GrpcHelthCheckClient),
 		app:               app,
+		sync:              sync,
 	}, nil
+}
+func (c *TApp) CollectDebugInfo() {
+	c.collectDebug = true
+}
+
+func (c *TApp) debugError(err error) {
+	log.Err(err)
+	fmt.Fprintln(c.debugTextView, err)
+}
+
+func (c *TApp) debugErrorFromGoRoutine(err error) {
+	c.app.QueueUpdateDraw(func() {
+		c.debugError(err)
+	})
+}
+
+func (c *TApp) debugInfo(info string) {
+	if c.collectDebug {
+		fmt.Fprintln(c.debugTextView, info)
+	}
+}
+func (c *TApp) debugInfoFromGoRoutine(info string) {
+	if c.collectDebug {
+		c.app.QueueUpdateDraw(func() {
+			c.debugInfo(info)
+		})
+	}
 }
 
 func (c *TApp) Run() error {
 	c.app.SetRoot(c.render(), true)
+	if c.sync {
+		c.startSyncWithServices()
+	}
 	if err := c.app.Run(); err != nil {
 		return err
 	}
 	return nil
 }
-
 func (c *TApp) Dispose() {
 	c.controlClient.Close()
 	c.repoClient.Close()
@@ -76,10 +125,14 @@ func (c *TApp) Dispose() {
 }
 
 func (c *TApp) render() *tview.Pages {
+	// sets the main pages
 	pages := tview.NewPages()
+
 	c.mainView = tview.NewPages()
 	c.mainView.SetBorderPadding(0, 0, 0, 0)
 	c.mainView.SetBorder(true)
+	c.mainView.AddPage(emptyPage, buildTextView(""), true, true)
+
 	menu := c.renderSideMenu(context.Background())
 	c.status = newTextView("")
 	c.status.SetTextAlign(tview.AlignCenter)
@@ -106,33 +159,54 @@ func (c *TApp) render() *tview.Pages {
 	grid.AddItem(menu, 1, 0, 1, 0, 0, 40, true).
 		AddItem(c.mainView, 1, 1, 0, 0, 0, 160, false)
 
-	const quitPageModal = "quit"
-	const mainPage = "main"
-	pages.AddPage(mainPage, grid, true, true)
-	pages.AddPage(quitPageModal, newModal(
-		tview.NewModal().SetText("Do you want to quit the application?").
-			AddButtons([]string{"Quit", "Cancel"}).
-			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				if buttonLabel == "Quit" {
-					c.app.Stop()
-				} else {
-					pages.HidePage(quitPageModal)
-					c.app.SetFocus(menu)
-				}
-			}), 40, 10), true, false)
-
-	c.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyTAB {
-			if menu.HasFocus() {
-				c.app.SetFocus(c.mainView)
+	quitModal := tview.NewModal().SetText("Do you want to quit the application?").
+		AddButtons([]string{"Quit", "Cancel"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			if buttonLabel == "Quit" {
+				c.app.Stop()
 			} else {
+				pages.HidePage(quitPageModal)
 				c.app.SetFocus(menu)
 			}
+		})
+
+	c.debugTextView = buildTextView("")
+	c.debugTextView.SetWordWrap(true)
+	c.debugTextView.SetWrap(true)
+	fmt.Fprintf(c.debugTextView, "Debug information for process: %d\n", os.Getppid())
+
+	c.debugTextView.SetBorder(true)
+
+	pages.AddPage(mainPage, grid, true, true)
+	pages.AddPage(debugPage, c.debugTextView, true, false)
+
+	// It is important that the last page is always the quit page, so
+	// it can appears on top of the others without the need to hide them
+	pages.AddPage(quitPageModal, newModal(
+		quitModal, 40, 10), true, false)
+
+	c.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		fp, _ := pages.GetFrontPage()
+		switch event.Key() {
+		case tcell.KeyTAB:
+			if fp == mainPage && !quitModal.HasFocus() {
+				if menu.HasFocus() {
+					c.app.SetFocus(c.mainView)
+				} else {
+					c.app.SetFocus(menu)
+				}
+			}
 			return nil
-		}
-		if event.Key() == tcell.KeyCtrlC ||
-			event.Key() == tcell.KeyEscape {
+		case tcell.KeyEscape, tcell.KeyCtrlC:
 			pages.ShowPage(quitPageModal)
+			return nil
+		case tcell.KeyCtrlD:
+			if fp == debugPage {
+				pages.SwitchToPage(mainPage)
+				c.app.SetFocus(menu)
+			} else {
+				pages.SwitchToPage(debugPage)
+			}
 			return nil
 		}
 		return event
@@ -141,28 +215,29 @@ func (c *TApp) render() *tview.Pages {
 	return pages
 }
 
-func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
-	var add func(target *node) *tview.TreeNode
-	add = func(target *node) *tview.TreeNode {
-		if target.color == tcell.ColorDefault {
-			if len(target.children) > 0 {
-				if !target.expanded {
-					target.text = "+ " + target.text
-				}
-				target.color = tcell.ColorGreen
-			} else {
-				target.color = tcell.ColorWhite
+func add(target *node) *tview.TreeNode {
+	if target.color == tcell.ColorDefault {
+		if len(target.children) > 0 {
+			if !target.expanded {
+				target.text = fmt.Sprintf("%s %s", iconContracted, target.text)
 			}
+			target.color = tcell.ColorGreen
+		} else {
+			target.color = tcell.ColorWhite
 		}
-		node := tview.NewTreeNode(target.text).
-			SetExpanded(target.expanded).
-			SetReference(target).
-			SetColor(target.color)
-		for _, child := range target.children {
-			node.AddChild(add(child))
-		}
-		return node
 	}
+	node := tview.NewTreeNode(target.text).
+		SetExpanded(target.expanded).
+		SetReference(target).
+		SetColor(target.color)
+	for _, child := range target.children {
+		node.AddChild(add(child))
+	}
+	return node
+}
+
+func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
+
 	e, err := c.controlClient.GetEnviroment(ctx)
 	if err != nil {
 		panic(err)
@@ -176,18 +251,23 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 		panic(err)
 	}
 	r := add(rootNode(e, ep, fs))
+	c.root = r
 	menu := tview.NewTreeView()
 	menu.SetRoot(r)
 	menu.SetCurrentNode(r)
+	menu.SetBorder(true)
 	var m = map[bool]string{
-		true:  "-",
-		false: "+",
+		true:  iconExpanded,
+		false: iconContracted,
 	}
 
 	menu.SetSelectedFunc(func(n *tview.TreeNode) {
 		original := n.GetReference().(*node)
 		if len(original.children) > 0 {
 			if !original.expanded {
+				if n.IsExpanded() {
+					c.refreshRootNode(ctx, n)
+				}
 				pref := m[n.IsExpanded()]
 				npref := m[!n.IsExpanded()]
 				ns, e := strings.CutPrefix(n.GetText(), pref)
@@ -216,4 +296,104 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 	})
 
 	return menu
+}
+
+func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
+	original := n.GetReference().(*node)
+	c.mainView.SwitchToPage(emptyPage)
+	switch original.rootNodeType {
+	case RootNodePackage:
+		ep, err := c.controlClient.GetAllPackages(ctx)
+		if err == nil {
+			g := packageChildrenNodes(ep)
+			original.children = g
+			refreshTreeNode(n)
+		} else {
+			c.showErrorStr("error refreshing packages data")
+		}
+	case RootNodeEnv:
+		ep, err := c.controlClient.GetEnviroment(ctx)
+		if err == nil {
+			g := environmentChildrenNodes(ep)
+			original.children = g
+			refreshTreeNode(n)
+		} else {
+			c.showErrorStr("error refreshing enviroment data")
+		}
+	case RootNodeFile:
+		fs, err := c.repoClient.GetAllFileNames(ctx)
+		if err == nil {
+			g := fileChildrenNodes(fs)
+			original.children = g
+			refreshTreeNode(n)
+		} else {
+			c.showErrorStr("error refreshing files data")
+		}
+	}
+}
+
+func refreshTreeNode(n *tview.TreeNode) {
+	n.ClearChildren()
+	for _, child := range n.GetReference().(*node).children {
+		n.AddChild(add(child))
+	}
+}
+
+func (c *TApp) showErrorStr(e string, ds ...time.Duration) {
+	d := utilico.ValueOrDefault(ds, durationError)
+	showText(c, c.status, e, tcell.ColorRed, d)
+}
+
+func (c *TApp) showError(err error, ds ...time.Duration) {
+	errStr := utilico.UnwrapError(err)[0].Error()
+	c.showErrorStr(errStr, utilico.ValueOrDefault(ds, durationError))
+}
+
+func (c *TApp) startSyncWithServices() {
+
+	jpc := make(chan *pb.UpdateToPackagesStrReply)
+	ec := make(chan *pb.UpdateToEnviromentStrReply)
+	//file := make(chan *pb.UpdatedFile)
+	ctx, done := context.WithCancel(context.Background())
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case j := <-jpc:
+				c.app.QueueUpdateDraw(func() {
+					r, n := getChidren(RootNodePackage, c.root)
+					nn := jobPackageNode(j.Object)
+					n.children = append(n.children, nn)
+					r.AddChild(add(nn))
+				})
+			}
+		}
+	}()
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case e := <-ec:
+				c.app.QueueUpdateDraw(func() {
+					p, n := getChidren(RootNodeEnv, c.root)
+					ns := environmentChildrenNodes(e.Object)
+					n.children = ns
+					refreshTreeNode(p)
+				})
+
+			}
+		}
+	}()
+	//job
+	go func() {
+		c.controlClient.UpdateToPackagesStr(ctx, jpc)
+		done()
+	}()
+	//env
+	go func() {
+		c.controlClient.UpdateToEnviromentStr(ctx, ec)
+		done()
+	}()
 }

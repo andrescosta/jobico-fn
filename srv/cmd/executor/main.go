@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/workflew/srv/internal/executor"
+	"github.com/andrescosta/jobico/srv/internal/executor"
 )
 
 func main() {

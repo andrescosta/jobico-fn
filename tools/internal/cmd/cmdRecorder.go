@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/andrescosta/workflew/api/pkg/remote"
+	"github.com/andrescosta/jobico/api/pkg/remote"
 )
 
 var cmdRecorder = &command{

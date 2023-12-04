@@ -10,12 +10,10 @@ import (
 	"time"
 
 	"github.com/andrescosta/goico/pkg/service"
-	info "github.com/andrescosta/goico/pkg/service/info/grpc"
+	"github.com/andrescosta/goico/pkg/svcmeta"
 	"github.com/andrescosta/goico/pkg/yamlico"
-	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/gdamore/tcell/v2"
+	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rivo/tview"
-	"github.com/rs/zerolog/log"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -28,7 +26,7 @@ func onFocusFileNode(c *TApp, n *tview.TreeNode) {
 			if err != nil {
 				return nil, errors.Join(errors.New(`"Repo" service down`), err)
 			} else {
-				cv := createContentView(string(f))
+				cv := buildTextView(string(f))
 				return cv, nil
 			}
 		})
@@ -54,12 +52,13 @@ func onFocusServerNode(c *TApp, n *tview.TreeNode) {
 			}
 			c.helthCheckClients[addr] = helthCheckClient
 		}
-		infos, err := infoClient.Info(context.Background(), &info.InfoRequest{})
+		infos, err := infoClient.Info(context.Background(), &svcmeta.GrpcMetadataRequest{})
 		if err != nil {
 			return nil, err
 		}
 		s, err := helthCheckClient.Check(context.Background(), h.name)
 		if err != nil {
+			c.debugError(err)
 			s = healthpb.HealthCheckResponse_NOT_SERVING
 		}
 		view := renderTableServers(infos, s)
@@ -94,7 +93,7 @@ func onFocusJobPackageNode(c *TApp, n *tview.TreeNode) {
 			return nil, errors.Join(errors.New(`package cannot displayed`), err)
 		}
 
-		textView := createContentView(decorate(*yaml))
+		textView := buildTextView(decorate(*yaml))
 		return textView, nil
 	})
 }
@@ -138,6 +137,7 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 		for {
 			select {
 			case <-ca.ctxJobResultsGetter.Done():
+				ca.debugInfoFromGoRoutine("collector context is done. stopping results collector ")
 				return
 			case l, ok := <-mc:
 				if ok {
@@ -145,6 +145,7 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 						fmt.Fprintln(textView, l)
 					})
 				} else {
+					ca.debugInfoFromGoRoutine("collector channel is closed. stopping results collector")
 					return
 				}
 			}
@@ -154,17 +155,18 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 		defer close(ch)
 		err := ca.recorderClient.GetJobExecutions(ca.ctxJobResultsGetter, "", lines, ch)
 		if err != nil {
-			log.Err(err)
-			showText(ca.status, "Error getting results", tcell.ColorRed, 3*time.Second, ca)
+			ca.debugErrorFromGoRoutine(err)
+			ca.showErrorStr("Error getting results", 3*time.Second)
 			ca.app.QueueUpdateDraw(func() {
 				onSelectedStopGettingJobResults(ca, n)
 				disableTreeNode(n)
 			})
 		}
+		ca.debugInfoFromGoRoutine("job execution call returned. stopping results collector")
 	}()
 }
 
-func renderTableServers(infos []*info.Info, s healthpb.HealthCheckResponse_ServingStatus) *tview.Table {
+func renderTableServers(infos []*svcmeta.GrpcServerMetadata, s healthpb.HealthCheckResponse_ServingStatus) *tview.Table {
 	table := tview.NewTable().
 		SetBorders(true)
 	table.SetCell(0, 0,
