@@ -119,6 +119,9 @@ func (c *TApp) render(ctx context.Context) *tview.Pages {
 	c.status.SetTextAlign(tview.AlignCenter)
 
 	helpTxt := "<Esc> - To Exit | <Tab> to switch views | <Arrows> to navigate"
+	if c.debug {
+		helpTxt = fmt.Sprintf("%s %s", helpTxt, "| <Ctrl-D> for debug info | <Ctrl-P> To stop streaming")
+	}
 	f := tview.NewFlex().
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(c.status, 0, 1, false).
