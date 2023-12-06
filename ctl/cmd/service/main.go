@@ -13,7 +13,7 @@ func main() {
 	svc, err := service.NewGrpcService(context.Background(), "ctl", &pb.Control_ServiceDesc,
 		func(ctx context.Context) (any, error) {
 			return server1.NewCotrolServer(ctx)
-		}, nil)
+		})
 	defer svc.Dispose()
 	if err != nil {
 		log.Panicf("error starting ctl service: %s", err)

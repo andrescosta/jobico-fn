@@ -29,13 +29,17 @@ func switchToPageIfExists(t *tview.Pages, page string) bool {
 
 func trySwitchToPage(name string, pages *tview.Pages, app *TApp, c func() (tview.Primitive, error)) {
 	if !switchToPageIfExists(pages, name) {
-		p, err := c()
+		page, err := c()
 		if err != nil {
 			app.debugError(err)
 			app.showError(err)
-		} else {
-			pages.AddAndSwitchToPage(name, p, true)
+			return
 		}
+		if page == nil {
+			switchToEmptyPage(app)
+			return
+		}
+		pages.AddAndSwitchToPage(name, page, true)
 	}
 }
 

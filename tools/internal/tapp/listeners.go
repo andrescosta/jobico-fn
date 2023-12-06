@@ -38,35 +38,69 @@ func onFocusServerNode(c *TApp, n *tview.TreeNode) {
 	h := (n.GetReference().(*node)).entity.(*sServerNode)
 	addr := h.host.Ip + ":" + strconv.Itoa(int(h.host.Port))
 	trySwitchToPage(addr, c.mainView, c, func() (tview.Primitive, error) {
-		helthCheckClient := c.helthCheckClients[addr]
-		infoClient, ok := c.infoClients[addr]
-		if !ok {
-			var err error
-			infoClient, err = service.NewGrpcServerInfoClient(addr)
-			if err != nil {
-				return nil, errors.Join(errors.New(`"Server Info" service down`), err)
+		switch h.host.Type {
+		case pb.Host_Grpc:
+			helthCheckClient := c.helthCheckClients[addr]
+			infoClient, ok := c.infoClients[addr]
+			if !ok {
+				var err error
+				infoClient, err = service.NewGrpcServerInfoClient(addr)
+				if err != nil {
+					return nil, errors.Join(errors.New(`"Server Info" service down`), err)
+				}
+				c.infoClients[addr] = infoClient
+				helthCheckClient, err = service.NewGrpcServerHelthCheckClient(addr)
+				if err != nil {
+					return nil, errors.Join(errors.New(`"Healcheck" service down`), err)
+				}
+				c.helthCheckClients[addr] = helthCheckClient
 			}
-			c.infoClients[addr] = infoClient
-			helthCheckClient, err = service.NewGrpcServerHelthCheckClient(addr)
+			info, err := infoClient.Info(context.Background(), &svcmeta.GrpcMetadataRequest{})
 			if err != nil {
-				return nil, errors.Join(errors.New(`"Healcheck" service down`), err)
+				return nil, err
 			}
-			c.helthCheckClients[addr] = helthCheckClient
+			s, err := helthCheckClient.Check(context.Background(), h.name)
+			if err != nil {
+				s = healthpb.HealthCheckResponse_NOT_SERVING
+			}
+			view := renderGrpcTableServer(info, s)
+			return view, nil
+		case pb.Host_Http, pb.Host_Headless:
+			metadata, err := c.metadataClient.GetMetadata(h.name)
+			if err != nil {
+				return nil, err
+			}
+			view := renderHttpTableServer(metadata)
+			return view, nil
+		default:
+			return nil, nil
 		}
-		infos, err := infoClient.Info(context.Background(), &svcmeta.GrpcMetadataRequest{})
-		if err != nil {
-			return nil, err
-		}
-		s, err := helthCheckClient.Check(context.Background(), h.name)
-		if err != nil {
-			c.debugError(err)
-			s = healthpb.HealthCheckResponse_NOT_SERVING
-		}
-		view := renderTableServers(infos, s)
-		return view, nil
 	})
 }
 
+func renderHttpTableServer(info *map[string]string) *tview.Table {
+	table := tview.NewTable().
+		SetBorders(true)
+	table.SetCell(0, 0,
+		tview.NewTableCell("Status").
+			SetAlign(tview.AlignCenter))
+	status := "Unknown"
+	table.SetCell(0, 1,
+		tview.NewTableCell(status).
+			SetAlign(tview.AlignCenter))
+	ix := 0
+	for k, v := range *info {
+		table.SetCell(ix+1, 0,
+			tview.NewTableCell(k).
+				SetAlign(tview.AlignCenter))
+		table.SetCell(ix+1, 1,
+			tview.NewTableCell(v).
+				SetAlign(tview.AlignCenter))
+		ix++
+	}
+	return table
+
+}
 func onSelectedGettingJobResults(ca *TApp, n *tview.TreeNode) {
 	n.SetText("<< stop >>")
 	nl := n.GetReference().(*node)
@@ -168,7 +202,7 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 	}()
 }
 
-func renderTableServers(infos []*svcmeta.GrpcServerMetadata, s healthpb.HealthCheckResponse_ServingStatus) *tview.Table {
+func renderGrpcTableServer(infos []*svcmeta.GrpcServerMetadata, s healthpb.HealthCheckResponse_ServingStatus) *tview.Table {
 	table := tview.NewTable().
 		SetBorders(true)
 	table.SetCell(0, 0,

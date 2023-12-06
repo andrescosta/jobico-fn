@@ -32,6 +32,7 @@ type TApp struct {
 	controlClient           *remote.ControlClient
 	repoClient              *remote.RepoClient
 	recorderClient          *remote.RecorderClient
+	metadataClient          *remote.MetadataClient
 	infoClients             map[string]*service.GrpcServerInfoClient
 	helthCheckClients       map[string]*service.GrpcHelthCheckClient
 	app                     *tview.Application
@@ -63,12 +64,17 @@ func New(sync bool) (*TApp, error) {
 	if err != nil {
 		return nil, err
 	}
+	metadataClient := remote.NewMetadataClient()
+	if err != nil {
+		return nil, err
+	}
 	app := tview.NewApplication().EnableMouse(true)
 
 	return &TApp{
 		controlClient:     controlClient,
 		repoClient:        repoClient,
 		recorderClient:    recorderClient,
+		metadataClient:    metadataClient,
 		infoClients:       make(map[string]*service.GrpcServerInfoClient),
 		helthCheckClients: make(map[string]*service.GrpcHelthCheckClient),
 		app:               app,
@@ -196,6 +202,11 @@ func (c *TApp) render(ctx context.Context) *tview.Pages {
 			if c.debug {
 				c.stopStreamingUpdates()
 			}
+		case tcell.KeyCtrlU:
+			if c.debug {
+				c.execProtected(func() { panic("testing panic") })
+			}
+
 		}
 		return event
 	})
@@ -265,7 +276,7 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 				}
 			}
 		} else if original.selected != nil {
-			original.selected(c, n)
+			c.execProtected(func() { original.selected(c, n) })
 		}
 	})
 	// This function simulates the focus and blur event handlers for the tree's nodes
@@ -273,12 +284,12 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 		if c.lastNode != nil {
 			nl := c.lastNode.GetReference().(*node)
 			if nl.blur != nil {
-				nl.blur(c, c.lastNode, n)
+				c.execProtected(func() { nl.blur(c, c.lastNode, n) })
 			}
 		}
 		ref := n.GetReference().(*node)
 		if ref.focus != nil {
-			ref.focus(c, n)
+			c.execProtected(func() { ref.focus(c, n) })
 		}
 		c.lastNode = n
 	})
@@ -410,6 +421,11 @@ func (c *TApp) stopStreamingUpdates() {
 	c.cancelStreamUpdatesFunc()
 	c.debugInfo("Sync services stopped")
 }
+func (c *TApp) onPanic(e any) {
+	txt := fmt.Sprintf("%v", e)
+	fmt.Fprintln(c.debugTextView, txt)
+	c.showErrorStr("Warning error executing event. Check the debug window.")
+}
 
 func refreshTreeNode(n *tview.TreeNode) {
 	n.ClearChildren()
@@ -450,4 +466,15 @@ func (c *TApp) debugInfoFromGoRoutine(info string) {
 			c.debugInfo(info)
 		})
 	}
+}
+
+func (c *TApp) execProtected(handler func()) {
+	defer func() {
+		if p := recover(); p != nil {
+			if c.debug {
+				c.onPanic(p)
+			}
+		}
+	}()
+	handler()
 }

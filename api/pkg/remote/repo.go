@@ -80,9 +80,7 @@ func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, er
 		return nil, err
 	}
 	ret := make([]*pb.TenantFiles, 0)
-	for _, tf := range reply.TenantFiles {
-		ret = append(ret, tf)
-	}
+	ret = append(ret, reply.TenantFiles...)
 	return ret, nil
 }
 

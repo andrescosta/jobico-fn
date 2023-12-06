@@ -3,9 +3,17 @@ syntax = "proto3";
 option go_package = "/types";
 
 message Host {
-    string Ip =1;
-    uint32 port=2; 
+
+  enum ServerType{
+    Undefined =0;
+    Grpc = 1;
+    Http = 2;
+    Headless = 3;
   }
+    string Ip =1;
+    uint32 port=2;
+    ServerType type=3; 
+}
   
 enum UpdateType {
   New = 0;

@@ -16,8 +16,7 @@ func main() {
 		&pb.Queue_ServiceDesc,
 		func(ctx context.Context) (any, error) {
 			return &queue.Server{}, nil
-		},
-		service.EmptyhealthCheckHandler)
+		})
 
 	if err != nil {
 		log.Panicf("error starting queue service %s", err)

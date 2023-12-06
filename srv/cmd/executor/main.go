@@ -9,13 +9,17 @@ import (
 )
 
 func main() {
-	if err := service.NewHeadlessService(context.Background(), "executor",
+	e, err := service.NewHeadlessService(context.Background(), "executor",
 		func(ctx context.Context) error {
 			if err := executor.StartExecutors(ctx); err != nil {
 				return err
 			}
 			return nil
-		}).Serve(); err != nil {
+		})
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := e.Start(); err != nil {
 		log.Fatalf("error running the executor service %s", err)
 	}
 }

@@ -14,7 +14,7 @@ func main() {
 	svc, err := service.NewGrpcService(context.Background(), "repo",
 		&pb.Repo_ServiceDesc, func(ctx context.Context) (any, error) {
 			return repo.NewServer(ctx, env.GetAsString("repo.dir", "./")), nil
-		}, nil)
+		})
 
 	if err != nil {
 		log.Panicf("error starting repo service: %s", err)

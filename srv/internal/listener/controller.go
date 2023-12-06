@@ -10,7 +10,7 @@ import (
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/httplog"
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
@@ -25,53 +25,26 @@ type Event struct {
 	schema *jsonschema.Schema
 }
 
-func New(ctx context.Context) (*Controller, error) {
-	controlClient, err := remote.NewControlClient()
+func ConfigureRoutes(ctx context.Context, r *mux.Router) error {
+	events, err := buildEventsMap(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	repoClient, err := remote.NewRepoClient()
-	if err != nil {
-		return nil, err
-	}
+
 	queueClient, err := remote.NewQueueClient()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	events := make(map[string]*Event)
-	con := Controller{
+
+	c := Controller{
 		events:      events,
 		queueClient: queueClient,
 	}
 
-	pkgs, err := controlClient.GetAllPackages(ctx)
-	if err != nil {
-		return nil, err
-	}
-	for _, ps := range pkgs {
-		tenantId := ps.TenantId
-		for _, job := range ps.Jobs {
-			event := job.Event
-			f, err := repoClient.GetFile(ctx, tenantId, event.Schema.SchemaRef)
-			if err != nil {
-				return nil, err
-			}
-			comp := jsonschema.NewCompiler()
-			if err := comp.AddResource(getFullEventId(tenantId, event.ID), bytes.NewReader(f)); err != nil {
-				return nil, err
-			}
-			compiledSchema, err := comp.Compile(getFullEventId(tenantId, event.ID))
-			if err != nil {
-				return nil, err
-			}
-
-			events[getFullEventId(tenantId, event.ID)] = &Event{
-				event:  event,
-				schema: compiledSchema,
-			}
-		}
-	}
-	return &con, nil
+	s := r.PathPrefix("/events").Subrouter()
+	s.Methods("POST").Path("/{tenant_id}/{event_id}").HandlerFunc(c.Post)
+	s.Methods("GET").HandlerFunc(c.Get)
+	return nil
 }
 
 func getFullEventId(tenantId string, eventId string) string {
@@ -84,17 +57,6 @@ func (rr Controller) getEventDef(tenantId string, eventId string) (*Event, error
 		return nil, fmt.Errorf("event unknown")
 	}
 	return ev, nil
-}
-
-func (rr Controller) Routes(ctx context.Context) chi.Router {
-	logger := zerolog.Ctx(ctx)
-	r := chi.NewRouter()
-	r.Use(httplog.RequestLogger(*logger))
-	r.Route("/{tenant_id}/{event_id}", func(r2 chi.Router) {
-		r2.Post("/", rr.Post)
-		r2.Get("/", rr.Get)
-	})
-	return r
 }
 
 func (rr Controller) Get(w http.ResponseWriter, r *http.Request) {
@@ -152,4 +114,46 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	writer.WriteHeader(http.StatusOK)
+}
+
+func buildEventsMap(ctx context.Context) (map[string]*Event, error) {
+	controlClient, err := remote.NewControlClient()
+	if err != nil {
+		return nil, err
+	}
+	repoClient, err := remote.NewRepoClient()
+	if err != nil {
+		return nil, err
+	}
+	events := make(map[string]*Event)
+
+	pkgs, err := controlClient.GetAllPackages(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ps := range pkgs {
+		tenantId := ps.TenantId
+		for _, job := range ps.Jobs {
+			event := job.Event
+			f, err := repoClient.GetFile(ctx, tenantId, event.Schema.SchemaRef)
+			if err != nil {
+				return nil, err
+			}
+			comp := jsonschema.NewCompiler()
+			if err := comp.AddResource(getFullEventId(tenantId, event.ID), bytes.NewReader(f)); err != nil {
+				return nil, err
+			}
+			compiledSchema, err := comp.Compile(getFullEventId(tenantId, event.ID))
+			if err != nil {
+				return nil, err
+			}
+
+			events[getFullEventId(tenantId, event.ID)] = &Event{
+				event:  event,
+				schema: compiledSchema,
+			}
+		}
+	}
+	return events, nil
 }
