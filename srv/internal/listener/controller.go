@@ -31,7 +31,7 @@ func ConfigureRoutes(ctx context.Context, r *mux.Router) error {
 		return err
 	}
 
-	queueClient, err := remote.NewQueueClient()
+	queueClient, err := remote.NewQueueClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -117,11 +117,11 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 }
 
 func buildEventsMap(ctx context.Context) (map[string]*Event, error) {
-	controlClient, err := remote.NewControlClient()
+	controlClient, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	repoClient, err := remote.NewRepoClient()
+	repoClient, err := remote.NewRepoClient(ctx)
 	if err != nil {
 		return nil, err
 	}

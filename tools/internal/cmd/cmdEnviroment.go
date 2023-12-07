@@ -43,7 +43,7 @@ func runEnv(ctx context.Context, cmd *command, args []string) {
 		return
 	}
 
-	client, err := remote.NewControlClient()
+	client, err := remote.NewControlClient(ctx)
 	if err != nil {
 		printError(os.Stdout, cmd, err)
 	}

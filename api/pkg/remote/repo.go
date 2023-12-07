@@ -17,9 +17,9 @@ type RepoClient struct {
 	client     pb.RepoClient
 }
 
-func NewRepoClient() (*RepoClient, error) {
+func NewRepoClient(ctx context.Context) (*RepoClient, error) {
 	addr := env.GetAsString("repo.host")
-	conn, err := service.Dial(addr)
+	conn, err := service.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}

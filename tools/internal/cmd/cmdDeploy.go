@@ -49,7 +49,7 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	client, err := remote.NewControlClient()
+	client, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return
 	}

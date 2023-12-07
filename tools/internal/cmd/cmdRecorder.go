@@ -41,7 +41,7 @@ func runRecorder(ctx context.Context, cmd *command, args []string) {
 		}
 	}(ch)
 	fmt.Printf("getting results at proc: %d \n", os.Getpid())
-	client, err := remote.NewRecorderClient()
+	client, err := remote.NewRecorderClient(ctx)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 	}

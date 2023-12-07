@@ -16,7 +16,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
-func onFocusFileNode(c *TApp, n *tview.TreeNode) {
+func onFocusFileNode(_ context.Context, c *TApp, n *tview.TreeNode) {
 	f := (n.GetReference().(*node)).entity.(*sFile)
 	if f.file.Type == pb.File_JsonSchema {
 		pageName := f.tenant + "/" + f.file.Name
@@ -34,7 +34,7 @@ func onFocusFileNode(c *TApp, n *tview.TreeNode) {
 	}
 }
 
-func onFocusServerNode(c *TApp, n *tview.TreeNode) {
+func onFocusServerNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 	h := (n.GetReference().(*node)).entity.(*sServerNode)
 	addr := h.host.Ip + ":" + strconv.Itoa(int(h.host.Port))
 	trySwitchToPage(addr, c.mainView, c, func() (tview.Primitive, error) {
@@ -44,12 +44,12 @@ func onFocusServerNode(c *TApp, n *tview.TreeNode) {
 			infoClient, ok := c.infoClients[addr]
 			if !ok {
 				var err error
-				infoClient, err = service.NewGrpcServerInfoClient(addr)
+				infoClient, err = service.NewGrpcServerInfoClient(ctx, addr)
 				if err != nil {
 					return nil, errors.Join(errors.New(`"Server Info" service down`), err)
 				}
 				c.infoClients[addr] = infoClient
-				helthCheckClient, err = service.NewGrpcServerHelthCheckClient(addr)
+				helthCheckClient, err = service.NewGrpcServerHelthCheckClient(ctx, addr)
 				if err != nil {
 					return nil, errors.Join(errors.New(`"Healcheck" service down`), err)
 				}
@@ -101,21 +101,21 @@ func renderHttpTableServer(info *map[string]string) *tview.Table {
 	return table
 
 }
-func onSelectedGettingJobResults(ca *TApp, n *tview.TreeNode) {
+func onSelectedGettingJobResults(ctx context.Context, ca *TApp, n *tview.TreeNode) {
 	n.SetText("<< stop >>")
 	nl := n.GetReference().(*node)
 	nl.selected = onSelectedStopGettingJobResults
 	startGettingJobResults(ca, n)
 }
 
-func onSelectedStopGettingJobResults(ca *TApp, n *tview.TreeNode) {
+func onSelectedStopGettingJobResults(ctx context.Context, ca *TApp, n *tview.TreeNode) {
 	ca.cancelJobResultsGetter()
 	nl := n.GetReference().(*node)
 	n.SetText("<< start >>")
 	nl.selected = onSelectedGettingJobResults
 }
 
-func onFocusJobPackageNode(c *TApp, n *tview.TreeNode) {
+func onFocusJobPackageNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 	p := (n.GetReference().(*node)).entity.(*pb.JobPackage)
 	pn := "package/" + p.TenantId + "/" + p.ID
 	trySwitchToPage(pn, c.mainView, c, func() (tview.Primitive, error) {
@@ -194,7 +194,7 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 			ca.debugErrorFromGoRoutine(err)
 			ca.showErrorStr("Error getting results", 3*time.Second)
 			ca.app.QueueUpdateDraw(func() {
-				onSelectedStopGettingJobResults(ca, n)
+				onSelectedStopGettingJobResults(ctxJobResultsGetter, ca, n)
 				disableTreeNode(n)
 			})
 		}

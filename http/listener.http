@@ -26,3 +26,7 @@ Content-Type: application/json
 ###
 POST http://localhost:9595/meta HTTP/1.1
 Content-Type: application/json
+
+###
+
+POST http://localhost:9090/api/v1/otlp/v1/metrics

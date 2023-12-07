@@ -32,7 +32,7 @@ type jobPackage struct {
 }
 
 func getPackages(ctx context.Context) ([]*jobPackage, error) {
-	c, err := remote.NewControlClient()
+	c, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func getPackages(ctx context.Context) ([]*jobPackage, error) {
 		}
 		jobPackage.Queues = queues
 
-		repoClient, err := remote.NewRepoClient()
+		repoClient, err := remote.NewRepoClient(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +206,7 @@ func makeDecisions(ctx context.Context, eventId string, tenantId string, code ui
 			},
 		}
 	}
-	client, err := remote.NewQueueClient()
+	client, err := remote.NewQueueClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func reportToRecorder(ctx context.Context, queueId string, eventId string, tenan
 			Message: result,
 		},
 	}
-	client, err := remote.NewRecorderClient()
+	client, err := remote.NewRecorderClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func reportToRecorder(ctx context.Context, queueId string, eventId string, tenan
 }
 
 func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
-	client, err := remote.NewQueueClient()
+	client, err := remote.NewQueueClient(ctx)
 	if err != nil {
 		return nil, err
 	}

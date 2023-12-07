@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 
@@ -11,7 +12,7 @@ func main() {
 	debugFlag := flag.Bool("debug", false, "debug enabled")
 	syncUpdatesFlag := flag.Bool("sync", false, "sync enabled")
 	flag.Parse()
-	tapp, err := tapp.New(*syncUpdatesFlag)
+	tapp, err := tapp.New(context.Background(), *syncUpdatesFlag)
 	if err != nil {
 		log.Panic(err)
 	}

@@ -47,20 +47,20 @@ type TApp struct {
 	sync                    bool
 }
 
-func New(sync bool) (*TApp, error) {
+func New(ctx context.Context, sync bool) (*TApp, error) {
 	err := config.LoadEnvVariables()
 	if err != nil {
 		return nil, err
 	}
-	controlClient, err := remote.NewControlClient()
+	controlClient, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	repoClient, err := remote.NewRepoClient()
+	repoClient, err := remote.NewRepoClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	recorderClient, err := remote.NewRecorderClient()
+	recorderClient, err := remote.NewRecorderClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +276,7 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 				}
 			}
 		} else if original.selected != nil {
-			c.execProtected(func() { original.selected(c, n) })
+			c.execProtected(func() { original.selected(ctx, c, n) })
 		}
 	})
 	// This function simulates the focus and blur event handlers for the tree's nodes
@@ -284,12 +284,12 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 		if c.lastNode != nil {
 			nl := c.lastNode.GetReference().(*node)
 			if nl.blur != nil {
-				c.execProtected(func() { nl.blur(c, c.lastNode, n) })
+				c.execProtected(func() { nl.blur(ctx, c, c.lastNode, n) })
 			}
 		}
 		ref := n.GetReference().(*node)
 		if ref.focus != nil {
-			c.execProtected(func() { ref.focus(c, n) })
+			c.execProtected(func() { ref.focus(ctx, c, n) })
 		}
 		c.lastNode = n
 	})

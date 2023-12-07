@@ -1,6 +1,7 @@
 package tapp
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/andrescosta/goico/pkg/convertico"
@@ -14,11 +15,11 @@ type node struct {
 	// true if this node has children and does not allow expansion
 	expanded bool
 	entity   any
-	selected func(*TApp, *tview.TreeNode)
+	selected func(context.Context, *TApp, *tview.TreeNode)
 	// the handler recv the node getting the focus
-	focus func(*TApp, *tview.TreeNode)
+	focus func(context.Context, *TApp, *tview.TreeNode)
 	// the handler recv the node loosing the focus and the one getting it
-	blur         func(*TApp, *tview.TreeNode, *tview.TreeNode)
+	blur         func(context.Context, *TApp, *tview.TreeNode, *tview.TreeNode)
 	children     []*node
 	rootNodeType RootNodeType
 	color        tcell.Color
@@ -54,7 +55,7 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, f []*pb.TenantFiles) 
 				children: []*node{
 					{text: "<< start >>",
 						selected: onSelectedGettingJobResults,
-						focus:    func(c *TApp, _ *tview.TreeNode) { switchToPageIfExists(c.mainView, "results") },
+						focus:    func(_ context.Context, c *TApp, _ *tview.TreeNode) { switchToPageIfExists(c.mainView, "results") },
 					},
 				}},
 		},

@@ -23,7 +23,7 @@ func initRepo() {
 
 }
 
-func runRepo(_ context.Context, cmd *command, args []string) {
+func runRepo(ctx context.Context, cmd *command, args []string) {
 	if len(args) < 4 {
 		printHelp(os.Stdout, cmd)
 		return
@@ -37,7 +37,7 @@ func runRepo(_ context.Context, cmd *command, args []string) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	client, err := remote.NewRepoClient()
+	client, err := remote.NewRepoClient(ctx)
 	if err != nil {
 		return
 	}

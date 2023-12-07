@@ -16,9 +16,9 @@ type ControlClient struct {
 	client     pb.ControlClient
 }
 
-func NewControlClient() (*ControlClient, error) {
+func NewControlClient(ctx context.Context) (*ControlClient, error) {
 	host := env.GetAsString("ctl.host")
-	conn, err := service.Dial(host)
+	conn, err := service.Dial(ctx, host)
 	if err != nil {
 		return nil, err
 	}
