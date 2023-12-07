@@ -2,7 +2,7 @@ package recorder
 
 import (
 	"github.com/andrescosta/goico/pkg/iohelper"
-	pb "github.com/andrescosta/workflew/api/types"
+	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
 	"gopkg.in/natefinch/lumberjack.v2"
 )

@@ -1,20 +1,21 @@
 package tapp
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rs/zerolog/log"
 )
 
-func createContentView(content string) *tview.TextView {
+func buildTextView(text string) *tview.TextView {
 	textView := tview.NewTextView()
 	textView.SetDynamicColors(true).
 		SetWrap(false).
 		SetRegions(true)
-	fmt.Fprint(textView, content)
+	fmt.Fprint(textView, text)
 	textView.SetBorder(false)
 	return textView
 }
@@ -29,25 +30,25 @@ func switchToPageIfExists(t *tview.Pages, page string) bool {
 
 func trySwitchToPage(name string, pages *tview.Pages, app *TApp, c func() (tview.Primitive, error)) {
 	if !switchToPageIfExists(pages, name) {
-		p, err := c()
+		page, err := c()
 		if err != nil {
-			log.Err(err)
-			errtxt := err.Error()
-			e, ok := err.(interface {
-				Unwrap() []error
-			})
-			if ok {
-				errtxt = e.Unwrap()[0].Error()
-			}
-			showText(app.status, errtxt, tcell.ColorRed, 6*time.Second, app)
+			app.debugError(err)
+			app.showError(err)
+			return
 		}
-		if err == nil {
-			pages.AddAndSwitchToPage(name, p, true)
+		if page == nil {
+			switchToEmptyPage(app)
+			return
 		}
+		pages.AddAndSwitchToPage(name, page, true)
 	}
 }
 
-func showText(status *tview.TextView, text string, color tcell.Color, d time.Duration, app *TApp) {
+func switchToEmptyPage(app *TApp) {
+	app.mainView.SwitchToPage(emptyPage)
+}
+
+func showText(app *TApp, status *tview.TextView, text string, color tcell.Color, d time.Duration) {
 	status.SetTextColor(color)
 	status.SetText(text)
 	c := time.NewTimer(d)
@@ -63,7 +64,7 @@ func showText(status *tview.TextView, text string, color tcell.Color, d time.Dur
 func disableTreeNode(tn *tview.TreeNode) {
 	tn.SetColor(tcell.ColorGray)
 	n := tn.GetReference().(*node)
-	n.selected = func(t *TApp, tn *tview.TreeNode) {}
+	n.selected = func(ctx context.Context, t *TApp, tn *tview.TreeNode) {}
 }
 
 func newModal(p tview.Primitive, width, height int) tview.Primitive {
@@ -79,4 +80,25 @@ func newModal(p tview.Primitive, width, height int) tview.Primitive {
 func newTextView(text string) *tview.TextView {
 	return tview.NewTextView().
 		SetText(text)
+}
+
+func getChidren(type1 RootNodeType, tn *tview.TreeNode) (*tview.TreeNode, *node) {
+	for _, t := range tn.GetChildren() {
+		n := t.GetReference().(*node)
+		if n.rootNodeType == type1 {
+			return t, n
+		}
+	}
+	return nil, nil
+}
+
+func getTenantNode(tenant string, tn *tview.TreeNode) (*tview.TreeNode, *node) {
+	for _, t := range tn.GetChildren() {
+		n := t.GetReference().(*node)
+		e, ok := n.entity.(*pb.TenantFiles)
+		if ok && e.TenantId == tenant {
+			return t, n
+		}
+	}
+	return nil, nil
 }

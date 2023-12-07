@@ -19,15 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Control_GetTenants_FullMethodName       = "/Control/GetTenants"
-	Control_AddTenant_FullMethodName        = "/Control/AddTenant"
-	Control_AddPackage_FullMethodName       = "/Control/AddPackage"
-	Control_GetAllPackages_FullMethodName   = "/Control/GetAllPackages"
-	Control_GetPackages_FullMethodName      = "/Control/GetPackages"
-	Control_UpdatePackage_FullMethodName    = "/Control/UpdatePackage"
-	Control_GetEnviroment_FullMethodName    = "/Control/GetEnviroment"
-	Control_AddEnviroment_FullMethodName    = "/Control/AddEnviroment"
-	Control_UpdateEnviroment_FullMethodName = "/Control/UpdateEnviroment"
+	Control_GetTenants_FullMethodName            = "/Control/GetTenants"
+	Control_AddTenant_FullMethodName             = "/Control/AddTenant"
+	Control_AddPackage_FullMethodName            = "/Control/AddPackage"
+	Control_GetAllPackages_FullMethodName        = "/Control/GetAllPackages"
+	Control_GetPackages_FullMethodName           = "/Control/GetPackages"
+	Control_UpdatePackage_FullMethodName         = "/Control/UpdatePackage"
+	Control_UpdateToPackagesStr_FullMethodName   = "/Control/UpdateToPackagesStr"
+	Control_GetEnviroment_FullMethodName         = "/Control/GetEnviroment"
+	Control_UpdateToEnviromentStr_FullMethodName = "/Control/UpdateToEnviromentStr"
+	Control_AddEnviroment_FullMethodName         = "/Control/AddEnviroment"
+	Control_UpdateEnviroment_FullMethodName      = "/Control/UpdateEnviroment"
 )
 
 // ControlClient is the client API for Control service.
@@ -40,7 +42,9 @@ type ControlClient interface {
 	GetAllPackages(ctx context.Context, in *GetAllJobPackagesRequest, opts ...grpc.CallOption) (*GetAllJobPackagesReply, error)
 	GetPackages(ctx context.Context, in *GetJobPackagesRequest, opts ...grpc.CallOption) (*GetJobPackagesReply, error)
 	UpdatePackage(ctx context.Context, in *UpdateJobPackageRequest, opts ...grpc.CallOption) (*UpdateJobPackageReply, error)
+	UpdateToPackagesStr(ctx context.Context, in *UpdateToPackagesStrRequest, opts ...grpc.CallOption) (Control_UpdateToPackagesStrClient, error)
 	GetEnviroment(ctx context.Context, in *GetEnviromentRequest, opts ...grpc.CallOption) (*GetEnviromentReply, error)
+	UpdateToEnviromentStr(ctx context.Context, in *UpdateToEnviromentStrRequest, opts ...grpc.CallOption) (Control_UpdateToEnviromentStrClient, error)
 	AddEnviroment(ctx context.Context, in *AddEnviromentRequest, opts ...grpc.CallOption) (*AddEnviromentReply, error)
 	UpdateEnviroment(ctx context.Context, in *UpdateEnviromentRequest, opts ...grpc.CallOption) (*UpdateEnviromentReply, error)
 }
@@ -107,6 +111,38 @@ func (c *controlClient) UpdatePackage(ctx context.Context, in *UpdateJobPackageR
 	return out, nil
 }
 
+func (c *controlClient) UpdateToPackagesStr(ctx context.Context, in *UpdateToPackagesStrRequest, opts ...grpc.CallOption) (Control_UpdateToPackagesStrClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Control_ServiceDesc.Streams[0], Control_UpdateToPackagesStr_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &controlUpdateToPackagesStrClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Control_UpdateToPackagesStrClient interface {
+	Recv() (*UpdateToPackagesStrReply, error)
+	grpc.ClientStream
+}
+
+type controlUpdateToPackagesStrClient struct {
+	grpc.ClientStream
+}
+
+func (x *controlUpdateToPackagesStrClient) Recv() (*UpdateToPackagesStrReply, error) {
+	m := new(UpdateToPackagesStrReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *controlClient) GetEnviroment(ctx context.Context, in *GetEnviromentRequest, opts ...grpc.CallOption) (*GetEnviromentReply, error) {
 	out := new(GetEnviromentReply)
 	err := c.cc.Invoke(ctx, Control_GetEnviroment_FullMethodName, in, out, opts...)
@@ -114,6 +150,38 @@ func (c *controlClient) GetEnviroment(ctx context.Context, in *GetEnviromentRequ
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *controlClient) UpdateToEnviromentStr(ctx context.Context, in *UpdateToEnviromentStrRequest, opts ...grpc.CallOption) (Control_UpdateToEnviromentStrClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Control_ServiceDesc.Streams[1], Control_UpdateToEnviromentStr_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &controlUpdateToEnviromentStrClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Control_UpdateToEnviromentStrClient interface {
+	Recv() (*UpdateToEnviromentStrReply, error)
+	grpc.ClientStream
+}
+
+type controlUpdateToEnviromentStrClient struct {
+	grpc.ClientStream
+}
+
+func (x *controlUpdateToEnviromentStrClient) Recv() (*UpdateToEnviromentStrReply, error) {
+	m := new(UpdateToEnviromentStrReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *controlClient) AddEnviroment(ctx context.Context, in *AddEnviromentRequest, opts ...grpc.CallOption) (*AddEnviromentReply, error) {
@@ -144,7 +212,9 @@ type ControlServer interface {
 	GetAllPackages(context.Context, *GetAllJobPackagesRequest) (*GetAllJobPackagesReply, error)
 	GetPackages(context.Context, *GetJobPackagesRequest) (*GetJobPackagesReply, error)
 	UpdatePackage(context.Context, *UpdateJobPackageRequest) (*UpdateJobPackageReply, error)
+	UpdateToPackagesStr(*UpdateToPackagesStrRequest, Control_UpdateToPackagesStrServer) error
 	GetEnviroment(context.Context, *GetEnviromentRequest) (*GetEnviromentReply, error)
+	UpdateToEnviromentStr(*UpdateToEnviromentStrRequest, Control_UpdateToEnviromentStrServer) error
 	AddEnviroment(context.Context, *AddEnviromentRequest) (*AddEnviromentReply, error)
 	UpdateEnviroment(context.Context, *UpdateEnviromentRequest) (*UpdateEnviromentReply, error)
 	mustEmbedUnimplementedControlServer()
@@ -172,8 +242,14 @@ func (UnimplementedControlServer) GetPackages(context.Context, *GetJobPackagesRe
 func (UnimplementedControlServer) UpdatePackage(context.Context, *UpdateJobPackageRequest) (*UpdateJobPackageReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePackage not implemented")
 }
+func (UnimplementedControlServer) UpdateToPackagesStr(*UpdateToPackagesStrRequest, Control_UpdateToPackagesStrServer) error {
+	return status.Errorf(codes.Unimplemented, "method UpdateToPackagesStr not implemented")
+}
 func (UnimplementedControlServer) GetEnviroment(context.Context, *GetEnviromentRequest) (*GetEnviromentReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEnviroment not implemented")
+}
+func (UnimplementedControlServer) UpdateToEnviromentStr(*UpdateToEnviromentStrRequest, Control_UpdateToEnviromentStrServer) error {
+	return status.Errorf(codes.Unimplemented, "method UpdateToEnviromentStr not implemented")
 }
 func (UnimplementedControlServer) AddEnviroment(context.Context, *AddEnviromentRequest) (*AddEnviromentReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddEnviroment not implemented")
@@ -302,6 +378,27 @@ func _Control_UpdatePackage_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Control_UpdateToPackagesStr_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(UpdateToPackagesStrRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ControlServer).UpdateToPackagesStr(m, &controlUpdateToPackagesStrServer{stream})
+}
+
+type Control_UpdateToPackagesStrServer interface {
+	Send(*UpdateToPackagesStrReply) error
+	grpc.ServerStream
+}
+
+type controlUpdateToPackagesStrServer struct {
+	grpc.ServerStream
+}
+
+func (x *controlUpdateToPackagesStrServer) Send(m *UpdateToPackagesStrReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 func _Control_GetEnviroment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetEnviromentRequest)
 	if err := dec(in); err != nil {
@@ -318,6 +415,27 @@ func _Control_GetEnviroment_Handler(srv interface{}, ctx context.Context, dec fu
 		return srv.(ControlServer).GetEnviroment(ctx, req.(*GetEnviromentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _Control_UpdateToEnviromentStr_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(UpdateToEnviromentStrRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ControlServer).UpdateToEnviromentStr(m, &controlUpdateToEnviromentStrServer{stream})
+}
+
+type Control_UpdateToEnviromentStrServer interface {
+	Send(*UpdateToEnviromentStrReply) error
+	grpc.ServerStream
+}
+
+type controlUpdateToEnviromentStrServer struct {
+	grpc.ServerStream
+}
+
+func (x *controlUpdateToEnviromentStrServer) Send(m *UpdateToEnviromentStrReply) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _Control_AddEnviroment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -400,6 +518,17 @@ var Control_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Control_UpdateEnviroment_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UpdateToPackagesStr",
+			Handler:       _Control_UpdateToPackagesStr_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "UpdateToEnviromentStr",
+			Handler:       _Control_UpdateToEnviromentStr_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "control.proto",
 }

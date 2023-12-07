@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/andrescosta/goico/pkg/yamlico"
-	"github.com/andrescosta/workflew/api/pkg/remote"
+	"github.com/andrescosta/jobico/api/pkg/remote"
 )
 
 var cmdShow = &command{
@@ -43,7 +43,7 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 	}
 	tenant := args[1]
 	id := args[2]
-	client, err := remote.NewControlClient()
+	client, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return
 	}
@@ -65,7 +65,7 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 }
 
 func showEnv(ctx context.Context, args []string, cmd *command) {
-	client, err := remote.NewControlClient()
+	client, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return
 	}

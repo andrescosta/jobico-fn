@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Repo_GetFile_FullMethodName         = "/Repo/GetFile"
 	Repo_AddFile_FullMethodName         = "/Repo/AddFile"
+	Repo_UpdateToFileStr_FullMethodName = "/Repo/UpdateToFileStr"
 	Repo_GetAllFileNames_FullMethodName = "/Repo/GetAllFileNames"
 )
 
@@ -30,6 +31,7 @@ const (
 type RepoClient interface {
 	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileReply, error)
 	AddFile(ctx context.Context, in *AddFileRequest, opts ...grpc.CallOption) (*AddFileReply, error)
+	UpdateToFileStr(ctx context.Context, in *UpdateToFileStrRequest, opts ...grpc.CallOption) (Repo_UpdateToFileStrClient, error)
 	GetAllFileNames(ctx context.Context, in *GetAllFileNamesRequest, opts ...grpc.CallOption) (*GetAllFileNamesReply, error)
 }
 
@@ -59,6 +61,38 @@ func (c *repoClient) AddFile(ctx context.Context, in *AddFileRequest, opts ...gr
 	return out, nil
 }
 
+func (c *repoClient) UpdateToFileStr(ctx context.Context, in *UpdateToFileStrRequest, opts ...grpc.CallOption) (Repo_UpdateToFileStrClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Repo_ServiceDesc.Streams[0], Repo_UpdateToFileStr_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &repoUpdateToFileStrClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Repo_UpdateToFileStrClient interface {
+	Recv() (*UpdateToFileStrReply, error)
+	grpc.ClientStream
+}
+
+type repoUpdateToFileStrClient struct {
+	grpc.ClientStream
+}
+
+func (x *repoUpdateToFileStrClient) Recv() (*UpdateToFileStrReply, error) {
+	m := new(UpdateToFileStrReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *repoClient) GetAllFileNames(ctx context.Context, in *GetAllFileNamesRequest, opts ...grpc.CallOption) (*GetAllFileNamesReply, error) {
 	out := new(GetAllFileNamesReply)
 	err := c.cc.Invoke(ctx, Repo_GetAllFileNames_FullMethodName, in, out, opts...)
@@ -74,6 +108,7 @@ func (c *repoClient) GetAllFileNames(ctx context.Context, in *GetAllFileNamesReq
 type RepoServer interface {
 	GetFile(context.Context, *GetFileRequest) (*GetFileReply, error)
 	AddFile(context.Context, *AddFileRequest) (*AddFileReply, error)
+	UpdateToFileStr(*UpdateToFileStrRequest, Repo_UpdateToFileStrServer) error
 	GetAllFileNames(context.Context, *GetAllFileNamesRequest) (*GetAllFileNamesReply, error)
 	mustEmbedUnimplementedRepoServer()
 }
@@ -87,6 +122,9 @@ func (UnimplementedRepoServer) GetFile(context.Context, *GetFileRequest) (*GetFi
 }
 func (UnimplementedRepoServer) AddFile(context.Context, *AddFileRequest) (*AddFileReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddFile not implemented")
+}
+func (UnimplementedRepoServer) UpdateToFileStr(*UpdateToFileStrRequest, Repo_UpdateToFileStrServer) error {
+	return status.Errorf(codes.Unimplemented, "method UpdateToFileStr not implemented")
 }
 func (UnimplementedRepoServer) GetAllFileNames(context.Context, *GetAllFileNamesRequest) (*GetAllFileNamesReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllFileNames not implemented")
@@ -140,6 +178,27 @@ func _Repo_AddFile_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Repo_UpdateToFileStr_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(UpdateToFileStrRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(RepoServer).UpdateToFileStr(m, &repoUpdateToFileStrServer{stream})
+}
+
+type Repo_UpdateToFileStrServer interface {
+	Send(*UpdateToFileStrReply) error
+	grpc.ServerStream
+}
+
+type repoUpdateToFileStrServer struct {
+	grpc.ServerStream
+}
+
+func (x *repoUpdateToFileStrServer) Send(m *UpdateToFileStrReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 func _Repo_GetAllFileNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAllFileNamesRequest)
 	if err := dec(in); err != nil {
@@ -178,6 +237,12 @@ var Repo_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Repo_GetAllFileNames_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UpdateToFileStr",
+			Handler:       _Repo_UpdateToFileStr_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "repo.proto",
 }

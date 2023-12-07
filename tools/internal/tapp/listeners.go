@@ -6,82 +6,116 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/andrescosta/goico/pkg/service"
-	info "github.com/andrescosta/goico/pkg/service/info/grpc"
+	"github.com/andrescosta/goico/pkg/service/svcmeta"
 	"github.com/andrescosta/goico/pkg/yamlico"
-	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/gdamore/tcell/v2"
+	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rivo/tview"
-	"github.com/rs/zerolog/log"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
-func onFocusFileNode(c *TApp, n *tview.TreeNode) {
+func onFocusFileNode(_ context.Context, c *TApp, n *tview.TreeNode) {
 	f := (n.GetReference().(*node)).entity.(*sFile)
-	if strings.HasSuffix(f.file, ".json") {
-		pageName := f.tenant + "/" + f.file
+	if f.file.Type == pb.File_JsonSchema {
+		pageName := f.tenant + "/" + f.file.Name
 		trySwitchToPage(pageName, c.mainView, c, func() (tview.Primitive, error) {
-			f, err := c.repoClient.GetFile(context.Background(), f.tenant, f.file)
+			f, err := c.repoClient.GetFile(context.Background(), f.tenant, f.file.Name)
 			if err != nil {
 				return nil, errors.Join(errors.New(`"Repo" service down`), err)
 			} else {
-				cv := createContentView(string(f))
+				cv := buildTextView(string(f))
 				return cv, nil
 			}
 		})
+	} else {
+		switchToEmptyPage(c)
 	}
 }
 
-func onFocusServerNode(c *TApp, n *tview.TreeNode) {
+func onFocusServerNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 	h := (n.GetReference().(*node)).entity.(*sServerNode)
 	addr := h.host.Ip + ":" + strconv.Itoa(int(h.host.Port))
 	trySwitchToPage(addr, c.mainView, c, func() (tview.Primitive, error) {
-		helthCheckClient := c.helthCheckClients[addr]
-		infoClient, ok := c.infoClients[addr]
-		if !ok {
-			var err error
-			infoClient, err = service.NewGrpcServerInfoClient(addr)
-			if err != nil {
-				return nil, errors.Join(errors.New(`"Server Info" service down`), err)
+		switch h.host.Type {
+		case pb.Host_Grpc:
+			helthCheckClient := c.helthCheckClients[addr]
+			infoClient, ok := c.infoClients[addr]
+			if !ok {
+				var err error
+				infoClient, err = service.NewGrpcServerInfoClient(ctx, addr)
+				if err != nil {
+					return nil, errors.Join(errors.New(`"Server Info" service down`), err)
+				}
+				c.infoClients[addr] = infoClient
+				helthCheckClient, err = service.NewGrpcServerHelthCheckClient(ctx, addr)
+				if err != nil {
+					return nil, errors.Join(errors.New(`"Healcheck" service down`), err)
+				}
+				c.helthCheckClients[addr] = helthCheckClient
 			}
-			c.infoClients[addr] = infoClient
-			helthCheckClient, err = service.NewGrpcServerHelthCheckClient(addr)
+			info, err := infoClient.Info(context.Background(), &svcmeta.GrpcMetadataRequest{})
 			if err != nil {
-				return nil, errors.Join(errors.New(`"Healcheck" service down`), err)
+				return nil, err
 			}
-			c.helthCheckClients[addr] = helthCheckClient
+			s, err := helthCheckClient.Check(context.Background(), h.name)
+			if err != nil {
+				s = healthpb.HealthCheckResponse_NOT_SERVING
+			}
+			view := renderGrpcTableServer(info, s)
+			return view, nil
+		case pb.Host_Http, pb.Host_Headless:
+			metadata, err := c.metadataClient.GetMetadata(h.name)
+			if err != nil {
+				return nil, err
+			}
+			view := renderHttpTableServer(metadata)
+			return view, nil
+		default:
+			return nil, nil
 		}
-		infos, err := infoClient.Info(context.Background(), &info.InfoRequest{})
-		if err != nil {
-			return nil, err
-		}
-		s, err := helthCheckClient.Check(context.Background(), h.name)
-		if err != nil {
-			s = healthpb.HealthCheckResponse_NOT_SERVING
-		}
-		view := renderTableServers(infos, s)
-		return view, nil
 	})
 }
 
-func onSelectedGettingJobResults(ca *TApp, n *tview.TreeNode) {
+func renderHttpTableServer(info *map[string]string) *tview.Table {
+	table := tview.NewTable().
+		SetBorders(true)
+	table.SetCell(0, 0,
+		tview.NewTableCell("Status").
+			SetAlign(tview.AlignCenter))
+	status := "Unknown"
+	table.SetCell(0, 1,
+		tview.NewTableCell(status).
+			SetAlign(tview.AlignCenter))
+	ix := 0
+	for k, v := range *info {
+		table.SetCell(ix+1, 0,
+			tview.NewTableCell(k).
+				SetAlign(tview.AlignCenter))
+		table.SetCell(ix+1, 1,
+			tview.NewTableCell(v).
+				SetAlign(tview.AlignCenter))
+		ix++
+	}
+	return table
+
+}
+func onSelectedGettingJobResults(ctx context.Context, ca *TApp, n *tview.TreeNode) {
 	n.SetText("<< stop >>")
 	nl := n.GetReference().(*node)
 	nl.selected = onSelectedStopGettingJobResults
 	startGettingJobResults(ca, n)
 }
 
-func onSelectedStopGettingJobResults(ca *TApp, n *tview.TreeNode) {
+func onSelectedStopGettingJobResults(ctx context.Context, ca *TApp, n *tview.TreeNode) {
 	ca.cancelJobResultsGetter()
 	nl := n.GetReference().(*node)
 	n.SetText("<< start >>")
 	nl.selected = onSelectedGettingJobResults
 }
 
-func onFocusJobPackageNode(c *TApp, n *tview.TreeNode) {
+func onFocusJobPackageNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 	p := (n.GetReference().(*node)).entity.(*pb.JobPackage)
 	pn := "package/" + p.TenantId + "/" + p.ID
 	trySwitchToPage(pn, c.mainView, c, func() (tview.Primitive, error) {
@@ -94,12 +128,12 @@ func onFocusJobPackageNode(c *TApp, n *tview.TreeNode) {
 			return nil, errors.Join(errors.New(`package cannot displayed`), err)
 		}
 
-		textView := createContentView(decorate(*yaml))
+		textView := buildTextView(syntaxHighlightYaml(*yaml))
 		return textView, nil
 	})
 }
 
-func decorate(yaml string) string {
+func syntaxHighlightYaml(yaml string) string {
 
 	reAttributes := regexp.MustCompile(`(?:^|\n).*:`)
 
@@ -133,11 +167,13 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 		ca.mainView.AddAndSwitchToPage("results", textView, true)
 	}
 	ch := make(chan string)
-	ca.ctxJobResultsGetter, ca.cancelJobResultsGetter = context.WithCancel(context.Background())
+	var ctxJobResultsGetter context.Context
+	ctxJobResultsGetter, ca.cancelJobResultsGetter = context.WithCancel(context.Background())
 	go func(mc <-chan string) {
 		for {
 			select {
-			case <-ca.ctxJobResultsGetter.Done():
+			case <-ctxJobResultsGetter.Done():
+				ca.debugInfoFromGoRoutine("collector context is done. stopping results collector ")
 				return
 			case l, ok := <-mc:
 				if ok {
@@ -145,6 +181,7 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 						fmt.Fprintln(textView, l)
 					})
 				} else {
+					ca.debugInfoFromGoRoutine("collector channel is closed. stopping results collector")
 					return
 				}
 			}
@@ -152,19 +189,20 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 	}(ch)
 	go func() {
 		defer close(ch)
-		err := ca.recorderClient.GetJobExecutions(ca.ctxJobResultsGetter, "", lines, ch)
+		err := ca.recorderClient.GetJobExecutions(ctxJobResultsGetter, "", lines, ch)
 		if err != nil {
-			log.Err(err)
-			showText(ca.status, "Error getting results", tcell.ColorRed, 3*time.Second, ca)
+			ca.debugErrorFromGoRoutine(err)
+			ca.showErrorStr("Error getting results", 3*time.Second)
 			ca.app.QueueUpdateDraw(func() {
-				onSelectedStopGettingJobResults(ca, n)
+				onSelectedStopGettingJobResults(ctxJobResultsGetter, ca, n)
 				disableTreeNode(n)
 			})
 		}
+		ca.debugInfoFromGoRoutine("job execution call returned. stopping results collector")
 	}()
 }
 
-func renderTableServers(infos []*info.Info, s healthpb.HealthCheckResponse_ServingStatus) *tview.Table {
+func renderGrpcTableServer(infos []*svcmeta.GrpcServerMetadata, s healthpb.HealthCheckResponse_ServingStatus) *tview.Table {
 	table := tview.NewTable().
 		SetBorders(true)
 	table.SetCell(0, 0,

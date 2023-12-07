@@ -5,7 +5,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
-	pb "github.com/andrescosta/workflew/api/types"
+	pb "github.com/andrescosta/jobico/api/types"
 	"google.golang.org/grpc"
 )
 
@@ -15,9 +15,9 @@ type QueueClient struct {
 	client     pb.QueueClient
 }
 
-func NewQueueClient() (*QueueClient, error) {
+func NewQueueClient(ctx context.Context) (*QueueClient, error) {
 	host := env.GetAsString("queue.host")
-	conn, err := service.Dial(host)
+	conn, err := service.Dial(ctx, host)
 	if err != nil {
 		return nil, err
 	}

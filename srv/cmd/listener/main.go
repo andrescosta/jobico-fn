@@ -5,17 +5,18 @@ import (
 	"log"
 
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/workflew/srv/internal/listener"
-	"github.com/go-chi/chi/v5"
+
+	//"github.com/andrescosta/goico/pkg/service/obs"
+	"github.com/andrescosta/jobico/srv/internal/listener"
 )
 
 func main() {
-	service.NewHttpService(context.Background(), "listener", "events",
-		func(ctx context.Context) chi.Router {
-			controler, err := listener.New(ctx)
-			if err != nil {
-				log.Fatal(err)
-			}
-			return controler.Routes(ctx)
-		}).Serve()
+	svc, err := service.NewHttpService(context.Background(), "listener", listener.ConfigureRoutes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := svc.Serve(); err != nil {
+		log.Fatal(err)
+	}
 }

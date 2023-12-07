@@ -11,9 +11,29 @@ service Control {
   rpc GetAllPackages (GetAllJobPackagesRequest) returns (GetAllJobPackagesReply) {}
   rpc GetPackages (GetJobPackagesRequest) returns (GetJobPackagesReply) {}
   rpc UpdatePackage (UpdateJobPackageRequest) returns (UpdateJobPackageReply) {}
+  rpc UpdateToPackagesStr (UpdateToPackagesStrRequest) returns (stream UpdateToPackagesStrReply) {}
   rpc GetEnviroment(GetEnviromentRequest) returns (GetEnviromentReply){}
+  rpc UpdateToEnviromentStr(UpdateToEnviromentStrRequest) returns (stream UpdateToEnviromentStrReply){}
   rpc AddEnviroment(AddEnviromentRequest) returns (AddEnviromentReply){}
   rpc UpdateEnviroment(UpdateEnviromentRequest) returns (UpdateEnviromentReply){}
+}
+
+
+
+message UpdateToEnviromentStrRequest {}
+
+message UpdateToEnviromentStrReply {
+  UpdateType type=1;
+  Environment object = 2;
+}
+
+message UpdateToPackagesStrRequest{
+  string tenantId = 1; //  not supported
+}
+
+message UpdateToPackagesStrReply{
+  UpdateType type=1;
+  JobPackage object = 2;
 }
 
 message AddJobPackageRequest{
@@ -134,7 +154,7 @@ message RuntimeDef{
 }
 
 enum RuntimeType {
-  Wasm = 0;
+  Wasm10 = 0;
   Go = 1;
 }
 

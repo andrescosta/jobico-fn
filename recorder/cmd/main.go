@@ -5,16 +5,16 @@ import (
 	"log"
 
 	"github.com/andrescosta/goico/pkg/service"
-	pb "github.com/andrescosta/workflew/api/types"
-	"github.com/andrescosta/workflew/recorder/internal/recorder"
+	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/recorder/internal/recorder"
 )
 
 func main() {
-	svc, err := service.NewGrpService(context.Background(), "recorder",
+	svc, err := service.NewGrpcService(context.Background(), "recorder",
 		&pb.Recorder_ServiceDesc,
 		func(ctx context.Context) (any, error) {
 			return recorder.NewServer(".\\log.log")
-		}, service.EmptyhealthCheckHandler)
+		})
 	if err != nil {
 		log.Panicf("error starting recorder service: %s", err)
 	}

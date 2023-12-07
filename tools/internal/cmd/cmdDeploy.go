@@ -8,8 +8,8 @@ import (
 
 	"github.com/andrescosta/goico/pkg/iohelper"
 	"github.com/andrescosta/goico/pkg/yamlico"
-	"github.com/andrescosta/workflew/api/pkg/remote"
-	pb "github.com/andrescosta/workflew/api/types"
+	"github.com/andrescosta/jobico/api/pkg/remote"
+	pb "github.com/andrescosta/jobico/api/types"
 )
 
 var cmdDeploy = &command{
@@ -49,7 +49,7 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	client, err := remote.NewControlClient()
+	client, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return
 	}

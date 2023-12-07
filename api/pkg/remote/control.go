@@ -5,7 +5,8 @@ import (
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
-	pb "github.com/andrescosta/workflew/api/types"
+	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/pkg/grpchelper"
 	"google.golang.org/grpc"
 )
 
@@ -15,9 +16,9 @@ type ControlClient struct {
 	client     pb.ControlClient
 }
 
-func NewControlClient() (*ControlClient, error) {
+func NewControlClient(ctx context.Context) (*ControlClient, error) {
 	host := env.GetAsString("ctl.host")
-	conn, err := service.Dial(host)
+	conn, err := service.Dial(ctx, host)
 	if err != nil {
 		return nil, err
 	}
@@ -112,4 +113,20 @@ func (c *ControlClient) AddPackage(ctx context.Context, package1 *pb.JobPackage)
 		return nil, err
 	}
 	return r.Package, nil
+}
+
+func (c *ControlClient) UpdateToPackagesStr(ctx context.Context, resChan chan<- *pb.UpdateToPackagesStrReply) error {
+	s, err := c.client.UpdateToPackagesStr(ctx, &pb.UpdateToPackagesStrRequest{})
+	if err != nil {
+		return err
+	}
+	return grpchelper.Recv(ctx, s, resChan)
+}
+
+func (c *ControlClient) UpdateToEnviromentStr(ctx context.Context, resChan chan<- *pb.UpdateToEnviromentStrReply) error {
+	s, err := c.client.UpdateToEnviromentStr(ctx, &pb.UpdateToEnviromentStrRequest{})
+	if err != nil {
+		return err
+	}
+	return grpchelper.Recv(ctx, s, resChan)
 }

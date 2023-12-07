@@ -6,19 +6,15 @@ import (
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
-	pb "github.com/andrescosta/workflew/api/types"
-	repo "github.com/andrescosta/workflew/repo/internal"
+	pb "github.com/andrescosta/jobico/api/types"
+	repo "github.com/andrescosta/jobico/repo/internal"
 )
 
 func main() {
-	svc, err := service.NewGrpService(context.Background(), "repo",
+	svc, err := service.NewGrpcService(context.Background(), "repo",
 		&pb.Repo_ServiceDesc, func(ctx context.Context) (any, error) {
-			return &repo.Server{
-				Repo: &repo.FileRepo{
-					Dir: env.GetAsString("repo.dir", "./"),
-				},
-			}, nil
-		}, service.EmptyhealthCheckHandler)
+			return repo.NewServer(ctx, env.GetAsString("repo.dir", "./")), nil
+		})
 
 	if err != nil {
 		log.Panicf("error starting repo service: %s", err)

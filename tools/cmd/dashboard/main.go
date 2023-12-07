@@ -1,13 +1,23 @@
 package main
 
 import (
-	"github.com/andrescosta/workflew/tools/internal/tapp"
+	"context"
+	"flag"
+	"log"
+
+	"github.com/andrescosta/jobico/tools/internal/tapp"
 )
 
 func main() {
-	tapp, err := tapp.New()
+	debugFlag := flag.Bool("debug", false, "debug enabled")
+	syncUpdatesFlag := flag.Bool("sync", false, "sync enabled")
+	flag.Parse()
+	tapp, err := tapp.New(context.Background(), *syncUpdatesFlag)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
+	}
+	if *debugFlag {
+		tapp.DebugOn()
 	}
 	defer tapp.Dispose()
 	if err := tapp.Run(); err != nil {

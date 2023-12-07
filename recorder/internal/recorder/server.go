@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/andrescosta/goico/pkg/iohelper"
-	pb "github.com/andrescosta/workflew/api/types"
+	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/nxadm/tail"
 	"github.com/rs/zerolog"
 )
