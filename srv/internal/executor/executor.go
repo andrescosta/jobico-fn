@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/andrescosta/goico/pkg/env"
+	"github.com/andrescosta/goico/pkg/wasmico/wazero"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
-	"github.com/andrescosta/jobico/srv/internal/wazero"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"

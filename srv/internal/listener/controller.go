@@ -9,7 +9,6 @@ import (
 
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
-	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -72,15 +71,15 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	var items []*pb.QueueItem
-	tenantId := chi.URLParam(request, "tenant_id")
-	eventId := chi.URLParam(request, "event_id")
+	tenantId := mux.Vars(request)["tenant_id"]
+	eventId := mux.Vars(request)["event_id"]
 	ef, err := c.getEventDef(tenantId, eventId)
 	if err != nil {
-		logger.Error().Msgf("Data unknown: %s", err)
-		http.Error(writer, "Event unknown", http.StatusBadRequest)
+		logger.Err(err).Msgf("server error")
+		http.Error(writer, "", http.StatusInternalServerError)
+		return
 	}
 	if ef.event.DataType == pb.DataType_Json {
-
 		for _, ev := range event.Data {
 
 			if err = ef.schema.Validate(ev); err != nil {

@@ -6,7 +6,6 @@ import (
 
 	"github.com/andrescosta/goico/pkg/service"
 
-	//"github.com/andrescosta/goico/pkg/service/obs"
 	"github.com/andrescosta/jobico/srv/internal/listener"
 )
 

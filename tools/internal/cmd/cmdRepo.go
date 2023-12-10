@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/andrescosta/jobico/api/pkg/remote"
@@ -56,4 +57,5 @@ func runRepo(ctx context.Context, cmd *command, args []string) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
+	fmt.Println("file deployed successfully")
 }
