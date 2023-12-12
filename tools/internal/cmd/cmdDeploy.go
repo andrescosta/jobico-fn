@@ -51,6 +51,7 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 	}
 	client, err := remote.NewControlClient(ctx)
 	if err != nil {
+		printError(os.Stderr, cmd, err)
 		return
 	}
 
@@ -59,22 +60,36 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	if len(p) >= 1 && !*cmdDeployflagUpdate {
+	isUpdate := len(p) >= 1
+	if isUpdate && !*cmdDeployflagUpdate {
 		fmt.Printf("package %s exists. use -update command to override.\n", f.ID)
 		return
 	}
+
 	t, err := client.GetTenant(ctx, &f.TenantId)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
 	}
 	if len(t) == 0 {
-		client.AddTenant(context.Background(), &pb.Tenant{ID: f.TenantId})
+		_, err = client.AddTenant(context.Background(), &pb.Tenant{ID: f.TenantId})
+		if err != nil {
+			printError(os.Stderr, cmd, err)
+			return
+		}
 	}
-	_, err = client.AddPackage(context.Background(), &f)
+	if !isUpdate {
+		_, err = client.AddPackage(context.Background(), &f)
+	} else {
+		err = client.UpdatePackage(context.Background(), &f)
+	}
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	fmt.Println("The package was deployed.")
+	if !isUpdate {
+		fmt.Println("The package was deployed.")
+	} else {
+		fmt.Println("The package was redeployed.")
+	}
 }

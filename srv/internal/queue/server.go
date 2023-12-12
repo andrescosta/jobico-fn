@@ -2,23 +2,29 @@ package queue
 
 import (
 	"context"
-	"fmt"
 
 	pb "github.com/andrescosta/jobico/api/types"
 )
 
 type Server struct {
 	pb.UnimplementedQueueServer
+	store *QueueStore[*pb.QueueItem]
+}
+
+func NewServer(ctx context.Context) (*Server, error) {
+	s, err := NewQueueStore[*pb.QueueItem](ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &Server{
+		store: s,
+	}, nil
 }
 
 func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.QueueReply, error) {
-	id := Id{
-		QueueId:  in.QueueId,
-		TenantId: in.TenantId,
-	}
-	myqueue, err := GetQueue[*pb.QueueItem](id)
+	myqueue, err := s.store.GetQueue(in.TenantId, in.QueueId)
 	if err != nil {
-		panic(fmt.Sprintf("Error creating directory: %v", err))
+		return nil, err
 	}
 	for _, i := range in.Items {
 		myqueue.Add(i)
@@ -30,13 +36,9 @@ func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.QueueReply
 }
 
 func (s *Server) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
-	id := Id{
-		QueueId:  in.QueueId,
-		TenantId: in.TenantId,
-	}
-	myqueue, err := GetQueue[*pb.QueueItem](id)
+	myqueue, err := s.store.GetQueue(in.TenantId, in.QueueId)
 	if err != nil {
-		panic(fmt.Sprintf("Error creating directory: %v", err))
+		return nil, err
 	}
 	i, err := myqueue.Remove()
 	if err != nil {

@@ -48,10 +48,10 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, f []*pb.TenantFiles) 
 	return &node{
 		text: "Jobico",
 		children: []*node{
-			{text: "Packages", entity: j, children: packageChildrenNodes(j), rootNodeType: RootNodePackage},
 			{text: "Enviroment", entity: e, children: environmentChildrenNodes(e), rootNodeType: RootNodeEnv},
+			{text: "Packages", entity: j, children: packageChildrenNodes(j), rootNodeType: RootNodePackage},
 			{text: "Files", entity: f, children: tenantFileChildrenNodes(f), rootNodeType: RootNodeFile},
-			{text: "(*) Job Results", color: tcell.ColorGreen, expanded: true,
+			{text: "Job Results", color: tcell.ColorGreen, expanded: true,
 				children: []*node{
 					{text: "<< start >>",
 						selected: onSelectedGettingJobResults,
@@ -67,6 +67,9 @@ var packageChildrenNodes = func(j []*pb.JobPackage) []*node {
 }
 
 var environmentChildrenNodes = func(e *pb.Environment) []*node {
+	if e == nil {
+		return []*node{}
+	}
 	return []*node{
 		{text: e.ID, entity: e, children: []*node{
 			{text: "Services", children: convertico.SliceWithFunc(e.Services, serviceNode)},
@@ -118,5 +121,14 @@ var tenantFileNode = func(tenant string, file *pb.File) *node {
 	return &node{
 		text: file.Name, entity: &sFile{tenant, file},
 		focus: onFocusFileNode,
+	}
+}
+
+func (n *node) removeChild(c *node) {
+	for idx, child := range n.children {
+		if child == c {
+			n.children = append(n.children[:idx], n.children[idx+1:]...)
+			break
+		}
 	}
 }

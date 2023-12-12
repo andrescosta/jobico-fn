@@ -2,7 +2,9 @@ package remote
 
 import (
 	"context"
+	"errors"
 
+	"github.com/andrescosta/goico/pkg/chico"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
@@ -11,20 +13,29 @@ import (
 )
 
 type ControlClient struct {
-	serverAddr string
-	conn       *grpc.ClientConn
-	client     pb.ControlClient
+	serverAddr            string
+	conn                  *grpc.ClientConn
+	client                pb.ControlClient
+	broadcasterJobPackage *chico.Broadcaster[*pb.UpdateToPackagesStrReply]
+	broadcasterEnvUpdates *chico.Broadcaster[*pb.UpdateToEnviromentStrReply]
 }
 
+var (
+	ErrCtlHostAddr = errors.New("the control service address was not specified in the env file using ctl.host")
+)
+
 func NewControlClient(ctx context.Context) (*ControlClient, error) {
-	host := env.GetAsString("ctl.host")
-	conn, err := service.Dial(ctx, host)
+	host := env.GetOrNil("ctl.host")
+	if host == nil {
+		return nil, ErrCtlHostAddr
+	}
+	conn, err := service.Dial(ctx, *host)
 	if err != nil {
 		return nil, err
 	}
 	client := pb.NewControlClient(conn)
 	return &ControlClient{
-		serverAddr: host,
+		serverAddr: *host,
 		conn:       conn,
 		client:     client,
 	}, nil
@@ -115,18 +126,62 @@ func (c *ControlClient) AddPackage(ctx context.Context, package1 *pb.JobPackage)
 	return r.Package, nil
 }
 
-func (c *ControlClient) UpdateToPackagesStr(ctx context.Context, resChan chan<- *pb.UpdateToPackagesStrReply) error {
-	s, err := c.client.UpdateToPackagesStr(ctx, &pb.UpdateToPackagesStrRequest{})
+func (c *ControlClient) UpdatePackage(ctx context.Context, package1 *pb.JobPackage) error {
+	_, err := c.client.UpdatePackage(ctx, &pb.UpdateJobPackageRequest{Package: package1})
 	if err != nil {
 		return err
 	}
-	return grpchelper.Recv(ctx, s, resChan)
+	return nil
 }
 
-func (c *ControlClient) UpdateToEnviromentStr(ctx context.Context, resChan chan<- *pb.UpdateToEnviromentStrReply) error {
+func (c *ControlClient) DeletePackage(ctx context.Context, package1 *pb.JobPackage) error {
+	_, err := c.client.DeletePackage(ctx, &pb.DeleteJobPackageRequest{Package: package1})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ControlClient) ListenerForEnvironmentUpdates(ctx context.Context) (*chico.Listener[*pb.UpdateToEnviromentStrReply], error) {
+	if c.broadcasterEnvUpdates == nil {
+		if err := c.startListenEnvironmentUpdates(ctx); err != nil {
+			return nil, err
+		}
+	}
+	return c.broadcasterEnvUpdates.Subscribe(), nil
+}
+
+func (c *ControlClient) startListenEnvironmentUpdates(ctx context.Context) error {
+	cb := chico.Start[*pb.UpdateToEnviromentStrReply](ctx)
+	c.broadcasterEnvUpdates = cb
 	s, err := c.client.UpdateToEnviromentStr(ctx, &pb.UpdateToEnviromentStrRequest{})
 	if err != nil {
 		return err
 	}
-	return grpchelper.Recv(ctx, s, resChan)
+	go func() {
+		grpchelper.Listen(ctx, s, cb)
+	}()
+	return nil
+}
+
+func (c *ControlClient) ListenerForPackageUpdates(ctx context.Context) (*chico.Listener[*pb.UpdateToPackagesStrReply], error) {
+	if c.broadcasterJobPackage == nil {
+		if err := c.startListenJobUpdates(ctx); err != nil {
+			return nil, err
+		}
+	}
+	return c.broadcasterJobPackage.Subscribe(), nil
+}
+
+func (c *ControlClient) startListenJobUpdates(ctx context.Context) error {
+	cb := chico.Start[*pb.UpdateToPackagesStrReply](ctx)
+	c.broadcasterJobPackage = cb
+	s, err := c.client.UpdateToPackagesStr(ctx, &pb.UpdateToPackagesStrRequest{})
+	if err != nil {
+		return err
+	}
+	go func() {
+		grpchelper.Listen(ctx, s, cb)
+	}()
+	return nil
 }

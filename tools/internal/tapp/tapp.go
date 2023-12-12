@@ -331,35 +331,50 @@ func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 	}
 }
 
-func (c *TApp) startStreamingUpdates(ctx context.Context) {
-	jpc := make(chan *pb.UpdateToPackagesStrReply)
-	ec := make(chan *pb.UpdateToEnviromentStrReply)
-	fc := make(chan *pb.UpdateToFileStrReply)
+func (c *TApp) startStreamingUpdates(ctx context.Context) error {
 	ctx, done := context.WithCancel(ctx)
 	c.cancelStreamUpdatesFunc = done
+
+	lp, err := c.controlClient.ListenerForPackageUpdates(ctx)
+	if err != nil {
+		return err
+	}
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				c.debugInfoFromGoRoutine("update to package channel stopped")
 				return
-			case j := <-jpc:
+			case j := <-lp.C:
 				c.app.QueueUpdateDraw(func() {
-					r, n := getChidren(RootNodePackage, c.root)
-					nn := jobPackageNode(j.Object)
-					n.children = append(n.children, nn)
-					r.AddChild(renderNode(nn))
+					switch j.Type {
+					case pb.UpdateType_New:
+						c.addNewPackage(j.Object)
+					case pb.UpdateType_Delete:
+						c.deleteNewPackage(j.Object)
+						switchToEmptyPage(c)
+					case pb.UpdateType_Update:
+						switchToEmptyPage(c)
+						c.deleteNewPackage(j.Object)
+						c.addNewPackage(j.Object)
+					}
+
 				})
 			}
 		}
 	}()
+
+	le, err := c.controlClient.ListenerForEnvironmentUpdates(ctx)
+	if err != nil {
+		return err
+	}
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				c.debugInfoFromGoRoutine("update to enviroment channel stopped")
 				return
-			case e := <-ec:
+			case e := <-le.C:
 				c.app.QueueUpdateDraw(func() {
 					p, n := getChidren(RootNodeEnv, c.root)
 					ns := environmentChildrenNodes(e.Object)
@@ -370,13 +385,18 @@ func (c *TApp) startStreamingUpdates(ctx context.Context) {
 			}
 		}
 	}()
+
+	lf, err := c.repoClient.ListenerForRepoUpdates(ctx)
+	if err != nil {
+		return err
+	}
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				c.debugInfoFromGoRoutine("update to file channel stopped")
 				return
-			case e := <-fc:
+			case e := <-lf.C:
 				c.app.QueueUpdateDraw(func() {
 					r, _ := getChidren(RootNodeFile, c.root)
 					tr, tn := getTenantNode(e.Object.TenantId, r)
@@ -388,33 +408,27 @@ func (c *TApp) startStreamingUpdates(ctx context.Context) {
 			}
 		}
 	}()
-	//job
-	go func() {
-		err := c.controlClient.UpdateToPackagesStr(ctx, jpc)
-		if err != nil {
-			c.debugErrorFromGoRoutine(err)
+
+	return nil
+}
+
+func (c *TApp) addNewPackage(p *pb.JobPackage) {
+	r, n := getChidren(RootNodePackage, c.root)
+	nn := jobPackageNode(p)
+	n.children = append(n.children, nn)
+	r.AddChild(renderNode(nn))
+}
+
+func (c *TApp) deleteNewPackage(p *pb.JobPackage) {
+	r, np := getChidren(RootNodePackage, c.root)
+	for _, ns := range r.GetChildren() {
+		n := (ns.GetReference().(*node))
+		t := n.entity.(*pb.JobPackage)
+		if p.ID == t.ID {
+			r.RemoveChild(ns)
+			np.removeChild(n)
 		}
-		c.debugInfoFromGoRoutine("updates to package stream stopped")
-		c.stopStreamingUpdates()
-	}()
-	//env
-	go func() {
-		err := c.controlClient.UpdateToEnviromentStr(ctx, ec)
-		if err != nil {
-			c.debugErrorFromGoRoutine(err)
-		}
-		c.debugInfoFromGoRoutine("updates to environment stream stopped")
-		c.stopStreamingUpdates()
-	}()
-	//file
-	go func() {
-		err := c.repoClient.UpdateToFileStr(ctx, fc)
-		if err != nil {
-			c.debugErrorFromGoRoutine(err)
-		}
-		c.debugInfoFromGoRoutine("updates to file stream stopped")
-		c.stopStreamingUpdates()
-	}()
+	}
 }
 
 func (c *TApp) stopStreamingUpdates() {

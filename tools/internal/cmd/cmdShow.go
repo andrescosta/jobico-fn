@@ -14,7 +14,7 @@ var cmdShow = &command{
 	name:      "show",
 	usageLine: `cli show <deploy|tenant|env> <tenant id> <deploy id>`,
 	short:     "display information of the specified entity ",
-	long:      `deployDisplay information`,
+	long:      `Display information about entities`,
 }
 
 func initShow() {
@@ -45,6 +45,7 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 	id := args[2]
 	client, err := remote.NewControlClient(ctx)
 	if err != nil {
+		printError(os.Stderr, cmd, err)
 		return
 	}
 

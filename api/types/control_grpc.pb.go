@@ -25,6 +25,7 @@ const (
 	Control_GetAllPackages_FullMethodName        = "/Control/GetAllPackages"
 	Control_GetPackages_FullMethodName           = "/Control/GetPackages"
 	Control_UpdatePackage_FullMethodName         = "/Control/UpdatePackage"
+	Control_DeletePackage_FullMethodName         = "/Control/DeletePackage"
 	Control_UpdateToPackagesStr_FullMethodName   = "/Control/UpdateToPackagesStr"
 	Control_GetEnviroment_FullMethodName         = "/Control/GetEnviroment"
 	Control_UpdateToEnviromentStr_FullMethodName = "/Control/UpdateToEnviromentStr"
@@ -42,6 +43,7 @@ type ControlClient interface {
 	GetAllPackages(ctx context.Context, in *GetAllJobPackagesRequest, opts ...grpc.CallOption) (*GetAllJobPackagesReply, error)
 	GetPackages(ctx context.Context, in *GetJobPackagesRequest, opts ...grpc.CallOption) (*GetJobPackagesReply, error)
 	UpdatePackage(ctx context.Context, in *UpdateJobPackageRequest, opts ...grpc.CallOption) (*UpdateJobPackageReply, error)
+	DeletePackage(ctx context.Context, in *DeleteJobPackageRequest, opts ...grpc.CallOption) (*DeleteJobPackageReply, error)
 	UpdateToPackagesStr(ctx context.Context, in *UpdateToPackagesStrRequest, opts ...grpc.CallOption) (Control_UpdateToPackagesStrClient, error)
 	GetEnviroment(ctx context.Context, in *GetEnviromentRequest, opts ...grpc.CallOption) (*GetEnviromentReply, error)
 	UpdateToEnviromentStr(ctx context.Context, in *UpdateToEnviromentStrRequest, opts ...grpc.CallOption) (Control_UpdateToEnviromentStrClient, error)
@@ -105,6 +107,15 @@ func (c *controlClient) GetPackages(ctx context.Context, in *GetJobPackagesReque
 func (c *controlClient) UpdatePackage(ctx context.Context, in *UpdateJobPackageRequest, opts ...grpc.CallOption) (*UpdateJobPackageReply, error) {
 	out := new(UpdateJobPackageReply)
 	err := c.cc.Invoke(ctx, Control_UpdatePackage_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controlClient) DeletePackage(ctx context.Context, in *DeleteJobPackageRequest, opts ...grpc.CallOption) (*DeleteJobPackageReply, error) {
+	out := new(DeleteJobPackageReply)
+	err := c.cc.Invoke(ctx, Control_DeletePackage_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +223,7 @@ type ControlServer interface {
 	GetAllPackages(context.Context, *GetAllJobPackagesRequest) (*GetAllJobPackagesReply, error)
 	GetPackages(context.Context, *GetJobPackagesRequest) (*GetJobPackagesReply, error)
 	UpdatePackage(context.Context, *UpdateJobPackageRequest) (*UpdateJobPackageReply, error)
+	DeletePackage(context.Context, *DeleteJobPackageRequest) (*DeleteJobPackageReply, error)
 	UpdateToPackagesStr(*UpdateToPackagesStrRequest, Control_UpdateToPackagesStrServer) error
 	GetEnviroment(context.Context, *GetEnviromentRequest) (*GetEnviromentReply, error)
 	UpdateToEnviromentStr(*UpdateToEnviromentStrRequest, Control_UpdateToEnviromentStrServer) error
@@ -241,6 +253,9 @@ func (UnimplementedControlServer) GetPackages(context.Context, *GetJobPackagesRe
 }
 func (UnimplementedControlServer) UpdatePackage(context.Context, *UpdateJobPackageRequest) (*UpdateJobPackageReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePackage not implemented")
+}
+func (UnimplementedControlServer) DeletePackage(context.Context, *DeleteJobPackageRequest) (*DeleteJobPackageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePackage not implemented")
 }
 func (UnimplementedControlServer) UpdateToPackagesStr(*UpdateToPackagesStrRequest, Control_UpdateToPackagesStrServer) error {
 	return status.Errorf(codes.Unimplemented, "method UpdateToPackagesStr not implemented")
@@ -378,6 +393,24 @@ func _Control_UpdatePackage_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Control_DeletePackage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteJobPackageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControlServer).DeletePackage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Control_DeletePackage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControlServer).DeletePackage(ctx, req.(*DeleteJobPackageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Control_UpdateToPackagesStr_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(UpdateToPackagesStrRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -504,6 +537,10 @@ var Control_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdatePackage",
 			Handler:    _Control_UpdatePackage_Handler,
+		},
+		{
+			MethodName: "DeletePackage",
+			Handler:    _Control_DeletePackage_Handler,
 		},
 		{
 			MethodName: "GetEnviroment",

@@ -105,8 +105,38 @@ func (s *ControlServer) AddPackage(ctx context.Context, in *pb.AddJobPackageRequ
 
 	s.broadcastAdd(in.Package)
 	return &pb.AddJobPackageReply{Package: in.Package}, nil
+}
+
+func (s *ControlServer) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.UpdateJobPackageReply, error) {
+	mydao, err := s.getDao(ctx, in.Package.TenantId, tblPackage, &pb.JobPackage{})
+	if err != nil {
+		return nil, err
+	}
+	var m proto.Message = in.Package
+	err = mydao.Update(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+
+	s.broadcastUpdate(in.Package)
+	return &pb.UpdateJobPackageReply{}, nil
 
 }
+func (s *ControlServer) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.DeleteJobPackageReply, error) {
+	mydao, err := s.getDao(ctx, in.Package.TenantId, tblPackage, &pb.JobPackage{})
+	if err != nil {
+		return nil, err
+	}
+	err = mydao.Delete(ctx, in.Package.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	s.broadcastDelete(in.Package)
+	return &pb.DeleteJobPackageReply{}, nil
+
+}
+
 func (s *ControlServer) getPackages(ctx context.Context, tenantId string) ([]*pb.JobPackage, error) {
 	mydao, err := s.getDao(ctx, tenantId, tblPackage, &pb.JobPackage{})
 	if err != nil {
@@ -279,27 +309,24 @@ func (s *ControlServer) getDao(ctx context.Context, tenant string, entity string
 }
 
 func (c *ControlServer) broadcastAdd(m proto.Message) {
-	j, ok := m.(*pb.JobPackage)
-	if ok {
-		c.bJobPackage.Broadcast(j, pb.UpdateType_New)
-		return
-	}
-	e, ok := m.(*pb.Environment)
-	if ok {
-		c.bEnviroment.Broadcast(e, pb.UpdateType_New)
-		return
-	}
+	c.broadcast(m, pb.UpdateType_New)
 }
 
 func (c *ControlServer) broadcastUpdate(m proto.Message) {
+	c.broadcast(m, pb.UpdateType_Update)
+}
+func (c *ControlServer) broadcastDelete(m proto.Message) {
+	c.broadcast(m, pb.UpdateType_Delete)
+}
+func (c *ControlServer) broadcast(m proto.Message, utype pb.UpdateType) {
 	j, ok := m.(*pb.JobPackage)
 	if ok {
-		c.bJobPackage.Broadcast(j, pb.UpdateType_Update)
+		c.bJobPackage.Broadcast(j, utype)
 		return
 	}
 	e, ok := m.(*pb.Environment)
 	if ok {
-		c.bEnviroment.Broadcast(e, pb.UpdateType_Update)
+		c.bEnviroment.Broadcast(e, utype)
 		return
 	}
 }

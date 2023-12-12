@@ -44,3 +44,10 @@ func (q *DAO[T]) Update(ctx context.Context, data T) error {
 	}
 	return nil
 }
+
+func (q *DAO[T]) Delete(ctx context.Context, id string) error {
+	if err := q.table.Delete(ctx, id); err != nil {
+		return err
+	}
+	return nil
+}
