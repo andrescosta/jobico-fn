@@ -11,7 +11,11 @@ import (
 func main() {
 	e, err := service.NewHeadlessService(context.Background(), "executor",
 		func(ctx context.Context) error {
-			if err := executor.StartExecutors(ctx); err != nil {
+			m, err := executor.NewExecutorMachine(ctx)
+			if err != nil {
+				return err
+			}
+			if err := m.StartExecutors(ctx); err != nil {
 				return err
 			}
 			return nil

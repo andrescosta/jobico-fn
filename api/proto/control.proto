@@ -11,6 +11,7 @@ service Control {
   rpc GetAllPackages (GetAllJobPackagesRequest) returns (GetAllJobPackagesReply) {}
   rpc GetPackages (GetJobPackagesRequest) returns (GetJobPackagesReply) {}
   rpc UpdatePackage (UpdateJobPackageRequest) returns (UpdateJobPackageReply) {}
+  rpc DeletePackage (DeleteJobPackageRequest) returns (DeleteJobPackageReply) {}
   rpc UpdateToPackagesStr (UpdateToPackagesStrRequest) returns (stream UpdateToPackagesStrReply) {}
   rpc GetEnviroment(GetEnviromentRequest) returns (GetEnviromentReply){}
   rpc UpdateToEnviromentStr(UpdateToEnviromentStrRequest) returns (stream UpdateToEnviromentStrReply){}
@@ -59,6 +60,12 @@ message UpdateJobPackageRequest{
 }
 message UpdateJobPackageReply{
 }
+message DeleteJobPackageRequest{
+  JobPackage package = 1;
+}
+message DeleteJobPackageReply{
+}
+
 message GetEnviromentRequest {
 }
 
@@ -148,7 +155,7 @@ message RuntimeDef{
   string ID = 1;
   optional string name = 2;
   string moduleRef = 3;
-  string mainFuncName = 4;
+  optional string mainFuncName = 4;
   RuntimeType type = 5;
   optional Platform platform = 6;
 }

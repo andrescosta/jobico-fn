@@ -123,3 +123,12 @@ var tenantFileNode = func(tenant string, file *pb.File) *node {
 		focus: onFocusFileNode,
 	}
 }
+
+func (n *node) removeChild(c *node) {
+	for idx, child := range n.children {
+		if child == c {
+			n.children = append(n.children[:idx], n.children[idx+1:]...)
+			break
+		}
+	}
+}

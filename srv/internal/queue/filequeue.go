@@ -22,7 +22,7 @@ type FileBasedQueue[T any] struct {
 	mutex     sync.Mutex
 }
 
-func GetFileBasedQueue[T any](id Id) *FileBasedQueue[T] {
+func GetFileBasedQueue[T any](id string) *FileBasedQueue[T] {
 	directory := queueDirectory(DIR, id)
 	queue, ok := queuesMap.Load(directory)
 	if !ok {
@@ -87,6 +87,6 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 	return nil
 }
 
-func queueDirectory(directory string, id Id) string {
-	return iohelper.BuildFullPath([]string{directory, id.TenantId, id.QueueId})
+func queueDirectory(directory string, id string) string {
+	return iohelper.BuildFullPath([]string{directory, id})
 }

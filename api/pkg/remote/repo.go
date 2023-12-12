@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/andrescosta/goico/pkg/chico"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
@@ -12,9 +13,10 @@ import (
 )
 
 type RepoClient struct {
-	serverAddr string
-	conn       *grpc.ClientConn
-	client     pb.RepoClient
+	serverAddr             string
+	conn                   *grpc.ClientConn
+	client                 pb.RepoClient
+	broadcasterRepoUpdates *chico.Broadcaster[*pb.UpdateToFileStrReply]
 }
 
 func NewRepoClient(ctx context.Context) (*RepoClient, error) {
@@ -90,4 +92,26 @@ func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.Upd
 		return err
 	}
 	return grpchelper.Recv(ctx, s, resChan)
+}
+
+func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*chico.Listener[*pb.UpdateToFileStrReply], error) {
+	if c.broadcasterRepoUpdates == nil {
+		if err := c.startListenRepoUpdates(ctx); err != nil {
+			return nil, err
+		}
+	}
+	return c.broadcasterRepoUpdates.Subscribe(), nil
+}
+
+func (c *RepoClient) startListenRepoUpdates(ctx context.Context) error {
+	cb := chico.Start[*pb.UpdateToFileStrReply](ctx)
+	c.broadcasterRepoUpdates = cb
+	s, err := c.client.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
+	if err != nil {
+		return err
+	}
+	go func() {
+		grpchelper.Listen(ctx, s, cb)
+	}()
+	return nil
 }
