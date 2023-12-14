@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/andrescosta/goico/pkg/utilico"
+	"github.com/andrescosta/goico/pkg/collection"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 )
 
 type QueueStore[T any] struct {
-	queues *utilico.SyncMap[string, Queue[T]]
+	queues *collection.SyncMap[string, Queue[T]]
 }
 
 type Queue[T any] interface {
@@ -19,7 +19,7 @@ type Queue[T any] interface {
 }
 
 func NewQueueStore[T any](ctx context.Context) (*QueueStore[T], error) {
-	q := utilico.NewSyncMap[string, Queue[T]]()
+	q := collection.NewSyncMap[string, Queue[T]]()
 	qs := &QueueStore[T]{
 		queues: q,
 	}
@@ -87,7 +87,7 @@ func (j *QueueStore[T]) addOrUpdateQueues(ctx context.Context, pkgs []*pb.JobPac
 		for _, queue := range ps.Queues {
 			err := j.addOrUpdateQueue(ctx, tenantId, queue)
 			if err != nil {
-				j.queues = utilico.NewSyncMap[string, Queue[T]]()
+				j.queues = collection.NewSyncMap[string, Queue[T]]()
 				return err
 			}
 		}

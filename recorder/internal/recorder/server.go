@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/andrescosta/goico/pkg/iohelper"
+	"github.com/andrescosta/goico/pkg/ioutl"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/nxadm/tail"
 	"github.com/rs/zerolog"
@@ -40,7 +40,7 @@ func (s *Server) GetJobExecutions(g *pb.GetJobExecutionsRequest, r pb.Recorder_G
 		Whence: io.SeekEnd,
 	}
 	if g.Lines != nil && *g.Lines > 0 {
-		lines, err := iohelper.GetLastnLines(s.fullpath, int(*g.Lines), true, true)
+		lines, err := ioutl.LastLines(s.fullpath, int(*g.Lines), true, true)
 		if err == nil {
 			if len(lines) > 0 {
 				r.Send(&pb.GetJobExecutionsReply{

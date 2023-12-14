@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/andrescosta/goico/pkg/chico"
+	"github.com/andrescosta/goico/pkg/broadcaster"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
@@ -18,12 +18,12 @@ var (
 )
 
 type GrpcBroadcaster[T proto.Message, S proto.Message] struct {
-	b *chico.Broadcaster[T]
+	b *broadcaster.Broadcaster[T]
 }
 
 func StartBroadcaster[T proto.Message, S proto.Message](ctx context.Context) *GrpcBroadcaster[T, S] {
 	return &GrpcBroadcaster[T, S]{
-		b: chico.Start[T](ctx),
+		b: broadcaster.Start[T](ctx),
 	}
 }
 

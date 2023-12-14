@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	"github.com/andrescosta/goico/pkg/convertico"
+	"github.com/andrescosta/goico/pkg/converter"
 	"github.com/andrescosta/goico/pkg/database"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/ctl/internal/dao"
@@ -86,7 +86,7 @@ func (s *ControlServer) GetAllPackages(ctx context.Context, in *pb.GetAllJobPack
 		if err != nil {
 			return nil, err
 		}
-		ps := convertico.SliceWithSlice[proto.Message, *pb.JobPackage](ms)
+		ps := converter.Slices[proto.Message, *pb.JobPackage](ms)
 		packages = append(packages, ps...)
 	}
 	return &pb.GetAllJobPackagesReply{Packages: packages}, nil
@@ -147,7 +147,7 @@ func (s *ControlServer) getPackages(ctx context.Context, tenantId string) ([]*pb
 	if err != nil {
 		return nil, err
 	}
-	packages := convertico.SliceWithSlice[proto.Message, *pb.JobPackage](ms)
+	packages := converter.Slices[proto.Message, *pb.JobPackage](ms)
 
 	return packages, nil
 }
@@ -197,7 +197,7 @@ func (s *ControlServer) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
 	if err != nil {
 		return nil, err
 	}
-	tenants := convertico.SliceWithSlice[proto.Message, *pb.Tenant](ms)
+	tenants := converter.Slices[proto.Message, *pb.Tenant](ms)
 
 	return tenants, nil
 }

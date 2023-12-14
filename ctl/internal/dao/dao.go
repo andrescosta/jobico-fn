@@ -12,7 +12,7 @@ type DAO[T proto.Message] struct {
 }
 
 func NewDAO[T proto.Message](ctx context.Context, db *database.Database, tableName string, m database.Marshaler[T]) (*DAO[T], error) {
-	table, err := database.GetTable(ctx, db, tableName, m)
+	table, err := database.NewTable(ctx, db, tableName, m)
 	if err != nil {
 		return nil, err
 	}

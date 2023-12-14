@@ -1,7 +1,7 @@
 package recorder
 
 import (
-	"github.com/andrescosta/goico/pkg/iohelper"
+	"github.com/andrescosta/goico/pkg/ioutl"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -21,7 +21,7 @@ func NewRecorder(fullpath string) (*Recorder, error) {
 	logger := zerolog.New(writer).With().Timestamp().Logger()
 	logger.Level(zerolog.InfoLevel)
 	// we create the file if not exists because tail has issues when the file is not present
-	if err := iohelper.CreateEmptyIfNotExists(fullpath); err != nil {
+	if err := ioutl.CreateEmptyIfNotExists(fullpath); err != nil {
 		return nil, err
 	}
 	return &Recorder{

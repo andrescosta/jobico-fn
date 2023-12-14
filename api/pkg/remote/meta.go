@@ -16,7 +16,7 @@ func NewMetadataClient() *MetadataClient {
 }
 
 func (c *MetadataClient) GetMetadata(name string) (*map[string]string, error) {
-	host := env.GetAsString(name + ".host")
+	host := env.Env(name + ".host")
 	url := fmt.Sprintf("http://%s/%s", host, "meta")
 	resp, err := http.Get(url)
 	if err != nil {

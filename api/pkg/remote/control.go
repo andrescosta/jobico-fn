@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/andrescosta/goico/pkg/chico"
+	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
@@ -16,8 +16,8 @@ type ControlClient struct {
 	serverAddr            string
 	conn                  *grpc.ClientConn
 	client                pb.ControlClient
-	broadcasterJobPackage *chico.Broadcaster[*pb.UpdateToPackagesStrReply]
-	broadcasterEnvUpdates *chico.Broadcaster[*pb.UpdateToEnviromentStrReply]
+	broadcasterJobPackage *broadcaster.Broadcaster[*pb.UpdateToPackagesStrReply]
+	broadcasterEnvUpdates *broadcaster.Broadcaster[*pb.UpdateToEnviromentStrReply]
 }
 
 var (
@@ -25,7 +25,7 @@ var (
 )
 
 func NewControlClient(ctx context.Context) (*ControlClient, error) {
-	host := env.GetOrNil("ctl.host")
+	host := env.EnvOrNil("ctl.host")
 	if host == nil {
 		return nil, ErrCtlHostAddr
 	}
@@ -142,7 +142,7 @@ func (c *ControlClient) DeletePackage(ctx context.Context, package1 *pb.JobPacka
 	return nil
 }
 
-func (c *ControlClient) ListenerForEnvironmentUpdates(ctx context.Context) (*chico.Listener[*pb.UpdateToEnviromentStrReply], error) {
+func (c *ControlClient) ListenerForEnvironmentUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToEnviromentStrReply], error) {
 	if c.broadcasterEnvUpdates == nil {
 		if err := c.startListenEnvironmentUpdates(ctx); err != nil {
 			return nil, err
@@ -152,7 +152,7 @@ func (c *ControlClient) ListenerForEnvironmentUpdates(ctx context.Context) (*chi
 }
 
 func (c *ControlClient) startListenEnvironmentUpdates(ctx context.Context) error {
-	cb := chico.Start[*pb.UpdateToEnviromentStrReply](ctx)
+	cb := broadcaster.Start[*pb.UpdateToEnviromentStrReply](ctx)
 	c.broadcasterEnvUpdates = cb
 	s, err := c.client.UpdateToEnviromentStr(ctx, &pb.UpdateToEnviromentStrRequest{})
 	if err != nil {
@@ -164,7 +164,7 @@ func (c *ControlClient) startListenEnvironmentUpdates(ctx context.Context) error
 	return nil
 }
 
-func (c *ControlClient) ListenerForPackageUpdates(ctx context.Context) (*chico.Listener[*pb.UpdateToPackagesStrReply], error) {
+func (c *ControlClient) ListenerForPackageUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToPackagesStrReply], error) {
 	if c.broadcasterJobPackage == nil {
 		if err := c.startListenJobUpdates(ctx); err != nil {
 			return nil, err
@@ -174,7 +174,7 @@ func (c *ControlClient) ListenerForPackageUpdates(ctx context.Context) (*chico.L
 }
 
 func (c *ControlClient) startListenJobUpdates(ctx context.Context) error {
-	cb := chico.Start[*pb.UpdateToPackagesStrReply](ctx)
+	cb := broadcaster.Start[*pb.UpdateToPackagesStrReply](ctx)
 	c.broadcasterJobPackage = cb
 	s, err := c.client.UpdateToPackagesStr(ctx, &pb.UpdateToPackagesStrRequest{})
 	if err != nil {

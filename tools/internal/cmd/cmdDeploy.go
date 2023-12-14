@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/andrescosta/goico/pkg/iohelper"
-	"github.com/andrescosta/goico/pkg/yamlico"
+	"github.com/andrescosta/goico/pkg/ioutl"
+	"github.com/andrescosta/goico/pkg/yamlutl"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 )
@@ -35,7 +35,7 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 		return
 	}
 	file := args[0]
-	e, err := iohelper.FileExists(file)
+	e, err := ioutl.FileExists(file)
 	if err != nil {
 		printError(os.Stdout, cmd, err)
 		return
@@ -45,7 +45,7 @@ func runDeploy(ctx context.Context, cmd *command, args []string) {
 		return
 	}
 	f := pb.JobPackage{}
-	if err = yamlico.Decode(file, &f); err != nil {
+	if err = yamlutl.DecodeFile(file, &f); err != nil {
 		printError(os.Stderr, cmd, err)
 		return
 	}

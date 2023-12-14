@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/andrescosta/goico/pkg/config"
+	"github.com/andrescosta/goico/pkg/collection"
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/goico/pkg/utilico"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/gdamore/tcell/v2"
@@ -48,7 +48,7 @@ type TApp struct {
 }
 
 func New(ctx context.Context, sync bool) (*TApp, error) {
-	err := config.LoadEnvVariables()
+	err := env.Populate()
 	if err != nil {
 		return nil, err
 	}
@@ -449,13 +449,13 @@ func refreshTreeNode(n *tview.TreeNode) {
 }
 
 func (c *TApp) showErrorStr(e string, ds ...time.Duration) {
-	d := utilico.FirstOrDefault(ds, durationError)
+	d := collection.FirstOrDefault(ds, durationError)
 	showText(c, c.status, e, tcell.ColorRed, d)
 }
 
 func (c *TApp) showError(err error, ds ...time.Duration) {
-	errStr := utilico.UnwrapError(err)[0].Error()
-	c.showErrorStr(errStr, utilico.FirstOrDefault(ds, durationError))
+	errStr := collection.UnwrapError(err)[0].Error()
+	c.showErrorStr(errStr, collection.FirstOrDefault(ds, durationError))
 }
 
 func (c *TApp) debugError(err error) {

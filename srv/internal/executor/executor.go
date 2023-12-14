@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/wasmico/wazero"
+	"github.com/andrescosta/goico/pkg/wasm/wazero"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
@@ -239,7 +239,7 @@ func (e *ExecutorMachine) execute(ctx context.Context, tenantId string, queueId 
 	defer ticker.Stop()
 	logger.Debug().Msgf("Worker for tenant: %s and queue: %s started", tenantId, queueId)
 	queueErrors := 0
-	maxQueueErrors := env.GetAsInt("max.queue.errors", 10)
+	maxQueueErrors := env.EnvAsInt("max.queue.errors", 10)
 	for {
 		select {
 		case <-ctx.Done():

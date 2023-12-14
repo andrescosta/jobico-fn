@@ -3,7 +3,7 @@ package grpchelper
 import (
 	"context"
 
-	"github.com/andrescosta/goico/pkg/chico"
+	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -35,7 +35,7 @@ func Recv[T proto.Message](ctx context.Context, s grpc.ClientStream, c chan<- T)
 	}
 }
 
-func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *chico.Broadcaster[T]) {
+func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *broadcaster.Broadcaster[T]) {
 	logger := zerolog.Ctx(ctx)
 	for {
 		select {

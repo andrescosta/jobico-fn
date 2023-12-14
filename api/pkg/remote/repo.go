@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/andrescosta/goico/pkg/chico"
+	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
@@ -16,11 +16,11 @@ type RepoClient struct {
 	serverAddr             string
 	conn                   *grpc.ClientConn
 	client                 pb.RepoClient
-	broadcasterRepoUpdates *chico.Broadcaster[*pb.UpdateToFileStrReply]
+	broadcasterRepoUpdates *broadcaster.Broadcaster[*pb.UpdateToFileStrReply]
 }
 
 func NewRepoClient(ctx context.Context) (*RepoClient, error) {
-	addr := env.GetAsString("repo.host")
+	addr := env.Env("repo.host")
 	conn, err := service.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.Upd
 	return grpchelper.Recv(ctx, s, resChan)
 }
 
-func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*chico.Listener[*pb.UpdateToFileStrReply], error) {
+func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToFileStrReply], error) {
 	if c.broadcasterRepoUpdates == nil {
 		if err := c.startListenRepoUpdates(ctx); err != nil {
 			return nil, err
@@ -104,7 +104,7 @@ func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*chico.Listene
 }
 
 func (c *RepoClient) startListenRepoUpdates(ctx context.Context) error {
-	cb := chico.Start[*pb.UpdateToFileStrReply](ctx)
+	cb := broadcaster.Start[*pb.UpdateToFileStrReply](ctx)
 	c.broadcasterRepoUpdates = cb
 	s, err := c.client.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
 	if err != nil {

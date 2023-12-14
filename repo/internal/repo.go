@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/andrescosta/goico/pkg/iohelper"
+	"github.com/andrescosta/goico/pkg/ioutl"
 	pb "github.com/andrescosta/jobico/api/types"
 )
 
@@ -40,8 +40,8 @@ func (f *FileRepo) File(tenantId string, name string) ([]byte, error) {
 }
 
 func file(name string, dirs ...string) ([]byte, error) {
-	full := iohelper.BuildFullPath(dirs)
-	res, err := os.ReadFile(iohelper.BuildPathWithFile(full, name))
+	full := ioutl.BuildFullPath(dirs)
+	res, err := os.ReadFile(ioutl.BuildPathWithFile(full, name))
 	if err != nil {
 		return nil, err
 	} else {
@@ -50,14 +50,14 @@ func file(name string, dirs ...string) ([]byte, error) {
 }
 
 func (f *FileRepo) Files() ([]*pb.TenantFiles, error) {
-	dirs, err := iohelper.GetDirs(f.dirFile)
+	dirs, err := ioutl.Dirs(f.dirFile)
 	if err != nil {
 		return nil, err
 	}
 	ts := make([]*pb.TenantFiles, 0)
 	for _, dir := range dirs {
-		fd := iohelper.BuildFullPath([]string{f.dirFile, dir.Name()})
-		files, err := iohelper.GetFiles(fd)
+		fd := ioutl.BuildFullPath([]string{f.dirFile, dir.Name()})
+		files, err := ioutl.Files(fd)
 		if err != nil {
 			return nil, err
 		}
@@ -85,12 +85,12 @@ func (f *FileRepo) AddFile(tenantId string, name string, fileType int32, bytes [
 }
 
 func addFile(name string, bytes []byte, dirs ...string) error {
-	full := iohelper.BuildFullPath(dirs)
-	if err := iohelper.CreateDirIfNotExist(full); err != nil {
+	full := ioutl.BuildFullPath(dirs)
+	if err := ioutl.CreateDirsIfNotExist(full); err != nil {
 		return err
 	}
-	fulPath := iohelper.BuildPathWithFile(full, name)
-	e, err := iohelper.FileExists(fulPath)
+	fulPath := ioutl.BuildPathWithFile(full, name)
+	e, err := ioutl.FileExists(fulPath)
 	if err != nil {
 		return err
 	}

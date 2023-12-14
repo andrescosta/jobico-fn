@@ -13,7 +13,7 @@ import (
 func main() {
 	svc, err := service.NewGrpcService(context.Background(), "repo",
 		&pb.Repo_ServiceDesc, func(ctx context.Context) (any, error) {
-			return repo.NewServer(ctx, env.GetAsString("repo.dir", "./")), nil
+			return repo.NewServer(ctx, env.Env("repo.dir", "./")), nil
 		})
 
 	if err != nil {

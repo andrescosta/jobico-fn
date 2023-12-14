@@ -4,7 +4,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/andrescosta/goico/pkg/convertico"
+	"github.com/andrescosta/goico/pkg/converter"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -63,7 +63,7 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, f []*pb.TenantFiles) 
 }
 
 var packageChildrenNodes = func(j []*pb.JobPackage) []*node {
-	return convertico.SliceWithFunc(j, jobPackageNode)
+	return converter.SliceWithFn(j, jobPackageNode)
 }
 
 var environmentChildrenNodes = func(e *pb.Environment) []*node {
@@ -72,21 +72,21 @@ var environmentChildrenNodes = func(e *pb.Environment) []*node {
 	}
 	return []*node{
 		{text: e.ID, entity: e, children: []*node{
-			{text: "Services", children: convertico.SliceWithFunc(e.Services, serviceNode)},
+			{text: "Services", children: converter.SliceWithFn(e.Services, serviceNode)},
 		}},
 	}
 }
 
 var tenantFileChildrenNodes = func(r []*pb.TenantFiles) []*node {
-	return convertico.SliceWithFunc(r, tenantFilesNode)
+	return converter.SliceWithFn(r, tenantFilesNode)
 }
 
 var serviceNode = func(e *pb.Service) *node {
 	return &node{
 		text: e.ID, entity: e,
 		children: []*node{
-			{text: "Servers", children: convertico.SliceWithFuncName(e.ID, e.Servers, serverNode)},
-			{text: "Storages", children: convertico.SliceWithFunc(e.Storages, storageNode)},
+			{text: "Servers", children: converter.SliceWithFn(e.Servers, func(h *pb.Host) *node { return serverNode(e.ID, h) })},
+			{text: "Storages", children: converter.SliceWithFn(e.Storages, storageNode)},
 		},
 	}
 }
@@ -113,7 +113,7 @@ var storageNode = func(s *pb.Storage) *node {
 var tenantFilesNode = func(e *pb.TenantFiles) *node {
 	return &node{
 		text: e.TenantId, entity: e,
-		children: convertico.SliceWithFuncName(e.TenantId, e.Files, tenantFileNode),
+		children: converter.SliceWithFn(e.Files, func(f *pb.File) *node { return tenantFileNode(e.TenantId, f) }),
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/svcmeta"
-	"github.com/andrescosta/goico/pkg/yamlico"
+	"github.com/andrescosta/goico/pkg/yamlutl"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rivo/tview"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -123,7 +123,7 @@ func onFocusJobPackageNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 		if err != nil {
 			return nil, errors.Join(errors.New(`"Ctl" service down`), err)
 		}
-		yaml, err := yamlico.Encode(pkg[0])
+		yaml, err := yamlutl.Marshal(pkg[0])
 		if err != nil {
 			return nil, errors.Join(errors.New(`package cannot displayed`), err)
 		}

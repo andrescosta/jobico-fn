@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/andrescosta/goico/pkg/yamlico"
+	"github.com/andrescosta/goico/pkg/yamlutl"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 )
 
@@ -56,7 +56,7 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 	if len(p) == 0 {
 		fmt.Println("not found")
 	} else {
-		s, err := yamlico.Encode(p[0])
+		s, err := yamlutl.Marshal(p[0])
 		if err != nil {
 			printError(os.Stderr, cmd, err)
 			return
@@ -77,7 +77,7 @@ func showEnv(ctx context.Context, args []string, cmd *command) {
 	if p == nil {
 		fmt.Println("not found")
 	} else {
-		s, err := yamlico.Encode(p)
+		s, err := yamlutl.Marshal(p)
 		if err != nil {
 			printError(os.Stderr, cmd, err)
 			return

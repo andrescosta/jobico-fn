@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/andrescosta/goico/pkg/config"
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/jobico/tools/internal/cmd"
 )
 
 func main() {
-	config.LoadEnvVariables()
+	env.Populate()
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer func() {
 		done()
