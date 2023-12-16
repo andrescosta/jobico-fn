@@ -7,7 +7,7 @@ workers
 Package definition:
 
 - Name
-- TenantId
+- tenant
 - Queues[]:
     - Queue
         - Name
@@ -32,7 +32,7 @@ Package definition:
 YAML:
 
 name: mypackage
-tenantId: soytriguerov1
+Tenant: soytriguerov1
 queues:
   -
     name: queue1
@@ -69,7 +69,7 @@ notification:
 
 name: mypackage
 jobpackageid: mypackage
-tenantid: m1
+Tenant: m1
 queues:
   - queueid: queue1
     name: queue1

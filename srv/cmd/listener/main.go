@@ -4,13 +4,16 @@ import (
 	"context"
 	"log"
 
-	"github.com/andrescosta/goico/pkg/service"
-
+	"github.com/andrescosta/goico/pkg/service/http"
 	"github.com/andrescosta/jobico/srv/internal/listener"
 )
 
 func main() {
-	svc, err := service.NewHttpService(context.Background(), "listener", listener.ConfigureRoutes)
+	svc, err := http.NewWithWouter(
+		http.WithContext(context.Background()),
+		http.WithName("listener"),
+		http.WithInitRoutesFn(listener.ConfigureRoutes),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

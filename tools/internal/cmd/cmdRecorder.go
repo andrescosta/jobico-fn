@@ -10,11 +10,18 @@ import (
 )
 
 var cmdRecorder = &command{
-	name:      "recorder",
+
+	name: "recorder",
+
 	usageLine: "cli recorder [tenant] [-lines <number>]",
-	short:     "gets result information for the tenant",
+
+	short: "gets result information for the tenant",
+
 	long: `
+
 Recorder gets result information for the tenant.
+
+
 
 The -lines <number> gets the logs lines  `,
 }
@@ -23,12 +30,15 @@ var cmdRecorderflagLines *int
 
 func initRecorder() {
 	cmdRecorder.flag = *flag.NewFlagSet("recorder", flag.ContinueOnError)
+
 	cmdRecorderflagLines = cmdRecorder.flag.Int("lines", 0, "")
+
 	cmdRecorder.flag.Usage = func() {}
+
 	cmdRecorder.run = runRecorder
 }
 
-func runRecorder(ctx context.Context, cmd *command, args []string) {
+func runRecorder(ctx context.Context, cmd *command, _ []string) {
 	ch := make(chan string)
 	go func(mc <-chan string) {
 		for {
@@ -40,13 +50,15 @@ func runRecorder(ctx context.Context, cmd *command, args []string) {
 			}
 		}
 	}(ch)
+
 	fmt.Printf("getting results at proc: %d \n", os.Getpid())
+
 	client, err := remote.NewRecorderClient(ctx)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 	}
-	client.GetJobExecutions(ctx, "", int32(*cmdRecorderflagLines), ch)
-	if err != nil {
+
+	if err := client.GetJobExecutions(ctx, "", int32(*cmdRecorderflagLines), ch); err != nil {
 		printError(os.Stderr, cmd, err)
 	}
 	fmt.Println("command stoped.")

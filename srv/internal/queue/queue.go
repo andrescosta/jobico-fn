@@ -7,9 +7,14 @@ import (
 	"github.com/andrescosta/goico/pkg/collection"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/rs/zerolog"
 )
 
-type QueueStore[T any] struct {
+var (
+	ErrQueueUnknown = errors.New("queue unknown")
+)
+
+type Store[T any] struct {
 	queues *collection.SyncMap[string, Queue[T]]
 }
 
@@ -18,118 +23,143 @@ type Queue[T any] interface {
 	Remove() (T, error)
 }
 
-func NewQueueStore[T any](ctx context.Context) (*QueueStore[T], error) {
+func NewQueueStore[T any](ctx context.Context) (*Store[T], error) {
 	q := collection.NewSyncMap[string, Queue[T]]()
-	qs := &QueueStore[T]{
+
+	qs := &Store[T]{
+
 		queues: q,
 	}
+
 	if err := qs.load(ctx); err != nil {
 		return nil, err
 	}
-	qs.startListeningUpdates(ctx)
+
+	if err := qs.startListeningUpdates(ctx); err != nil {
+		return nil, err
+	}
+
 	return qs, nil
 }
 
-func (q *QueueStore[T]) load(ctx context.Context) error {
+func (q *Store[T]) load(ctx context.Context) error {
 	controlClient, err := remote.NewControlClient(ctx)
+
 	if err != nil {
 		return err
 	}
+
 	pkgs, err := controlClient.GetAllPackages(ctx)
+
 	if err != nil {
 		return err
 	}
-	q.addOrUpdateQueues(ctx, pkgs)
-	if err != nil {
+
+	if err := q.addOrUpdateQueues(ctx, pkgs); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (j *QueueStore[T]) startListeningUpdates(ctx context.Context) error {
+func (q *Store[T]) startListeningUpdates(ctx context.Context) error {
 	controlClient, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return err
 	}
+
 	l, err := controlClient.ListenerForPackageUpdates(ctx)
 	if err != nil {
 		return err
 	}
+
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case u := <-l.C:
-				j.onUpdate(ctx, u)
+				q.onUpdate(ctx, u)
 			}
 		}
 	}()
+
 	return nil
 }
-func (j *QueueStore[T]) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrReply) {
+
+func (q *Store[T]) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrReply) {
+	logger := zerolog.Ctx(ctx)
 	switch u.Type {
 	case pb.UpdateType_Delete:
-		j.deleteQueues(u.Object.TenantId, u.Object.Queues)
+		q.deleteQueues(u.Object.Tenant, u.Object.Queues)
 	case pb.UpdateType_New, pb.UpdateType_Update:
-		j.addOrUpdateQueues(ctx, []*pb.JobPackage{u.Object})
-	}
-}
-func (j *QueueStore[T]) deleteQueues(tenantId string, qs []*pb.QueueDef) {
-	for _, q := range qs {
-		j.queues.Delete(getFullQueueId(tenantId, q.ID))
+		if err := q.addOrUpdateQueues(ctx, []*pb.JobPackage{u.Object}); err != nil {
+			logger.Warn().AnErr("error", err).Msg("onUpdate: error updating queue")
+		}
 	}
 }
 
-func (j *QueueStore[T]) addOrUpdateQueues(ctx context.Context, pkgs []*pb.JobPackage) error {
+func (q *Store[T]) deleteQueues(tenant string, qs []*pb.QueueDef) {
+	for _, queue := range qs {
+		q.queues.Delete(getQueueName(tenant, queue.ID))
+	}
+}
+
+func (q *Store[T]) addOrUpdateQueues(ctx context.Context, pkgs []*pb.JobPackage) error {
 	for _, ps := range pkgs {
-		tenantId := ps.TenantId
+		tenant := ps.Tenant
+
 		for _, queue := range ps.Queues {
-			err := j.addOrUpdateQueue(ctx, tenantId, queue)
+			err := q.addOrUpdateQueue(ctx, tenant, queue)
+
 			if err != nil {
-				j.queues = collection.NewSyncMap[string, Queue[T]]()
+				q.queues = collection.NewSyncMap[string, Queue[T]]()
+
 				return err
 			}
 		}
 	}
+
 	return nil
 }
 
-func (j *QueueStore[T]) addOrUpdateQueue(ctx context.Context, tenantId string, q *pb.QueueDef) error {
-	queueId := getFullQueueId(tenantId, q.ID)
-	queue, err := j.newQueue(queueId)
+func (q *Store[T]) addOrUpdateQueue(_ context.Context, tenant string, def *pb.QueueDef) error {
+	name := getQueueName(tenant, def.ID)
+
+	queue, err := q.newQueue(name)
+
 	if err != nil {
 		return err
 	}
-	if j.existQueue(queueId) {
-		j.queues.Swap(queueId, queue)
+
+	if q.existQueue(name) {
+		q.queues.Swap(name, queue)
 	} else {
-		j.queues.Store(queueId, queue)
+		q.queues.Store(name, queue)
 	}
+
 	return nil
 }
 
-func (j *QueueStore[T]) newQueue(id string) (Queue[T], error) {
+func (q *Store[T]) newQueue(id string) (Queue[T], error) {
 	return GetFileBasedQueue[T](id), nil
 }
 
-func getFullQueueId(tenantId string, queueId string) string {
-	return tenantId + "/" + queueId
+func getQueueName(tenant string, queueID string) string {
+	return tenant + "/" + queueID
 }
 
-func (j *QueueStore[T]) existQueue(queueId string) bool {
-	_, ok := j.queues.Load(queueId)
+func (q *Store[T]) existQueue(queueID string) bool {
+	_, ok := q.queues.Load(queueID)
+
 	return ok
 }
 
-var (
-	ErrQueueUnknown = errors.New("queue unknown")
-)
+func (q *Store[T]) GetQueue(tentant string, queueID string) (Queue[T], error) {
+	queue, ok := q.queues.Load(getQueueName(tentant, queueID))
 
-func (j *QueueStore[T]) GetQueue(tentantId string, queueId string) (Queue[T], error) {
-	q, ok := j.queues.Load(getFullQueueId(tentantId, queueId))
 	if !ok {
 		return nil, ErrQueueUnknown
 	}
-	return q, nil
+
+	return queue, nil
 }

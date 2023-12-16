@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/service/grpc"
 	"github.com/andrescosta/goico/pkg/service/svcmeta"
-	"github.com/andrescosta/goico/pkg/yamlutl"
+	"github.com/andrescosta/goico/pkg/yamlutil"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rivo/tview"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -24,32 +24,32 @@ func onFocusFileNode(_ context.Context, c *TApp, n *tview.TreeNode) {
 			f, err := c.repoClient.GetFile(context.Background(), f.tenant, f.file.Name)
 			if err != nil {
 				return nil, errors.Join(errors.New(`"Repo" service down`), err)
-			} else {
-				cv := buildTextView(string(f))
-				return cv, nil
 			}
+			cv := buildTextView(string(f))
+			return cv, nil
 		})
 	} else {
 		switchToEmptyPage(c)
 	}
 }
-
 func onFocusServerNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 	h := (n.GetReference().(*node)).entity.(*sServerNode)
 	addr := h.host.Ip + ":" + strconv.Itoa(int(h.host.Port))
 	trySwitchToPage(addr, c.mainView, c, func() (tview.Primitive, error) {
 		switch h.host.Type {
+		case pb.Host_Undefined:
+			c.debugInfo("undefined hos type")
 		case pb.Host_Grpc:
 			helthCheckClient := c.helthCheckClients[addr]
 			infoClient, ok := c.infoClients[addr]
 			if !ok {
 				var err error
-				infoClient, err = service.NewGrpcServerInfoClient(ctx, addr)
+				infoClient, err = grpc.NewInfoClient(ctx, addr)
 				if err != nil {
 					return nil, errors.Join(errors.New(`"Server Info" service down`), err)
 				}
 				c.infoClients[addr] = infoClient
-				helthCheckClient, err = service.NewGrpcServerHelthCheckClient(ctx, addr)
+				helthCheckClient, err = grpc.NewHelthCheckClient(ctx, addr)
 				if err != nil {
 					return nil, errors.Join(errors.New(`"Healcheck" service down`), err)
 				}
@@ -66,19 +66,19 @@ func onFocusServerNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 			view := renderGrpcTableServer(info, s)
 			return view, nil
 		case pb.Host_Http, pb.Host_Headless:
-			metadata, err := c.metadataClient.GetMetadata(h.name)
+			metadata, err := c.metadataClient.GetMetadata(ctx, h.name)
 			if err != nil {
 				return nil, err
 			}
-			view := renderHttpTableServer(metadata)
+			view := renderHTTPTableServer(metadata)
 			return view, nil
 		default:
 			return nil, nil
 		}
+		return nil, nil
 	})
 }
-
-func renderHttpTableServer(info *map[string]string) *tview.Table {
+func renderHTTPTableServer(info *map[string]string) *tview.Table {
 	table := tview.NewTable().
 		SetBorders(true)
 	table.SetCell(0, 0,
@@ -99,56 +99,46 @@ func renderHttpTableServer(info *map[string]string) *tview.Table {
 		ix++
 	}
 	return table
-
 }
-func onSelectedGettingJobResults(ctx context.Context, ca *TApp, n *tview.TreeNode) {
+func onSelectedGettingJobResults(_ context.Context, ca *TApp, n *tview.TreeNode) {
 	n.SetText("<< stop >>")
 	nl := n.GetReference().(*node)
 	nl.selected = onSelectedStopGettingJobResults
 	startGettingJobResults(ca, n)
 }
-
-func onSelectedStopGettingJobResults(ctx context.Context, ca *TApp, n *tview.TreeNode) {
+func onSelectedStopGettingJobResults(_ context.Context, ca *TApp, n *tview.TreeNode) {
 	ca.cancelJobResultsGetter()
 	nl := n.GetReference().(*node)
 	n.SetText("<< start >>")
 	nl.selected = onSelectedGettingJobResults
 }
-
-func onFocusJobPackageNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
+func onFocusJobPackageNode(_ context.Context, c *TApp, n *tview.TreeNode) {
 	p := (n.GetReference().(*node)).entity.(*pb.JobPackage)
-	pn := "package/" + p.TenantId + "/" + p.ID
+	pn := "package/" + p.Tenant + "/" + p.ID
 	trySwitchToPage(pn, c.mainView, c, func() (tview.Primitive, error) {
-		pkg, err := c.controlClient.GetPackage(context.Background(), p.TenantId, &p.ID)
+		pkg, err := c.controlClient.GetPackage(context.Background(), p.Tenant, &p.ID)
 		if err != nil {
 			return nil, errors.Join(errors.New(`"Ctl" service down`), err)
 		}
-		yaml, err := yamlutl.Marshal(pkg[0])
+		yaml, err := yamlutil.Marshal(pkg[0])
 		if err != nil {
 			return nil, errors.Join(errors.New(`package cannot displayed`), err)
 		}
-
 		textView := buildTextView(syntaxHighlightYaml(*yaml))
 		return textView, nil
 	})
 }
-
 func syntaxHighlightYaml(yaml string) string {
-
 	reAttributes := regexp.MustCompile(`(?:^|\n).*:`)
-
 	yaml = reAttributes.ReplaceAllStringFunc(yaml, func(match string) string {
 		return "[#ff8282]" + match[:len(match)-1] + "[white:black]:"
 	})
-
 	reValues := regexp.MustCompile(`: .+\n`)
 	yaml = reValues.ReplaceAllStringFunc(yaml, func(match string) string {
 		return ": [#d1ffbd]" + match[2:]
 	})
-
 	return yaml
 }
-
 func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 	var textView *tview.TextView
 	lines := int32(5)
@@ -201,7 +191,6 @@ func startGettingJobResults(ca *TApp, n *tview.TreeNode) {
 		ca.debugInfoFromGoRoutine("job execution call returned. stopping results collector")
 	}()
 }
-
 func renderGrpcTableServer(infos []*svcmeta.GrpcServerMetadata, s healthpb.HealthCheckResponse_ServingStatus) *tview.Table {
 	table := tview.NewTable().
 		SetBorders(true)

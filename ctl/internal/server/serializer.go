@@ -25,5 +25,4 @@ func (s *ProtoMessageMarshaler) MarshalObj(q proto.Message) (string, []byte, err
 	id := q.ProtoReflect().Get(f).String()
 	r, err := proto.Marshal(q)
 	return id, r, err
-
 }

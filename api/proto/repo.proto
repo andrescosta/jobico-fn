@@ -13,7 +13,7 @@ service Repo {
 
 
 message UpdateToFileStrRequest{
-    string tenantId = 1; //not used
+    string tenant = 1; //not used
 }
 
 
@@ -47,12 +47,12 @@ message GetFileReply {
 }
 
 message TenantFiles {
-	string tenantId=1; 
+	string tenant=1; 
 	repeated File files=2; 
 }
 
 message TenantFile {
-	string tenantId=1; 
+	string tenant=1; 
 	File file=2; 
 }
 

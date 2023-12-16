@@ -10,7 +10,7 @@ service Recorder {
 }
 
 message GetJobExecutionsRequest{
-    optional string tenantId =1;
+    optional string tenant =1;
     optional int32 lines = 2;
 }
 
@@ -26,9 +26,9 @@ message AddJobExecutionReply{
 }
 
 message JobExecution{
-    string eventId = 1;
-    string tenantId = 2;
-    string queueId = 3;
+    string event = 1;
+    string tenant = 2;
+    string queue = 3;
     google.protobuf.Timestamp date=4;
     string server = 5;
     JobResult result = 6;

@@ -4,16 +4,20 @@ import (
 	"context"
 	"log"
 
-	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/api/types"
 	server1 "github.com/andrescosta/jobico/ctl/internal/server"
 )
 
 func main() {
-	svc, err := service.NewGrpcService(context.Background(), "ctl", &pb.Control_ServiceDesc,
-		func(ctx context.Context) (any, error) {
+	svc, err := grpc.New(
+		grpc.WithName("ctl"),
+		grpc.WithContext(context.Background()),
+		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
+		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
 			return server1.NewCotrolServer(ctx)
-		})
+		}),
+	)
 	defer svc.Dispose()
 	if err != nil {
 		log.Panicf("error starting ctl service: %s", err)

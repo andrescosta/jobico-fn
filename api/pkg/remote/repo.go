@@ -6,47 +6,43 @@ import (
 
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
-	"google.golang.org/grpc"
+	rpc "google.golang.org/grpc"
 )
 
 type RepoClient struct {
 	serverAddr             string
-	conn                   *grpc.ClientConn
+	conn                   *rpc.ClientConn
 	client                 pb.RepoClient
 	broadcasterRepoUpdates *broadcaster.Broadcaster[*pb.UpdateToFileStrReply]
 }
 
 func NewRepoClient(ctx context.Context) (*RepoClient, error) {
 	addr := env.Env("repo.host")
-	conn, err := service.Dial(ctx, addr)
+	conn, err := grpc.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
 	client := pb.NewRepoClient(conn)
-
 	return &RepoClient{
 		serverAddr: addr,
 		conn:       conn,
 		client:     client,
 	}, nil
 }
-
 func (c *RepoClient) Close() {
 	c.conn.Close()
 }
-
 func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, fileType pb.File_FileType, reader io.Reader) error {
 	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
-
 	_, err = c.client.AddFile(ctx, &pb.AddFileRequest{
 		TenantFile: &pb.TenantFile{
-			TenantId: tenant,
+			Tenant: tenant,
 			File: &pb.File{
 				Type:    fileType,
 				Name:    name,
@@ -59,11 +55,10 @@ func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, fi
 	}
 	return nil
 }
-
 func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([]byte, error) {
 	r, err := c.client.GetFile(ctx, &pb.GetFileRequest{
 		TenantFile: &pb.TenantFile{
-			TenantId: tenant,
+			Tenant: tenant,
 			File: &pb.File{
 				Name: name,
 			},
@@ -72,10 +67,8 @@ func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([
 	if err != nil {
 		return nil, err
 	}
-
 	return r.File.Content, nil
 }
-
 func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, error) {
 	reply, err := c.client.GetAllFileNames(ctx, &pb.GetAllFileNamesRequest{})
 	if err != nil {
@@ -85,7 +78,6 @@ func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, er
 	ret = append(ret, reply.TenantFiles...)
 	return ret, nil
 }
-
 func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.UpdateToFileStrReply) error {
 	s, err := c.client.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
 	if err != nil {
@@ -93,7 +85,6 @@ func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.Upd
 	}
 	return grpchelper.Recv(ctx, s, resChan)
 }
-
 func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToFileStrReply], error) {
 	if c.broadcasterRepoUpdates == nil {
 		if err := c.startListenRepoUpdates(ctx); err != nil {
@@ -102,7 +93,6 @@ func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.L
 	}
 	return c.broadcasterRepoUpdates.Subscribe(), nil
 }
-
 func (c *RepoClient) startListenRepoUpdates(ctx context.Context) error {
 	cb := broadcaster.Start[*pb.UpdateToFileStrReply](ctx)
 	c.broadcasterRepoUpdates = cb
