@@ -31,7 +31,7 @@ func (b *GrpcBroadcaster[T, S]) Stop() {
 	b.b.Stop()
 }
 
-func (b *GrpcBroadcaster[T, S]) Broadcast(ctx context.Context, value S, utype pb.UpdateType) {
+func (b *GrpcBroadcaster[T, S]) Broadcast(_ context.Context, value S, utype pb.UpdateType) {
 	var prototype T
 	n := b.new(prototype, value, utype)
 	b.b.Write(n)

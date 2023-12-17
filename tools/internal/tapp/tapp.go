@@ -218,12 +218,12 @@ func (c *TApp) startStreamingCtlUpdates(ctx context.Context) error {
 	return nil
 }
 
-func (ca *TApp) startGettingJobResults(n *tview.TreeNode) {
+func (c *TApp) startGettingJobResults(n *tview.TreeNode) {
 	var textView *tview.TextView
 	lines := int32(5)
-	if ca.mainView.HasPage("results") {
-		ca.mainView.SwitchToPage("results")
-		_, fp := ca.mainView.GetFrontPage()
+	if c.mainView.HasPage("results") {
+		c.mainView.SwitchToPage("results")
+		_, fp := c.mainView.GetFrontPage()
 		textView = fp.(*tview.TextView)
 		lines = 0
 	} else {
@@ -233,24 +233,24 @@ func (ca *TApp) startGettingJobResults(n *tview.TreeNode) {
 			SetWordWrap(false).
 			SetWrap(false).
 			SetMaxLines(100)
-		ca.mainView.AddAndSwitchToPage("results", textView, true)
+		c.mainView.AddAndSwitchToPage("results", textView, true)
 	}
 	ch := make(chan string)
 	var ctxJobResultsGetter context.Context
-	ctxJobResultsGetter, ca.cancelJobResultsGetter = context.WithCancel(context.Background())
+	ctxJobResultsGetter, c.cancelJobResultsGetter = context.WithCancel(context.Background())
 	go func(mc <-chan string) {
 		for {
 			select {
 			case <-ctxJobResultsGetter.Done():
-				ca.debugInfoFromGoRoutine("collector context is done. stopping results collector ")
+				c.debugInfoFromGoRoutine("collector context is done. stopping results collector ")
 				return
 			case l, ok := <-mc:
 				if ok {
-					ca.app.QueueUpdateDraw(func() {
+					c.app.QueueUpdateDraw(func() {
 						fmt.Fprintln(textView, l)
 					})
 				} else {
-					ca.debugInfoFromGoRoutine("collector channel is closed. stopping results collector")
+					c.debugInfoFromGoRoutine("collector channel is closed. stopping results collector")
 					return
 				}
 			}
@@ -258,16 +258,16 @@ func (ca *TApp) startGettingJobResults(n *tview.TreeNode) {
 	}(ch)
 	go func() {
 		defer close(ch)
-		err := ca.recorderClient.StreamJobExecutions(ctxJobResultsGetter, "", lines, ch)
+		err := c.recorderClient.StreamJobExecutions(ctxJobResultsGetter, "", lines, ch)
 		if err != nil {
-			ca.debugErrorFromGoRoutine(err)
-			ca.showErrorStr("Error getting results", 3*time.Second)
-			ca.app.QueueUpdateDraw(func() {
-				onSelectedStopGettingJobResults(ctxJobResultsGetter, ca, n)
+			c.debugErrorFromGoRoutine(err)
+			c.showErrorStr("Error getting results", 3*time.Second)
+			c.app.QueueUpdateDraw(func() {
+				onSelectedStopGettingJobResults(ctxJobResultsGetter, c, n)
 				disableTreeNode(n)
 			})
 		}
-		ca.debugInfoFromGoRoutine("job execution call returned. stopping results collector")
+		c.debugInfoFromGoRoutine("job execution call returned. stopping results collector")
 	}()
 }
 

@@ -101,7 +101,7 @@ func (c *RepoClient) startListenRepoUpdates(ctx context.Context) error {
 		return err
 	}
 	go func() {
-		grpchelper.Listen(ctx, s, cb)
+		_ = grpchelper.Listen(ctx, s, cb)
 	}()
 	return nil
 }

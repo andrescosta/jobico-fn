@@ -17,7 +17,6 @@ func NewCache(db *database.Database) *Cache {
 		daos: make(map[string]*DAO[proto.Message]),
 		db:   db,
 	}
-
 }
 func (c *Cache) GetGeneric(ctx context.Context, entity string, message proto.Message) (*DAO[proto.Message], error) {
 	return c.GetForTenant(ctx, entity, entity, message)
