@@ -4,63 +4,26 @@ import (
 	"context"
 
 	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/srv/internal/queue/controller"
 )
 
 type Server struct {
 	pb.UnimplementedQueueServer
-
-	store *Store[*pb.QueueItem]
+	controller *controller.Controller
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
-	s, err := NewQueueStore[*pb.QueueItem](ctx)
-
+	c, err := controller.New(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	return &Server{
-
-		store: s,
+		controller: c,
 	}, nil
 }
-
-func (s *Server) Queue(_ context.Context, in *pb.QueueRequest) (*pb.QueueReply, error) {
-	myqueue, err := s.store.GetQueue(in.Tenant, in.Queue)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, i := range in.Items {
-		if err := myqueue.Add(i); err != nil {
-			return nil, err
-		}
-	}
-	ret := pb.QueueReply{}
-	return &ret, nil
+func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.QueueReply, error) {
+	return s.controller.Queue(ctx, in)
 }
-
-func (s *Server) Dequeue(_ context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
-	myqueue, err := s.store.GetQueue(in.Tenant, in.Queue)
-
-	if err != nil {
-		return nil, err
-	}
-
-	i, err := myqueue.Remove()
-
-	if err != nil {
-		return nil, err
-	}
-
-	var iqs []*pb.QueueItem
-
-	if i != nil {
-		iqs = append(iqs, i)
-	}
-
-	return &pb.DequeueReply{
-
-		Items: iqs,
-	}, nil
+func (s *Server) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
+	return s.controller.Dequeue(ctx, in)
 }

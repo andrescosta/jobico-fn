@@ -7,7 +7,7 @@ import (
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/api/types"
-	repo "github.com/andrescosta/jobico/repo/internal"
+	"github.com/andrescosta/jobico/repo/internal/server"
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 		grpc.WithContext(context.Background()),
 		grpc.WithServiceDesc(&pb.Repo_ServiceDesc),
 		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
-			return repo.NewServer(ctx, env.Env("repo.dir", "./")), nil
+			return server.New(ctx, env.Env("repo.dir", "./")), nil
 		}),
 	)
 	if err != nil {

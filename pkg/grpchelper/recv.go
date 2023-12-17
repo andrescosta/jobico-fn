@@ -18,12 +18,12 @@ func Recv[T proto.Message](ctx context.Context, s grpc.ClientStream, c chan<- T)
 			if err := s.CloseSend(); err != nil {
 				logger.Warn().AnErr("error", err).Msg("Recv: Error while closing stream.")
 			}
-			return nil
+			return s.Context().Err()
 		case <-ctx.Done():
 			if err := s.CloseSend(); err != nil {
 				logger.Warn().AnErr("error", err).Msg("Recv: Error while closing stream.")
 			}
-			return nil
+			return ctx.Err()
 		default:
 			var t T
 			p := t.ProtoReflect().New()
@@ -40,7 +40,7 @@ func Recv[T proto.Message](ctx context.Context, s grpc.ClientStream, c chan<- T)
 	}
 }
 
-func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *broadcaster.Broadcaster[T]) {
+func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *broadcaster.Broadcaster[T]) error {
 	logger := zerolog.Ctx(ctx)
 
 	for {
@@ -49,12 +49,12 @@ func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *broadc
 			if err := s.CloseSend(); err != nil {
 				logger.Warn().AnErr("error", err).Msg("Listen: Error while closing stream.")
 			}
-			return
+			return s.Context().Err()
 		case <-ctx.Done():
 			if err := s.CloseSend(); err != nil {
 				logger.Warn().AnErr("error", err).Msg("Listen: Error while closing stream.")
 			}
-			return
+			return ctx.Err()
 		default:
 			var t T
 			p := t.ProtoReflect().New()

@@ -14,15 +14,12 @@ func main() {
 		headless.WithName("executor"),
 		headless.WithServeHandler(func(ctx context.Context) error {
 			m, err := executor.NewExecutorMachine(ctx)
-
 			if err != nil {
 				return err
 			}
-
 			if err := m.StartExecutors(ctx); err != nil {
 				return err
 			}
-
 			return nil
 		}),
 	)

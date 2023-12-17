@@ -4,9 +4,10 @@ import (
 	"context"
 	"log"
 
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/api/types"
-	server1 "github.com/andrescosta/jobico/ctl/internal/server"
+	"github.com/andrescosta/jobico/ctl/internal/server"
 )
 
 func main() {
@@ -15,7 +16,8 @@ func main() {
 		grpc.WithContext(context.Background()),
 		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
 		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
-			return server1.NewCotrolServer(ctx)
+			dbPath := env.Env("ctl.dbpath", ".\\db.db")
+			return server.New(ctx, dbPath)
 		}),
 	)
 	defer svc.Dispose()

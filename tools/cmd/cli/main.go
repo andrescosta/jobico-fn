@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -18,12 +17,6 @@ func main() {
 	}
 
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer func() {
-		done()
-		if r := recover(); r != nil {
-			fmt.Printf("%v\n", r)
-		}
-	}()
 	cmd.RunCli(ctx, os.Args)
-	done()
+	defer done()
 }

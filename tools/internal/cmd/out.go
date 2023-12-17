@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/andrescosta/goico/pkg/helpinfo"
+	"github.com/andrescosta/goico/pkg/templatehelper"
 )
 
 var usageTemplate = `{{.Long | trim}}
@@ -55,7 +55,7 @@ Details:
 func printUsage(w io.Writer, cmd *command) {
 	bw := bufio.NewWriter(w)
 
-	helpinfo.Render(bw, usageTemplate, cmd)
+	templatehelper.Render(bw, usageTemplate, cmd)
 
 	bw.Flush()
 }
@@ -63,7 +63,7 @@ func printUsage(w io.Writer, cmd *command) {
 func printHelp(w io.Writer, cmd *command) {
 	bw := bufio.NewWriter(w)
 
-	helpinfo.Render(bw, helpTemplate, cmd)
+	templatehelper.Render(bw, helpTemplate, cmd)
 
 	bw.Flush()
 }
@@ -71,7 +71,7 @@ func printHelp(w io.Writer, cmd *command) {
 func printError(w io.Writer, cmd *command, err error) {
 	bw := bufio.NewWriter(w)
 
-	helpinfo.Render(bw, errorTemplate, cmd)
+	templatehelper.Render(bw, errorTemplate, cmd)
 
 	bw.Flush()
 

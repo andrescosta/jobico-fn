@@ -6,7 +6,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service/grpc"
+	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	rpc "google.golang.org/grpc"
@@ -21,7 +21,7 @@ type RepoClient struct {
 
 func NewRepoClient(ctx context.Context) (*RepoClient, error) {
 	addr := env.Env("repo.host")
-	conn, err := grpc.Dial(ctx, addr)
+	conn, err := grpcutil.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package server
+package dao
 
 import (
 	"google.golang.org/protobuf/proto"

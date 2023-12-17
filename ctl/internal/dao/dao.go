@@ -13,16 +13,12 @@ type DAO[T proto.Message] struct {
 
 func NewDAO[T proto.Message](ctx context.Context, db *database.Database, tableName string, m database.Marshaler[T]) (*DAO[T], error) {
 	table, err := database.NewTable(ctx, db, tableName, m)
-
 	if err != nil {
 		return nil, err
 	}
-
 	var res = DAO[T]{
-
 		table: table,
 	}
-
 	return &res, nil
 }
 
@@ -36,11 +32,9 @@ func (q *DAO[T]) Get(ctx context.Context, id string) (*T, error) {
 
 func (q *DAO[T]) Add(ctx context.Context, data T) (uint64, error) {
 	i, err := q.table.Add(ctx, data)
-
 	if err != nil {
 		return 0, err
 	}
-
 	return i, nil
 }
 
@@ -48,7 +42,6 @@ func (q *DAO[T]) Update(ctx context.Context, data T) error {
 	if err := q.table.Update(ctx, data); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -56,6 +49,5 @@ func (q *DAO[T]) Delete(ctx context.Context, id string) error {
 	if err := q.table.Delete(ctx, id); err != nil {
 		return err
 	}
-
 	return nil
 }

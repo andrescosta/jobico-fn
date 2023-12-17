@@ -6,7 +6,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service/grpc"
+	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	rpc "google.golang.org/grpc"
@@ -29,7 +29,7 @@ func NewControlClient(ctx context.Context) (*ControlClient, error) {
 	if host == nil {
 		return nil, ErrCtlHostAddr
 	}
-	conn, err := grpc.Dial(ctx, *host)
+	conn, err := grpcutil.Dial(ctx, *host)
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +40,7 @@ func NewControlClient(ctx context.Context) (*ControlClient, error) {
 		client:     client,
 	}, nil
 }
+
 func (c *ControlClient) Close() {
 	c.conn.Close()
 }
@@ -149,13 +150,13 @@ func (c *ControlClient) startListenEnvironmentUpdates(ctx context.Context) error
 }
 func (c *ControlClient) ListenerForPackageUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToPackagesStrReply], error) {
 	if c.broadcasterJobPackage == nil {
-		if err := c.startListenJobUpdates(ctx); err != nil {
+		if err := c.startListenerForPackageUpdates(ctx); err != nil {
 			return nil, err
 		}
 	}
 	return c.broadcasterJobPackage.Subscribe(), nil
 }
-func (c *ControlClient) startListenJobUpdates(ctx context.Context) error {
+func (c *ControlClient) startListenerForPackageUpdates(ctx context.Context) error {
 	cb := broadcaster.Start[*pb.UpdateToPackagesStrReply](ctx)
 	c.broadcasterJobPackage = cb
 	s, err := c.client.UpdateToPackagesStr(ctx, &pb.UpdateToPackagesStrRequest{})

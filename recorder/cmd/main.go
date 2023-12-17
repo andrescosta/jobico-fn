@@ -6,7 +6,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/api/types"
-	"github.com/andrescosta/jobico/recorder/internal/recorder"
+	"github.com/andrescosta/jobico/recorder/internal/server"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 		grpc.WithContext(context.Background()),
 		grpc.WithServiceDesc(&pb.Recorder_ServiceDesc),
 		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
-			return recorder.NewServer(".\\log.log")
+			return server.New(".\\log.log")
 		}),
 	)
 	if err != nil {

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service/grpc"
+	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
 	rpc "google.golang.org/grpc"
@@ -18,7 +18,7 @@ type RecorderClient struct {
 
 func NewRecorderClient(ctx context.Context) (*RecorderClient, error) {
 	addr := env.Env("recorder.host")
-	conn, err := grpc.Dial(ctx, addr)
+	conn, err := grpcutil.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func NewRecorderClient(ctx context.Context) (*RecorderClient, error) {
 func (c *RecorderClient) Close() {
 	c.conn.Close()
 }
-func (c *RecorderClient) GetJobExecutions(ctx context.Context, _ string, lines int32, resChan chan<- string) error {
+func (c *RecorderClient) StreamJobExecutions(ctx context.Context, _ string, lines int32, resChan chan<- string) error {
 	logger := zerolog.Ctx(ctx)
 	rj, err := c.client.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{
 		Lines: &lines,
