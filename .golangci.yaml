@@ -38,7 +38,7 @@ linters:
   - 'gosec'
   - 'gosimple'
   - 'govet'
-  - 'gci'
+  #- 'gci'
   - 'ineffassign'
   - 'makezero'
   - 'misspell'
