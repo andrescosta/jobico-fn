@@ -15,23 +15,24 @@ const (
 	tblPackage = "package"
 )
 
-type Package struct {
+type PackageController struct {
 	daoCache         *dao.Cache
 	bJobPackage      *grpchelper.GrpcBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message]
-	tenantController Tenant
+	tenantController *TenantController
 }
 
-func NewPackage(ctx context.Context, db *database.Database) *Package {
-	return &Package{
-		daoCache:    dao.NewCache(db),
-		bJobPackage: grpchelper.StartBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message](ctx),
+func NewPackageController(ctx context.Context, db *database.Database) *PackageController {
+	return &PackageController{
+		daoCache:         dao.NewCache(db),
+		bJobPackage:      grpchelper.StartBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message](ctx),
+		tenantController: NewTenantController(db),
 	}
 }
-func (c *Package) Close() {
+func (c *PackageController) Close() {
 	c.bJobPackage.Stop()
 }
 
-func (c *Package) GetPackages(ctx context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
+func (c *PackageController) GetPackages(ctx context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
 	if in.ID != nil {
 		p, err := c.getPackage(ctx, in.Tenant, *in.ID)
 		if err != nil {
@@ -49,7 +50,7 @@ func (c *Package) GetPackages(ctx context.Context, in *pb.GetJobPackagesRequest)
 	return &pb.GetJobPackagesReply{Packages: packages}, nil
 }
 
-func (c *Package) GetAllPackages(ctx context.Context, _ *pb.GetAllJobPackagesRequest) (*pb.GetAllJobPackagesReply, error) {
+func (c *PackageController) GetAllPackages(ctx context.Context, _ *pb.GetAllJobPackagesRequest) (*pb.GetAllJobPackagesReply, error) {
 	ms, err := c.tenantController.getTenants(ctx)
 	if err != nil {
 		return nil, err
@@ -70,7 +71,7 @@ func (c *Package) GetAllPackages(ctx context.Context, _ *pb.GetAllJobPackagesReq
 	return &pb.GetAllJobPackagesReply{Packages: packages}, nil
 }
 
-func (c *Package) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (*pb.AddJobPackageReply, error) {
+func (c *PackageController) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (*pb.AddJobPackageReply, error) {
 	mydao, err := c.daoCache.GetForTenant(ctx, in.Package.Tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
@@ -83,7 +84,7 @@ func (c *Package) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (
 	c.broadcastAdd(ctx, in.Package)
 	return &pb.AddJobPackageReply{Package: in.Package}, nil
 }
-func (c *Package) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.UpdateJobPackageReply, error) {
+func (c *PackageController) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.UpdateJobPackageReply, error) {
 	mydao, err := c.daoCache.GetForTenant(ctx, in.Package.Tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
@@ -97,7 +98,7 @@ func (c *Package) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequ
 	return &pb.UpdateJobPackageReply{}, nil
 }
 
-func (c *Package) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.DeleteJobPackageReply, error) {
+func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.DeleteJobPackageReply, error) {
 	mydao, err := c.daoCache.GetForTenant(ctx, in.Package.Tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
@@ -109,10 +110,10 @@ func (c *Package) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequ
 	c.broadcastDelete(ctx, in.Package)
 	return &pb.DeleteJobPackageReply{}, nil
 }
-func (c *Package) UpdateToPackagesStr(_ *pb.UpdateToPackagesStrRequest, r pb.Control_UpdateToPackagesStrServer) error {
+func (c *PackageController) UpdateToPackagesStr(_ *pb.UpdateToPackagesStrRequest, r pb.Control_UpdateToPackagesStrServer) error {
 	return c.bJobPackage.RcvAndDispatchUpdates(r)
 }
-func (c *Package) getPackages(ctx context.Context, tenant string) ([]*pb.JobPackage, error) {
+func (c *PackageController) getPackages(ctx context.Context, tenant string) ([]*pb.JobPackage, error) {
 	mydao, err := c.daoCache.GetForTenant(ctx, tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
@@ -124,7 +125,7 @@ func (c *Package) getPackages(ctx context.Context, tenant string) ([]*pb.JobPack
 	packages := convert.Slices[proto.Message, *pb.JobPackage](ms)
 	return packages, nil
 }
-func (c *Package) getPackage(ctx context.Context, tenant string, id string) (*pb.JobPackage, error) {
+func (c *PackageController) getPackage(ctx context.Context, tenant string, id string) (*pb.JobPackage, error) {
 	mydao, err := c.daoCache.GetForTenant(ctx, tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
@@ -139,15 +140,15 @@ func (c *Package) getPackage(ctx context.Context, tenant string, id string) (*pb
 	return nil, nil
 }
 
-func (c *Package) broadcastAdd(ctx context.Context, m *pb.JobPackage) {
+func (c *PackageController) broadcastAdd(ctx context.Context, m *pb.JobPackage) {
 	c.broadcast(ctx, m, pb.UpdateType_New)
 }
-func (c *Package) broadcastUpdate(ctx context.Context, m *pb.JobPackage) {
+func (c *PackageController) broadcastUpdate(ctx context.Context, m *pb.JobPackage) {
 	c.broadcast(ctx, m, pb.UpdateType_Update)
 }
-func (c *Package) broadcastDelete(ctx context.Context, m *pb.JobPackage) {
+func (c *PackageController) broadcastDelete(ctx context.Context, m *pb.JobPackage) {
 	c.broadcast(ctx, m, pb.UpdateType_Delete)
 }
-func (c *Package) broadcast(ctx context.Context, m *pb.JobPackage, utype pb.UpdateType) {
+func (c *PackageController) broadcast(ctx context.Context, m *pb.JobPackage, utype pb.UpdateType) {
 	c.bJobPackage.Broadcast(ctx, m, utype)
 }

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/wasm/wazero"
 	"github.com/andrescosta/jobico/api/pkg/remote"
@@ -128,7 +129,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	for _, job := range pkg.Jobs {
 		event := job.Event
 		for _, runtime := range pkg.Runtimes {
-			if runtime.ID == event.RuntimeId {
+			if runtime.ID == event.Runtime {
 				wasmfile, ok := files[runtime.ModuleRef]
 				if !ok {
 					wasmfile, err = repoClient.GetFile(ctx, pkg.Tenant, runtime.ModuleRef)
@@ -165,7 +166,9 @@ func getFullPackageID(tenant string, queue string) string {
 func getModuleName(supplierQueue string, eventID string) string {
 	return supplierQueue + "/" + eventID
 }
+
 func (e *VM) startListeningUpdates(ctx context.Context) error {
+	logger := zerolog.Ctx(ctx)
 	controlClient, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return err
@@ -174,17 +177,26 @@ func (e *VM) startListeningUpdates(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	e.w.Add(1)
 	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case u := <-l.C:
-				e.onUpdate(ctx, u)
-			}
+		err := e.listeningUpdates(ctx, l)
+		if err != nil {
+			logger.Info().AnErr("context.error", err).Msg("CTL update listener stopped.")
 		}
 	}()
 	return nil
+}
+
+func (e *VM) listeningUpdates(ctx context.Context, l *broadcaster.Listener[*pb.UpdateToPackagesStrReply]) error {
+	defer e.w.Done()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case u := <-l.C:
+			e.onUpdate(ctx, u)
+		}
+	}
 }
 func (e *VM) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrReply) {
 	logger := zerolog.Ctx(ctx)

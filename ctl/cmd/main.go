@@ -20,10 +20,10 @@ func main() {
 			return server.New(ctx, dbPath)
 		}),
 	)
-	defer svc.Dispose()
 	if err != nil {
 		log.Panicf("error starting ctl service: %s", err)
 	}
+	defer svc.Dispose()
 	if err = svc.Serve(); err != nil {
 		log.Fatalf("error serving ctl service %s", err)
 	}

@@ -30,26 +30,26 @@ Details:
 func printUsage(w io.Writer, cmd *command) {
 	bw := bufio.NewWriter(w)
 	err := templatehelper.Render(bw, usageTemplate, cmd)
-	bw.Flush()
 	if err != nil {
-		fmt.Printf("error template %v\n", err)
+		fmt.Fprintf(bw, "error rendering template %v\n", err)
 	}
+	bw.Flush()
 }
 func printHelp(w io.Writer, cmd *command) {
 	bw := bufio.NewWriter(w)
 	err := templatehelper.Render(bw, helpTemplate, cmd)
-	bw.Flush()
 	if err != nil {
-		fmt.Printf("error template %v\n", err)
+		fmt.Fprintf(bw, "error rendering template %v\n", err)
 	}
+	bw.Flush()
 }
 func printError(w io.Writer, cmd *command, err error) {
 	bw := bufio.NewWriter(w)
 	errr := templatehelper.Render(bw, errorTemplate, cmd)
-	bw.Flush()
 	if errr != nil {
-		fmt.Printf("error template %v\n", errr)
+		fmt.Fprintf(bw, "error rendering template %v\n", errr)
 	}
-	fmt.Println(err.Error())
-	fmt.Println("")
+	fmt.Fprintln(bw, err.Error())
+	fmt.Fprintln(bw, "")
+	bw.Flush()
 }

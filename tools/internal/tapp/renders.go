@@ -12,6 +12,11 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
+var iconPreffixNodesMap = map[bool]string{
+	true:  iconExpanded,
+	false: iconContracted,
+}
+
 func (c *TApp) renderUI(ctx context.Context) *tview.Pages {
 	// sets the main pages
 	pages := tview.NewPages()
@@ -33,7 +38,7 @@ func (c *TApp) renderUI(ctx context.Context) *tview.Pages {
 			AddItem(newTextView(helpTxt), 0, 1, false), 0, 1, false)
 	grid := tview.NewGrid().
 		SetRows(3, 0, 3).
-		SetColumns(25, 30).
+		SetColumns(30, 30).
 		SetBorders(true).
 		AddItem(newTextView("Jobico Dashboard"), 0, 0, 1, 4, 0, 0, false).
 		AddItem(f, 2, 0, 1, 4, 0, 0, false)
@@ -118,15 +123,11 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 		panic(err)
 	}
 	r := renderNode(rootNode(e, ep, fs))
-	c.root = r
+	c.rootTreeNode = r
 	menu := tview.NewTreeView()
 	menu.SetRoot(r)
 	menu.SetCurrentNode(r)
 	menu.SetBorder(true)
-	var m = map[bool]string{
-		true:  iconExpanded,
-		false: iconContracted,
-	}
 	menu.SetSelectedFunc(func(n *tview.TreeNode) {
 		original := n.GetReference().(*node)
 		if len(original.children) > 0 {
@@ -134,11 +135,11 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 				if n.IsExpanded() {
 					c.refreshRootNode(ctx, n)
 				}
-				pref := m[n.IsExpanded()]
-				npref := m[!n.IsExpanded()]
-				ns, e := strings.CutPrefix(n.GetText(), pref)
+				iconNodeExpanded := iconPreffixNodesMap[n.IsExpanded()]
+				iconNodeClosed := iconPreffixNodesMap[!n.IsExpanded()]
+				ns, e := strings.CutPrefix(n.GetText(), iconNodeExpanded)
 				if e {
-					n.SetText(npref + ns)
+					n.SetText(iconNodeClosed + ns)
 					n.SetExpanded(!n.IsExpanded())
 				}
 			}
@@ -163,16 +164,16 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 	return menu
 }
 func renderNode(target *node) *tview.TreeNode {
-	if target.color == tcell.ColorDefault {
-		if len(target.children) > 0 {
-			if !target.expanded {
-				target.text = fmt.Sprintf("%s %s", iconContracted, target.text)
-			}
-			target.color = tcell.ColorGreen
-		} else {
-			target.color = tcell.ColorWhite
+	// if target.color == tcell.ColorDefault {
+	if len(target.children) > 0 {
+		if !target.expanded {
+			target.text = renderNodeText(iconContracted, target.text)
 		}
+		target.color = tcell.ColorGreen
+	} else {
+		target.color = tcell.ColorWhite
 	}
+	// }
 	node := tview.NewTreeNode(target.text).
 		SetExpanded(target.expanded).
 		SetReference(target).
@@ -181,6 +182,33 @@ func renderNode(target *node) *tview.TreeNode {
 		node.AddChild(renderNode(child))
 	}
 	return node
+}
+
+func reRenderNode(target *node, tn *tview.TreeNode) {
+	// if target.color == tcell.ColorDefault {
+	if len(target.children) > 0 {
+		if !target.expanded {
+			target.text = renderNodeText(iconContracted, target.text)
+		}
+		target.color = tcell.ColorGreen
+	} else {
+		newText, f := strings.CutPrefix(target.text, iconContracted)
+		if !f {
+			newText, _ = strings.CutPrefix(target.text, iconExpanded)
+		}
+		target.text = newText
+		target.color = tcell.ColorWhite
+		target.expanded = false
+	}
+	// }
+	tn.SetText(target.text).
+		SetExpanded(target.expanded).
+		SetReference(target).
+		SetColor(target.color)
+}
+
+func renderNodeText(icon, text string) string {
+	return fmt.Sprintf("%s%s", icon, text)
 }
 
 func renderHTTPTableServer(info map[string]string) *tview.Table {

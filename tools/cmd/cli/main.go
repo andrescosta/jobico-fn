@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	if err := env.Populate(); err != nil {
+	if err := env.Load(); err != nil {
 		log.Fatalf("Error initializing %v\n", err)
 	}
 

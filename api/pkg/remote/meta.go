@@ -23,13 +23,20 @@ func (c *MetadataClient) GetMetadata(ctx context.Context, name string) (map[stri
 	if err != nil {
 		return nil, err
 	}
-	defer req.Body.Close()
-
+	defer func() {
+		if req.Body != nil {
+			req.Body.Close()
+		}
+	}()
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
 	r := make(map[string]string)
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
 		return nil, err

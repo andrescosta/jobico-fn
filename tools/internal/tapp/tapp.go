@@ -22,8 +22,8 @@ const (
 	quitPageModal  = "quit"
 	mainPage       = "main"
 	debugPage      = "debug"
-	iconContracted = "+"
-	iconExpanded   = "-"
+	iconContracted = "+ "
+	iconExpanded   = "- "
 )
 
 type TApp struct {
@@ -37,7 +37,7 @@ type TApp struct {
 	app                     *tview.Application
 	mainView                *tview.Pages
 	lastNode                *tview.TreeNode
-	root                    *tview.TreeNode
+	rootTreeNode            *tview.TreeNode
 	status                  *tview.TextView
 	debugTextView           *tview.TextView
 	debug                   bool
@@ -47,7 +47,7 @@ type TApp struct {
 }
 
 func New(ctx context.Context, sync bool) (*TApp, error) {
-	err := env.Populate()
+	err := env.Load()
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (c *TApp) startStreamingCtlUpdates(ctx context.Context) error {
 				return
 			case e := <-le.C:
 				c.app.QueueUpdateDraw(func() {
-					p, n := getChidren(RootNodeEnv, c.root)
+					p, n := getChidren(RootNodeEnv, c.rootTreeNode)
 					ns := environmentChildrenNodes(e.Object)
 					n.children = ns
 					refreshTreeNode(p)
@@ -206,7 +206,7 @@ func (c *TApp) startStreamingCtlUpdates(ctx context.Context) error {
 				return
 			case e := <-lf.C:
 				c.app.QueueUpdateDraw(func() {
-					r, _ := getChidren(RootNodeFile, c.root)
+					r, _ := getChidren(RootNodeFile, c.rootTreeNode)
 					tr, tn := getTenantNode(e.Object.Tenant, r)
 					ns := tenantFileNode(e.Object.Tenant, e.Object.File)
 					tn.children = append(tn.children, ns)
@@ -272,20 +272,26 @@ func (c *TApp) startGettingJobResults(n *tview.TreeNode) {
 }
 
 func (c *TApp) addNewPackage(p *pb.JobPackage) {
-	r, n := getChidren(RootNodePackage, c.root)
+	treeNodePkg, pkgNode := getChidren(RootNodePackage, c.rootTreeNode)
 	nn := jobPackageNode(p)
-	n.children = append(n.children, nn)
-	r.AddChild(renderNode(nn))
+	pkgNode.children = append(pkgNode.children, nn)
+	treeNodePkg.AddChild(renderNode(nn))
+	if len(pkgNode.children) == 1 {
+		reRenderNode(pkgNode, treeNodePkg)
+	}
 }
 
 func (c *TApp) deleteNewPackage(p *pb.JobPackage) {
-	r, np := getChidren(RootNodePackage, c.root)
-	for _, ns := range r.GetChildren() {
-		n := (ns.GetReference().(*node))
-		t := n.entity.(*pb.JobPackage)
-		if p.ID == t.ID {
-			r.RemoveChild(ns)
-			np.removeChild(n)
+	treeNodePkg, pkgNode := getChidren(RootNodePackage, c.rootTreeNode)
+	for _, childNode := range treeNodePkg.GetChildren() {
+		refChildNode := (childNode.GetReference().(*node))
+		pkg := refChildNode.entity.(*pb.JobPackage)
+		if p.ID == pkg.ID {
+			treeNodePkg.RemoveChild(childNode)
+			pkgNode.removeChild(refChildNode)
+			if len(pkgNode.children) == 0 {
+				reRenderNode(pkgNode, treeNodePkg)
+			}
 		}
 	}
 }

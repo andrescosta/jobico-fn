@@ -11,9 +11,9 @@ import (
 type Server struct {
 	pb.UnimplementedControlServer
 	db         *database.Database
-	pkgCont    *controller.Package
-	envCont    *controller.Environment
-	tenantCont *controller.Tenant
+	pkgCont    *controller.PackageController
+	envCont    *controller.EnvironmentController
+	tenantCont *controller.TenantController
 }
 
 func New(ctx context.Context, dbPath string) (*Server, error) {
@@ -23,9 +23,9 @@ func New(ctx context.Context, dbPath string) (*Server, error) {
 	}
 	return &Server{
 		db:         db,
-		tenantCont: controller.NewTenant(db),
-		pkgCont:    controller.NewPackage(ctx, db),
-		envCont:    controller.NewEnvironment(ctx, db),
+		tenantCont: controller.NewTenantController(db),
+		pkgCont:    controller.NewPackageController(ctx, db),
+		envCont:    controller.NewEnvironmentController(ctx, db),
 	}, nil
 }
 func (c *Server) Close() error {

@@ -185,7 +185,7 @@ message EventDef {
   DataType dataType = 3;
   optional SchemaDef schema = 4;
   string supplierQueue = 5;
-  string runtimeId = 6;
+  string runtime = 6;
 }
 
 enum DataType {

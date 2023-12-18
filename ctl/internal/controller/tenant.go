@@ -14,20 +14,20 @@ const (
 	tblTenant = "tenant"
 )
 
-type Tenant struct {
+type TenantController struct {
 	daoCache *dao.Cache
 }
 
-func NewTenant(db *database.Database) *Tenant {
-	return &Tenant{
+func NewTenantController(db *database.Database) *TenantController {
+	return &TenantController{
 		daoCache: dao.NewCache(db),
 	}
 }
 
-func (c *Tenant) Close() {
+func (c *TenantController) Close() {
 }
 
-func (c *Tenant) GetTenants(ctx context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
+func (c *TenantController) GetTenants(ctx context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
 	if in.ID != nil {
 		t, err := c.getTenant(ctx, *in.ID)
 		if err != nil {
@@ -44,7 +44,7 @@ func (c *Tenant) GetTenants(ctx context.Context, in *pb.GetTenantsRequest) (*pb.
 	}
 	return &pb.GetTenantsReply{Tenants: ts}, nil
 }
-func (c *Tenant) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
+func (c *TenantController) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
 	mydao, err := c.daoCache.GetGeneric(ctx, tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (c *Tenant) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.Ad
 	}
 	return &pb.AddTenantReply{Tenant: in.Tenant}, nil
 }
-func (c *Tenant) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
+func (c *TenantController) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
 	mydao, err := c.daoCache.GetGeneric(ctx, tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (c *Tenant) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
 	tenants := convert.Slices[proto.Message, *pb.Tenant](ms)
 	return tenants, nil
 }
-func (c *Tenant) getTenant(ctx context.Context, id string) (*pb.Tenant, error) {
+func (c *TenantController) getTenant(ctx context.Context, id string) (*pb.Tenant, error) {
 	mydao, err := c.daoCache.GetGeneric(ctx, tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err

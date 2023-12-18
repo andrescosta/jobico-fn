@@ -116,8 +116,9 @@ func (f *FileRepo) WriteMetadataForFile(tenant string, name string, fileType int
 func (f *FileRepo) GetMetadataForFile(tenant string, name string) (*Metadata, error) {
 	c, err := file(name+metFileExt, f.dirMeta, tenant)
 	if err != nil {
-		pe, ok := err.(*fs.PathError)
-		if ok && errors.Is(syscall.ERROR_FILE_NOT_FOUND, pe.Unwrap()) {
+		pe := &fs.PathError{}
+		ok := errors.As(err, &pe)
+		if ok && syscall.ERROR_FILE_NOT_FOUND.Is(pe.Unwrap()) {
 			return &Metadata{}, nil
 		}
 		return nil, err
