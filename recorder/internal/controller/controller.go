@@ -1,54 +1,56 @@
-package recorder
+package controller
 
 import (
 	"context"
 	"io"
 	"strings"
 
-	"github.com/andrescosta/goico/pkg/iohelper"
+	"github.com/andrescosta/goico/pkg/ioutil"
 	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/recorder/internal/recorder"
 	"github.com/nxadm/tail"
 	"github.com/rs/zerolog"
 )
 
-type Server struct {
-	pb.UnimplementedRecorderServer
-	recorder *Recorder
+type Recorder struct {
+	recorder *recorder.LogRecorder
 	fullpath string
 }
 
-func NewServer(fullpath string) (*Server, error) {
-	r, err := NewRecorder(fullpath)
+func New(fullpath string) (*Recorder, error) {
+	r, err := recorder.New(fullpath)
 	if err != nil {
 		return nil, err
 	}
-	return &Server{
+	return &Recorder{
 		recorder: r,
 		fullpath: fullpath,
 	}, nil
 }
-
-func (s *Server) AddJobExecution(ctx context.Context, r *pb.AddJobExecutionRequest) (*pb.AddJobExecutionReply, error) {
-	s.recorder.AddExecution(r.Execution)
+func (s *Recorder) AddJobExecution(_ context.Context, r *pb.AddJobExecutionRequest) (*pb.AddJobExecutionReply, error) {
+	if err := s.recorder.AddExecution(r.Execution); err != nil {
+		return nil, err
+	}
 	return &pb.AddJobExecutionReply{}, nil
 }
-
-func (s *Server) GetJobExecutions(g *pb.GetJobExecutionsRequest, r pb.Recorder_GetJobExecutionsServer) error {
+func (s *Recorder) GetJobExecutions(g *pb.GetJobExecutionsRequest, r pb.Recorder_GetJobExecutionsServer) error {
 	logger := zerolog.Ctx(r.Context())
 	seekInfo := &tail.SeekInfo{
 		Offset: 0,
 		Whence: io.SeekEnd,
 	}
 	if g.Lines != nil && *g.Lines > 0 {
-		lines, err := iohelper.GetLastnLines(s.fullpath, int(*g.Lines), true, true)
-		if err == nil {
-			if len(lines) > 0 {
-				r.Send(&pb.GetJobExecutionsReply{
-					Result: lines,
-				})
-			}
-		} else {
+		lines, err := ioutil.LastLines(s.fullpath, int(*g.Lines), true, true)
+		if err != nil {
 			logger.Warn().Msgf("error getting tail lines %s", err)
+		} else {
+			if len(lines) > 0 {
+				if err := r.Send(&pb.GetJobExecutionsReply{
+					Result: lines,
+				}); err != nil {
+					logger.Warn().Msgf("error sending tail lines %s", err)
+				}
+			}
 		}
 	}
 	tail, err := tail.TailFile(s.fullpath, tail.Config{Follow: true, ReOpen: true, Poll: true, CompleteLines: true, Location: seekInfo})

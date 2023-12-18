@@ -4,38 +4,35 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
-	"google.golang.org/grpc"
+	rpc "google.golang.org/grpc"
 )
 
 type RecorderClient struct {
 	serverAddr string
-	conn       *grpc.ClientConn
+	conn       *rpc.ClientConn
 	client     pb.RecorderClient
 }
 
 func NewRecorderClient(ctx context.Context) (*RecorderClient, error) {
-	addr := env.GetAsString("recorder.host")
-	conn, err := service.Dial(ctx, addr)
+	addr := env.Env("recorder.host")
+	conn, err := grpcutil.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
 	client := pb.NewRecorderClient(conn)
-
 	return &RecorderClient{
 		serverAddr: addr,
 		conn:       conn,
 		client:     client,
 	}, nil
 }
-
 func (c *RecorderClient) Close() {
 	c.conn.Close()
 }
-
-func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, lines int32, resChan chan<- string) error {
+func (c *RecorderClient) StreamJobExecutions(ctx context.Context, _ string, lines int32, resChan chan<- string) error {
 	logger := zerolog.Ctx(ctx)
 	rj, err := c.client.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{
 		Lines: &lines,
@@ -46,10 +43,14 @@ func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, li
 	for {
 		select {
 		case <-rj.Context().Done():
-			rj.CloseSend()
+			if err := rj.CloseSend(); err != nil {
+				logger.Warn().AnErr("err", err).Msg("Recorder Client: error closing client stream")
+			}
 			return nil
 		case <-ctx.Done():
-			rj.CloseSend()
+			if err := rj.CloseSend(); err != nil {
+				logger.Warn().AnErr("err", err).Msg("Recorder Client: error closing client stream")
+			}
 			return nil
 		default:
 			ress, err := rj.Recv()
@@ -63,7 +64,6 @@ func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, li
 		}
 	}
 }
-
 func (c *RecorderClient) AddJobExecution(ctx context.Context, ex *pb.JobExecution) error {
 	if _, err := c.client.AddJobExecution(ctx, &pb.AddJobExecutionRequest{Execution: ex}); err != nil {
 		return err

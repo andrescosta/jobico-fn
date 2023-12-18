@@ -9,8 +9,8 @@ service Queue {
 
 // Idea: add loadtype, and it will processed by any queue that supports that loadtype.
 message QueueRequest {
-  string tenantId=1;
-  string queueId = 2;
+  string tenant=1;
+  string queue = 2;
   repeated QueueItem items = 3;
 }
 
@@ -18,8 +18,8 @@ message QueueReply {
 }
 
 message DequeueRequest {
-  string tenantId=1;
-  string queueId = 2;
+  string tenant=1;
+  string queue = 2;
   repeated QueueItem items = 3;
 }
 
@@ -28,6 +28,6 @@ message DequeueReply {
 }
 
 message QueueItem {
-  string eventId=1;
+  string event=1;
   bytes data = 2;
 } 

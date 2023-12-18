@@ -21,9 +21,7 @@ func initRepo() {
 	cmdRepo.flag = *flag.NewFlagSet("repo", flag.ContinueOnError)
 	cmdRepo.run = runRepo
 	cmdRepo.flag.Usage = func() {}
-
 }
-
 func runRepo(ctx context.Context, cmd *command, args []string) {
 	if len(args) < 4 {
 		printHelp(os.Stdout, cmd)
@@ -42,7 +40,6 @@ func runRepo(ctx context.Context, cmd *command, args []string) {
 	if err != nil {
 		return
 	}
-
 	var fileType pb.File_FileType
 	switch fileTypeStr {
 	case "wasm":

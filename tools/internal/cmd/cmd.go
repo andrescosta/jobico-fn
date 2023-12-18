@@ -6,8 +6,10 @@ import (
 	"strings"
 )
 
+type runProc func(ctx context.Context, cmd *command, args []string)
+
 type command struct {
-	run       func(ctx context.Context, cmd *command, args []string)
+	run       runProc
 	usageLine string
 	short     string
 	name      string
@@ -24,7 +26,6 @@ func (c *command) LongName() string {
 func (c *command) Name() string {
 	return c.name
 }
-
 func (c *command) Long() string {
 	return c.long
 }

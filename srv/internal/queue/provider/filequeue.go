@@ -1,12 +1,14 @@
-package queue
+package provider
 
 import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"os"
+	"path/filepath"
 	"sync"
 
-	"github.com/andrescosta/goico/pkg/iohelper"
+	"github.com/andrescosta/goico/pkg/ioutil"
 )
 
 const (
@@ -30,7 +32,6 @@ func GetFileBasedQueue[T any](id string) *FileBasedQueue[T] {
 		queue, _ = queuesMap.LoadOrStore(directory, newQueue)
 	}
 	return queue.(*FileBasedQueue[T])
-
 }
 
 // aka Poor man queue
@@ -39,11 +40,9 @@ func NewDefaultFileBasedQueue[T any]() (*FileBasedQueue[T], error) {
 		directory: DIR,
 	}, nil
 }
-
 func (f *FileBasedQueue[T]) Add(data T) error {
 	return f.writeData(data)
 }
-
 func (f *FileBasedQueue[T]) Remove() (T, error) {
 	return f.readAndRemove()
 }
@@ -52,7 +51,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	// sync the access to the "queue"
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	bdata, filename, err := iohelper.GetOldestFile(f.directory, preffix, suffix)
+	bdata, filename, err := ioutil.OldestFile(f.directory, preffix, suffix)
 	if err != nil {
 		var d T
 		return d, errors.Join(errors.New("error removing file"), err)
@@ -64,29 +63,34 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	buffer := bytes.NewBuffer(bdata)
 	decoder := gob.NewDecoder(buffer)
 	var data T
-	if err = decoder.Decode(&data); err != nil {
+	if err := decoder.Decode(&data); err != nil {
 		var d T
-		iohelper.RenameFile(*filename, *filename+".error")
+		// if the file cannot be decoded, we rename it to [file].error for further processing
+		if errR := os.Rename(*filename, *filename+".error"); errR != nil {
+			err = errors.Join(errR, err)
+		}
 		return d, errors.Join(errors.New("error decoding"), err)
 	}
-	iohelper.RemoveFile(*filename)
+	if err := os.Remove(*filename); err != nil {
+		var t T
+		return t, err
+	}
 	return data, nil
 }
-
 func (f *FileBasedQueue[T]) writeData(data T) error {
 	buffer := bytes.NewBuffer(make([]byte, 0))
 	encoder := gob.NewEncoder(buffer)
-	err := encoder.Encode(data)
-	if err != nil {
+	if err := encoder.Encode(data); err != nil {
 		return errors.Join(errors.New("error encoding"), err)
 	}
-	err = iohelper.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes())
-	if err != nil {
+
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+	if _, err := ioutil.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes()); err != nil {
 		return err
 	}
 	return nil
 }
-
 func queueDirectory(directory string, id string) string {
-	return iohelper.BuildFullPath([]string{directory, id})
+	return filepath.Join([]string{directory, id}...)
 }

@@ -1,59 +1,63 @@
 package grpchelper
 
 import (
-	"context"
-
-	"github.com/andrescosta/goico/pkg/chico"
+	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
-func Recv[T proto.Message](ctx context.Context, s grpc.ClientStream, c chan<- T) error {
-	logger := zerolog.Ctx(ctx)
+func Recv[T proto.Message](s grpc.ClientStream, c chan<- T) error {
+	logger := zerolog.Ctx(s.Context())
+
 	for {
 		select {
 		case <-s.Context().Done():
-			s.CloseSend()
-			return nil
-		case <-ctx.Done():
-			s.CloseSend()
-			return nil
+			if err := s.CloseSend(); err != nil {
+				logger.Warn().AnErr("error", err).Msg("Recv: Error while closing stream.")
+			}
+			return s.Context().Err()
 		default:
 			var t T
 			p := t.ProtoReflect().New()
 			err := s.RecvMsg(p.Interface())
 			if err != nil {
-				logger.Warn().Msgf("error getting message %s", err)
-			} else {
-				select {
-				case c <- p.Interface().(T):
-				default:
+				if status.Code(err) != codes.Canceled {
+					logger.Warn().AnErr("error", err).Msg("Recv: error getting message")
 				}
+				continue
+			}
+			select {
+			case c <- p.Interface().(T):
+			default:
 			}
 		}
 	}
 }
 
-func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *chico.Broadcaster[T]) {
-	logger := zerolog.Ctx(ctx)
+func Listen[T proto.Message](s grpc.ClientStream, b *broadcaster.Broadcaster[T]) error {
+	logger := zerolog.Ctx(s.Context())
+
 	for {
 		select {
 		case <-s.Context().Done():
-			s.CloseSend()
-			return
-		case <-ctx.Done():
-			s.CloseSend()
-			return
+			if err := s.CloseSend(); err != nil {
+				logger.Warn().AnErr("error", err).Msg("Listen: Error while closing stream.")
+			}
+			return s.Context().Err()
 		default:
 			var t T
 			p := t.ProtoReflect().New()
 			err := s.RecvMsg(p.Interface())
 			if err != nil {
-				logger.Warn().Msgf("error getting message %s", err)
-			} else {
-				b.Write(p.Interface().(T))
+				if status.Code(err) != codes.Canceled {
+					logger.Warn().AnErr("error", err).Msg("Listen: error getting message")
+				}
+				continue
 			}
+			b.Write(p.Interface().(T))
 		}
 	}
 }

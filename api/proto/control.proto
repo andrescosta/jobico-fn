@@ -29,7 +29,7 @@ message UpdateToEnviromentStrReply {
 }
 
 message UpdateToPackagesStrRequest{
-  string tenantId = 1; //  not supported
+  string tenant = 1; //  not supported
 }
 
 message UpdateToPackagesStrReply{
@@ -49,7 +49,7 @@ message GetAllJobPackagesReply{
   repeated JobPackage packages = 1;
 }
 message GetJobPackagesRequest{
-  string tenantId = 1;  
+  string tenant = 1;  
   optional string ID = 2; 
 }
 message GetJobPackagesReply{
@@ -91,7 +91,7 @@ message AddEnviromentReply {
 
 message GetTenantsRequest {
   optional string ID = 1;
-  optional string tenantId=2;
+  optional string tenant=2;
 }
 
 message GetTenantsReply {
@@ -134,7 +134,7 @@ enum StorageType {
 message JobPackage {
     string ID = 1;
     optional string name = 2;
-    string tenantId = 3;
+    string tenant = 3;
     repeated QueueDef queues = 4;
     repeated JobDef jobs = 5;
     repeated RuntimeDef runtimes = 6;
@@ -184,8 +184,8 @@ message EventDef {
   optional string name = 2;
   DataType dataType = 3;
   optional SchemaDef schema = 4;
-  string supplierQueueId = 5;
-  string runtimeId = 6;
+  string supplierQueue = 5;
+  string runtime = 6;
 }
 
 enum DataType {

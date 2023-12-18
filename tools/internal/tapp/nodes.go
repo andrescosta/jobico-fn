@@ -4,7 +4,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/andrescosta/goico/pkg/convertico"
+	"github.com/andrescosta/goico/pkg/convert"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -24,11 +24,10 @@ type node struct {
 	rootNodeType RootNodeType
 	color        tcell.Color
 }
-
 type RootNodeType int
 
 const (
-	NoRootNode RootNodeType = iota
+	NoRootNode RootNodeType = iota + 1
 	RootNodeEnv
 	RootNodePackage
 	RootNodeFile
@@ -38,7 +37,6 @@ type sFile struct {
 	tenant string
 	file   *pb.File
 }
-
 type sServerNode struct {
 	name string
 	host *pb.Host
@@ -48,7 +46,7 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, f []*pb.TenantFiles) 
 	return &node{
 		text: "Jobico",
 		children: []*node{
-			{text: "Enviroment", entity: e, children: environmentChildrenNodes(e), rootNodeType: RootNodeEnv},
+			{text: "Environment", entity: e, children: environmentChildrenNodes(e), rootNodeType: RootNodeEnv},
 			{text: "Packages", entity: j, children: packageChildrenNodes(j), rootNodeType: RootNodePackage},
 			{text: "Files", entity: f, children: tenantFileChildrenNodes(f), rootNodeType: RootNodeFile},
 			{text: "Job Results", color: tcell.ColorGreen, expanded: true,
@@ -61,62 +59,53 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, f []*pb.TenantFiles) 
 		},
 	}
 }
-
 var packageChildrenNodes = func(j []*pb.JobPackage) []*node {
-	return convertico.SliceWithFunc(j, jobPackageNode)
+	return convert.SliceWithFn(j, jobPackageNode)
 }
-
 var environmentChildrenNodes = func(e *pb.Environment) []*node {
 	if e == nil {
 		return []*node{}
 	}
 	return []*node{
 		{text: e.ID, entity: e, children: []*node{
-			{text: "Services", children: convertico.SliceWithFunc(e.Services, serviceNode)},
+			{text: "Services", children: convert.SliceWithFn(e.Services, serviceNode)},
 		}},
 	}
 }
-
 var tenantFileChildrenNodes = func(r []*pb.TenantFiles) []*node {
-	return convertico.SliceWithFunc(r, tenantFilesNode)
+	return convert.SliceWithFn(r, tenantFilesNode)
 }
-
 var serviceNode = func(e *pb.Service) *node {
 	return &node{
 		text: e.ID, entity: e,
 		children: []*node{
-			{text: "Servers", children: convertico.SliceWithFuncName(e.ID, e.Servers, serverNode)},
-			{text: "Storages", children: convertico.SliceWithFunc(e.Storages, storageNode)},
+			{text: "Servers", children: convert.SliceWithFn(e.Servers, func(h *pb.Host) *node { return serverNode(e.ID, h) })},
+			{text: "Storages", children: convert.SliceWithFn(e.Storages, storageNode)},
 		},
 	}
 }
-
 var jobPackageNode = func(e *pb.JobPackage) *node {
 	return &node{
 		text: e.ID, entity: e, focus: onFocusJobPackageNode,
 	}
 }
-
 var serverNode = func(name string, e *pb.Host) *node {
 	return &node{
 		text: e.Ip + ":" + strconv.Itoa(int(e.Port)), entity: &sServerNode{name, e},
 		focus: onFocusServerNode,
 	}
 }
-
 var storageNode = func(s *pb.Storage) *node {
 	return &node{
 		text: s.ID, entity: s,
 	}
 }
-
 var tenantFilesNode = func(e *pb.TenantFiles) *node {
 	return &node{
-		text: e.TenantId, entity: e,
-		children: convertico.SliceWithFuncName(e.TenantId, e.Files, tenantFileNode),
+		text: e.Tenant, entity: e,
+		children: convert.SliceWithFn(e.Files, func(f *pb.File) *node { return tenantFileNode(e.Tenant, f) }),
 	}
 }
-
 var tenantFileNode = func(tenant string, file *pb.File) *node {
 	return &node{
 		text: file.Name, entity: &sFile{tenant, file},

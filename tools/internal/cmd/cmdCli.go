@@ -13,7 +13,6 @@ func initCliCommand() *command {
 	initShow()
 	initEnv()
 	initRollback()
-
 	cliCommand.commands = []*command{
 		cmdHelp,
 		cmdRepo,
@@ -23,7 +22,6 @@ func initCliCommand() *command {
 		cmdShow,
 		cmdEnv,
 	}
-
 	cliCommand.run = runCli
 	return cliCommand
 }
@@ -34,7 +32,7 @@ var cliCommand = &command{
 	long:      "Cli is the command line admin tool.",
 }
 
-func runCli(ctx context.Context, _ *command, args []string) {
+func runCli(ctx context.Context, _ *command, _ []string) {
 	if len(os.Args) < 2 {
 		printUsage(os.Stdout, cliCommand)
 		return

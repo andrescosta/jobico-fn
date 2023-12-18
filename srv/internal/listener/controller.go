@@ -13,7 +13,7 @@ import (
 
 type Controller struct {
 	queueClient *remote.QueueClient
-	eventsStore *EventsStore
+	eventsCache *EventDefCache
 }
 
 func ConfigureRoutes(ctx context.Context, r *mux.Router) error {
@@ -21,30 +21,25 @@ func ConfigureRoutes(ctx context.Context, r *mux.Router) error {
 	if err != nil {
 		return err
 	}
+	eventsStore, err := NewEventDefCache(ctx)
 	if err != nil {
 		return err
 	}
-	eventsStore, err := NewEventsStore(ctx)
-	if err != nil {
-		return err
-	}
-
 	c := Controller{
-		eventsStore: eventsStore,
+		eventsCache: eventsStore,
 		queueClient: queueClient,
 	}
-
 	s := r.PathPrefix("/events").Subrouter()
 	s.Methods("POST").Path("/{tenant_id}/{event_id}").HandlerFunc(c.Post)
 	s.Methods("GET").HandlerFunc(c.Get)
 	return nil
 }
-
-func (rr Controller) Get(w http.ResponseWriter, r *http.Request) {
+func (c Controller) Get(writer http.ResponseWriter, _ *http.Request) {
+	http.Error(writer, "", http.StatusNotFound)
 }
-
 func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 	logger := zerolog.Ctx(request.Context())
+
 	event := pb.MerchantData{}
 	if err := json.NewDecoder(request.Body).Decode(&event); err != nil {
 		logger.Error().Msgf("Failed to decode request body: %s", err)
@@ -53,44 +48,45 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	var items []*pb.QueueItem
-	tenantId := mux.Vars(request)["tenant_id"]
-	eventId := mux.Vars(request)["event_id"]
-	ef, err := c.eventsStore.GetEvent(tenantId, eventId)
+	tenant := mux.Vars(request)["tenant_id"]
+	eventID := mux.Vars(request)["event_id"]
+	ef, err := c.eventsCache.Get(tenant, eventID)
 	if err != nil {
-		logger.Err(err).Msgf("server error")
+		logger.Err(err).Msgf("Get: error getting event")
 		http.Error(writer, "", http.StatusInternalServerError)
 		return
 	}
-	if ef.event.DataType == pb.DataType_Json {
-		for _, ev := range event.Data {
 
-			if err = ef.schema.Validate(ev); err != nil {
-				logger.Error().Msgf("Failed to validate event: %s", err)
-				http.Error(writer, "Failed to validate event", http.StatusBadRequest)
+	if ef.EventDef.DataType == pb.DataType_Json {
+		for _, ev := range event.Data {
+			if err = ef.Schema.Validate(ev); err != nil {
+				logger.Error().Msgf("Schema.Validate: Failed to validate event: %s", err)
+				http.Error(writer, "Event illegal", http.StatusBadRequest)
 				return
 			}
 
 			evBin, err := json.Marshal(ev)
 			if err != nil {
-				logger.Error().Msgf("Failed to encode event: %s", err)
+				logger.Error().Msgf("json.Marshal: Failed to encode event: %s", err)
 				http.Error(writer, "Failed to process event", http.StatusBadRequest)
 				return
 			}
+
 			q := pb.QueueItem{
-				Data:    evBin,
-				EventId: eventId,
+				Data:  evBin,
+				Event: eventID,
 			}
 			items = append(items, &q)
 		}
 	}
 	queueRequest := pb.QueueRequest{
-		QueueId:  ef.event.SupplierQueueId,
-		TenantId: tenantId,
-		Items:    items,
+		Queue:  ef.EventDef.SupplierQueue,
+		Tenant: tenant,
+		Items:  items,
 	}
 	err = c.queueClient.Queue(request.Context(), &queueRequest)
 	if err != nil {
-		logger.Error().Msgf("Failed to connect to queue server: %s", err)
+		logger.Error().Msgf("Failed to connect to connect to queue server: %s", err)
 		http.Error(writer, "", http.StatusInternalServerError)
 		return
 	}

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/andrescosta/goico/pkg/yamlico"
+	"github.com/andrescosta/goico/pkg/yamlutil"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 )
 
@@ -21,9 +21,7 @@ func initShow() {
 	cmdShow.flag = *flag.NewFlagSet("show", flag.ContinueOnError)
 	cmdShow.run = runShow
 	cmdShow.flag.Usage = func() {}
-
 }
-
 func runShow(ctx context.Context, cmd *command, args []string) {
 	switch args[0] {
 	case "deploy":
@@ -35,7 +33,6 @@ func runShow(ctx context.Context, cmd *command, args []string) {
 		return
 	}
 }
-
 func showDeploy(ctx context.Context, args []string, cmd *command) {
 	if len(args) < 3 {
 		printHelp(os.Stdout, cmd)
@@ -48,7 +45,6 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-
 	p, err := client.GetPackage(ctx, tenant, &id)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
@@ -56,7 +52,7 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 	if len(p) == 0 {
 		fmt.Println("not found")
 	} else {
-		s, err := yamlico.Encode(p[0])
+		s, err := yamlutil.Marshal(p[0])
 		if err != nil {
 			printError(os.Stderr, cmd, err)
 			return
@@ -64,8 +60,7 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 		fmt.Println(*s)
 	}
 }
-
-func showEnv(ctx context.Context, args []string, cmd *command) {
+func showEnv(ctx context.Context, _ []string, cmd *command) {
 	client, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return
@@ -77,7 +72,7 @@ func showEnv(ctx context.Context, args []string, cmd *command) {
 	if p == nil {
 		fmt.Println("not found")
 	} else {
-		s, err := yamlico.Encode(p)
+		s, err := yamlutil.Marshal(p)
 		if err != nil {
 			printError(os.Stderr, cmd, err)
 			return

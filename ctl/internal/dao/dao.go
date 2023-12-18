@@ -12,14 +12,14 @@ type DAO[T proto.Message] struct {
 }
 
 func NewDAO[T proto.Message](ctx context.Context, db *database.Database, tableName string, m database.Marshaler[T]) (*DAO[T], error) {
-	table, err := database.GetTable(ctx, db, tableName, m)
+	table, err := database.NewTable(ctx, db, tableName, m)
 	if err != nil {
 		return nil, err
 	}
-	var r DAO[T] = DAO[T]{
+	var res = DAO[T]{
 		table: table,
 	}
-	return &r, nil
+	return &res, nil
 }
 
 func (q *DAO[T]) All(ctx context.Context) ([]T, error) {

@@ -1,4 +1,4 @@
-Start-Job -Name ctl -WorkingDirectory C:\users\Andres\projects\go\jobico\ctl\cmd\service\ {go run main.go}
+Start-Job -Name ctl -WorkingDirectory C:\users\Andres\projects\go\jobico\ctl\cmd\ {go run main.go}
 Start-Sleep -Seconds 4
 Start-Job -Name queue -WorkingDirectory C:\users\Andres\projects\go\jobico\srv\cmd\queue\ {go run main.go}
 Start-Job -Name repo -WorkingDirectory C:\users\Andres\projects\go\jobico\repo\cmd\ {go run main.go}

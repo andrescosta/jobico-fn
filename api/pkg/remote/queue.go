@@ -4,20 +4,20 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
 	pb "github.com/andrescosta/jobico/api/types"
-	"google.golang.org/grpc"
+	rpc "google.golang.org/grpc"
 )
 
 type QueueClient struct {
 	serverAddr string
-	conn       *grpc.ClientConn
+	conn       *rpc.ClientConn
 	client     pb.QueueClient
 }
 
 func NewQueueClient(ctx context.Context) (*QueueClient, error) {
-	host := env.GetAsString("queue.host")
-	conn, err := service.Dial(ctx, host)
+	host := env.Env("queue.host")
+	conn, err := grpcutil.Dial(ctx, host)
 	if err != nil {
 		return nil, err
 	}
@@ -28,15 +28,13 @@ func NewQueueClient(ctx context.Context) (*QueueClient, error) {
 		client:     client,
 	}, nil
 }
-
 func (c *QueueClient) Close() {
 	c.conn.Close()
 }
-
 func (c *QueueClient) Dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
 	request := pb.DequeueRequest{
-		QueueId:  queue,
-		TenantId: tenant,
+		Queue:  queue,
+		Tenant: tenant,
 	}
 	r, err := c.client.Dequeue(ctx, &request)
 	if err != nil {
@@ -44,7 +42,6 @@ func (c *QueueClient) Dequeue(ctx context.Context, tenant string, queue string) 
 	}
 	return r.Items, nil
 }
-
 func (c *QueueClient) Queue(ctx context.Context, queueRequest *pb.QueueRequest) error {
 	if _, err := c.client.Queue(ctx, queueRequest); err != nil {
 		return err

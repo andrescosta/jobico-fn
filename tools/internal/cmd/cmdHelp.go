@@ -18,10 +18,8 @@ func initHelp() {
 	cmdHelp.flag = *flag.NewFlagSet("help", flag.ContinueOnError)
 	cmdHelp.run = runHelp
 	cmdHelp.flag.Usage = func() {}
-
 }
-
-func runHelp(ctx context.Context, cmd *command, args []string) {
+func runHelp(_ context.Context, _ *command, args []string) {
 	if len(args) < 1 || args[0] == "help" {
 		printUsage(os.Stdout, cliCommand)
 	}

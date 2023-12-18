@@ -13,9 +13,9 @@ var cmdRecorder = &command{
 	name:      "recorder",
 	usageLine: "cli recorder [tenant] [-lines <number>]",
 	short:     "gets result information for the tenant",
+
 	long: `
 Recorder gets result information for the tenant.
-
 The -lines <number> gets the logs lines  `,
 }
 
@@ -27,8 +27,7 @@ func initRecorder() {
 	cmdRecorder.flag.Usage = func() {}
 	cmdRecorder.run = runRecorder
 }
-
-func runRecorder(ctx context.Context, cmd *command, args []string) {
+func runRecorder(ctx context.Context, cmd *command, _ []string) {
 	ch := make(chan string)
 	go func(mc <-chan string) {
 		for {
@@ -45,8 +44,7 @@ func runRecorder(ctx context.Context, cmd *command, args []string) {
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 	}
-	client.GetJobExecutions(ctx, "", int32(*cmdRecorderflagLines), ch)
-	if err != nil {
+	if err := client.StreamJobExecutions(ctx, "", int32(*cmdRecorderflagLines), ch); err != nil {
 		printError(os.Stderr, cmd, err)
 	}
 	fmt.Println("command stoped.")

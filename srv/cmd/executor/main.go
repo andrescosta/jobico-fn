@@ -4,13 +4,15 @@ import (
 	"context"
 	"log"
 
-	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/service/headless"
 	"github.com/andrescosta/jobico/srv/internal/executor"
 )
 
 func main() {
-	e, err := service.NewHeadlessService(context.Background(), "executor",
-		func(ctx context.Context) error {
+	e, err := headless.New(
+		headless.WithContext(context.Background()),
+		headless.WithName("executor"),
+		headless.WithServeHandler(func(ctx context.Context) error {
 			m, err := executor.NewExecutorMachine(ctx)
 			if err != nil {
 				return err
@@ -19,7 +21,8 @@ func main() {
 				return err
 			}
 			return nil
-		})
+		}),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

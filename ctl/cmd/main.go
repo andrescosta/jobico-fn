@@ -7,23 +7,24 @@ import (
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/api/types"
-	"github.com/andrescosta/jobico/repo/internal/server"
+	"github.com/andrescosta/jobico/ctl/internal/server"
 )
 
 func main() {
 	svc, err := grpc.New(
-		grpc.WithName("repo"),
+		grpc.WithName("ctl"),
 		grpc.WithContext(context.Background()),
-		grpc.WithServiceDesc(&pb.Repo_ServiceDesc),
+		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
 		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
-			return server.New(ctx, env.Env("repo.dir", "./")), nil
+			dbPath := env.Env("ctl.dbpath", ".\\db.db")
+			return server.New(ctx, dbPath)
 		}),
 	)
 	if err != nil {
-		log.Panicf("error starting repo service: %s", err)
+		log.Panicf("error starting ctl service: %s", err)
 	}
-
+	defer svc.Dispose()
 	if err = svc.Serve(); err != nil {
-		log.Fatalf("error serving repo service: %s", err)
+		log.Fatalf("error serving ctl service %s", err)
 	}
 }

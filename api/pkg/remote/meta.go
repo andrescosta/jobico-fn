@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,16 +16,30 @@ func NewMetadataClient() *MetadataClient {
 	return &MetadataClient{}
 }
 
-func (c *MetadataClient) GetMetadata(name string) (*map[string]string, error) {
-	host := env.GetAsString(name + ".host")
+func (c *MetadataClient) GetMetadata(ctx context.Context, name string) (map[string]string, error) {
+	host := env.Env(name + ".host")
 	url := fmt.Sprintf("http://%s/%s", host, "meta")
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if req.Body != nil {
+			req.Body.Close()
+		}
+	}()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
 	r := make(map[string]string)
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
 		return nil, err
 	}
-	return &r, nil
+	return r, nil
 }

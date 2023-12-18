@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/andrescosta/goico/pkg/chico"
+	"github.com/andrescosta/goico/pkg/broadcaster"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
@@ -17,21 +17,21 @@ var (
 	ErrPublishingData = errors.New("error")
 )
 
-type GrpcBroadcaster[T proto.Message, S proto.Message] struct {
-	b *chico.Broadcaster[T]
+type GrpcBroadcaster[T, S proto.Message] struct {
+	b *broadcaster.Broadcaster[T]
 }
 
-func StartBroadcaster[T proto.Message, S proto.Message](ctx context.Context) *GrpcBroadcaster[T, S] {
+func StartBroadcaster[T, S proto.Message](ctx context.Context) *GrpcBroadcaster[T, S] {
 	return &GrpcBroadcaster[T, S]{
-		b: chico.Start[T](ctx),
+		b: broadcaster.Start[T](ctx),
 	}
 }
 
-func (s *GrpcBroadcaster[T, S]) Stop() {
-	s.b.Stop()
+func (b *GrpcBroadcaster[T, S]) Stop() {
+	b.b.Stop()
 }
 
-func (b *GrpcBroadcaster[T, S]) Broadcast(value S, utype pb.UpdateType) {
+func (b *GrpcBroadcaster[T, S]) Broadcast(_ context.Context, value S, utype pb.UpdateType) {
 	var prototype T
 	n := b.new(prototype, value, utype)
 	b.b.Write(n)
