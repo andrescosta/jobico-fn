@@ -30,7 +30,7 @@ jobico::build(){
 	local targets=( $(jobico::all_targets) )
 	for t in "${targets[@]}"; do
 		echo "Building $t ..."
-		go build -o ./bin ../$t
+		go build -o ./bin ./$t
 	done
 }
 
@@ -39,7 +39,7 @@ jobico::copy_env_files(){
 	for t in "${targets[@]}"; do
 		pkg=$(basename "${t}")
 		echo "coping ../$t/.env to ./bin/.env.$pkg" 
-		cp ../$t/.env ./bin/.env.$pkg
+		cp ./$t/.env ./bin/.env.$pkg
 	done
 }
 
