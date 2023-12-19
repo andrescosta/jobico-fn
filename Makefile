@@ -1,4 +1,4 @@
-GOFMT_FILES = $(shell go list -f '{{.Dir}}' ./... | grep -v '\types')
+GOFMT_FILES:= $(shell find . -type f -name '*.go' -not -path "./api/types/*")
 
 .PHONY: lint
 lint:
@@ -15,8 +15,6 @@ build:
 .PHONY: release
 release: lint vuln build
 
-.PHONE: gofmt
-gofmt: $(GOFMT_FILES) 
-
-$(GOFMT_FILES):
-    gofmt -s $@
+.PHONY: gofmt
+gofmt:  
+	@gofmt -s -l -w $(SRC)
