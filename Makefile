@@ -1,20 +1,19 @@
-GOFMT_FILES:= $(shell find . -type f -name '*.go' -not -path "./api/types/*")
+GOFMT_FILES = $(shell find . -type f -name '*.go' -not -path "./api/types/*")
 
-.PHONY: lint
 lint:
 	golangci-lint run ./...
 
-.PHONY: vuln
 vuln:
 	govulncheck ./...
 
-.PHONY: build
 build:
 	./build/build.sh
 
-.PHONY: release
-release: lint vuln build
+gofmt: $(GOFMT_FILES)  
 
-.PHONY: gofmt
-gofmt:  
-	@gofmt -s -l -w $(SRC)
+$(GOFMT_FILES):
+	@gofmt -s -w $@
+
+release: gofmt lint vuln build 
+
+.PHONY: lint vuln build release gofmt $(GOFMT_FILES)
