@@ -43,19 +43,9 @@ jobico::copy_env_files(){
 	done
 }
 
-jobico::run_lints(){
-	echo "Running lints, check issues file ..."
-	golangci-lint run ../... > ../issues
-}
-
-jobico::deploy_locally(){
+jobico::build_locally(){
 	jobico::build
 	jobico::copy_env_files
 }
 
-jobico::release_locally(){
-	jobico::run_lints
-	jobico::deploy_locally
-}
-
-jobico::deploy_locally
+jobico::build_locally
