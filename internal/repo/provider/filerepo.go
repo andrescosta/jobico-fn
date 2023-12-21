@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/andrescosta/goico/pkg/ioutil"
 	pb "github.com/andrescosta/jobico/api/types"
@@ -116,9 +114,7 @@ func (f *FileRepo) WriteMetadataForFile(tenant string, name string, fileType int
 func (f *FileRepo) GetMetadataForFile(tenant string, name string) (*Metadata, error) {
 	c, err := file(name+metFileExt, f.dirMeta, tenant)
 	if err != nil {
-		pe := &fs.PathError{}
-		ok := errors.As(err, &pe)
-		if ok && syscall.ERROR_FILE_NOT_FOUND.Is(pe.Unwrap()) {
+		if os.IsNotExist(err) {
 			return &Metadata{}, nil
 		}
 		return nil, err

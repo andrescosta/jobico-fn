@@ -1,43 +1,48 @@
-FROM golang:1.21.0-bullseye as builder
+FROM golang:1.21.5-bullseye as builder
 
 ENV CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-all"
 ENV GOFLAGS="-buildmode=pie"
 
 WORKDIR /workdir
 
+COPY .env ./
 COPY go.mod ./
+COPY go.sum ./
 RUN go mod download
 
-COPY . .
-RUN go build -ldflags "-s -w" -trimpath ./cmd/...
+COPY ./cmd ./cmd
+COPY ./internal ./internal
+COPY ./pkg ./pkg
+COPY ./api ./api
+RUN go build -o ./bin/ -ldflags "-s -w" -trimpath ./cmd/...
 
-# try USER with nobody:nobody 
-FROM gcr.io/distroless/base-debian11:nonroot as ctl
-COPY --from=builder /workdir/ctl /bin/ctl
-USER 65534:65534
-CMD ["/bin/ctl"]
+FROM  debian:12-slim as ctl
+WORKDIR /app
+COPY --from=builder /workdir/bin/ctl ctl
+COPY --from=builder /workdir/.env .env
+CMD ["/app/ctl","--env:basedir=/app"]
 
-FROM gcr.io/distroless/base-debian11:nonroot as exec
-COPY --from=builder /workdir/executor /bin/executor
-USER 65534:65534
-CMD ["/bin/executor"]
+FROM  debian:12-slim as exec
+COPY --from=builder /workdir/bin/executor /bin
+COPY --from=builder /workdir/.env /bin
+ENTRYPOINT ["/bin/executor", "--env:basedir=/bin"]
 
-FROM gcr.io/distroless/base-debian11:nonroot as listener
-COPY --from=builder /workdir/listener /bin/listener
-USER 65534:65534
-CMD ["/bin/listener"]
+FROM  debian:12-slim as listener
+COPY --from=builder /workdir/bin/listener /bin/listener
+COPY --from=builder /workdir/.env /bin
+ENTRYPOINT ["/bin/listener","--env:basedir=/bin"]
 
-FROM gcr.io/distroless/base-debian11:nonroot as queue
-COPY --from=builder /workdir/queue /bin/queue
-USER 65534:65534
-CMD ["/bin/queue"]
+FROM  debian:12-slim as queue
+COPY --from=builder /workdir/bin/queue /bin/queue
+COPY --from=builder /workdir/.env /bin
+ENTRYPOINT ["/bin/queue","--env:basedir=/bin"]
 
-FROM gcr.io/distroless/base-debian11:nonroot as recorder
-COPY --from=builder /workdir/recorder /bin/recorder
-USER 65534:65534
-CMD ["/bin/recorder"]
+FROM  debian:12-slim as recorder
+COPY --from=builder /workdir/bin/recorder /bin/recorder
+COPY --from=builder /workdir/.env /bin
+ENTRYPOINT ["/bin/recorder","--env:basedir=/bin"]
 
-FROM gcr.io/distroless/base-debian11:nonroot as repo
-COPY --from=builder /workdir/repo /bin/repo
-USER 65534:65534
-CMD ["/bin/repo"]
+FROM  debian:12-slim as repo
+COPY --from=builder /workdir/bin/repo /bin/repo
+COPY --from=builder /workdir/.env /bin
+ENTRYPOINT ["/bin/repo","--env:basedir=/bin"]
