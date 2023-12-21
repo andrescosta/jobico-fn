@@ -15,7 +15,11 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/cmd/ctl/main.go"
+        "program": "${workspaceFolder}/cmd/ctl/main.go",
+        "args": [
+            "--env:basedir=../../bin",
+            "--env:workdir=../../work",
+        ]
     },
     {
         "name": "Launch Repo",

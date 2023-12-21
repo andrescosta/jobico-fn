@@ -18,20 +18,13 @@ jobico::all_targets() {
 	echo "${targets[@]}"
 }
 
-jobico::debug(){
+jobico::copy_env_files(){
 	local targets=( $(jobico::all_targets) )
 	for t in "${targets[@]}"; do
-		echo $(basename "${t}")
+		pkg=$(basename "${t}")
+		echo "coping ../$t/.env to ./bin/.env.$pkg" 
+		cp ./$t/.env ./bin/.env.$pkg
 	done
 }
 
-
-jobico::build(){
-	local targets=( $(jobico::all_targets) )
-	for t in "${targets[@]}"; do
-		echo "Building $t ..."
-		go build -o ./bin ./$t
-	done
-}
-
-jobico::build
+jobico::copy_env_files

@@ -1,0 +1,35 @@
+version: "3.7"
+services:
+  build:
+    build:
+      target: build
+      context: .
+ctl:
+  build:
+    target: ctl
+    context: .
+
+exec:
+  build:
+    target: exec
+    context: .
+
+listener:
+  build:
+    target: listener
+    context: .
+
+queue:
+  build:
+    target: queue
+    context: .
+
+recorder:
+  build:
+    target: recorder
+    context: .
+
+repo:
+  build:
+    target: repo
+    context: .

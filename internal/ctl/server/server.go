@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/andrescosta/goico/pkg/database"
+	"github.com/andrescosta/goico/pkg/env"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/controller"
 )
@@ -16,7 +18,8 @@ type Server struct {
 	tenantCont *controller.TenantController
 }
 
-func New(ctx context.Context, dbPath string) (*Server, error) {
+func New(ctx context.Context, dbFileName string) (*Server, error) {
+	dbPath := filepath.Join(env.WorkDir(), dbFileName)
 	db, err := database.Open(dbPath)
 	if err != nil {
 		return nil, err

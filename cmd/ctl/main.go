@@ -16,8 +16,8 @@ func main() {
 		grpc.WithContext(context.Background()),
 		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
 		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
-			dbPath := env.Env("ctl.dbpath", ".\\db.db")
-			return server.New(ctx, dbPath)
+			dbFileName := env.Env("ctl.dbname", "db.db")
+			return server.New(ctx, dbFileName)
 		}),
 	)
 	if err != nil {
