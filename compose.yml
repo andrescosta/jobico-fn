@@ -20,8 +20,8 @@ services:
       - log.console.enabled=true
       - log.file.enabled=true
       - log.file.name={workdir}/log/ctl.log
-      - log.file.dir=log
       - workdir=/data/ctl
+
   exec:
     build:
       target: exec
@@ -40,6 +40,7 @@ services:
       - log.level=0
       - log.console.enabled=true
       - log.file.enabled=false
+      - log.file.name={workdir}/log/executor.log
       - workdir=/data/executor
     depends_on:
       - ctl
@@ -67,6 +68,7 @@ services:
       - log.level=0
       - log.console.enabled=true
       - log.file.enabled=false
+      - log.file.name={workdir}/log/listener.log
       - workdir=/data/listener
     depends_on:
       - ctl
@@ -93,6 +95,7 @@ services:
       - log.level=0
       - log.console.enabled=true
       - log.file.enabled=false
+      - log.file.name={workdir}/log/queue.log
       - workdir=/data/queue
     depends_on:
       - ctl
@@ -116,6 +119,7 @@ services:
       - log.level=0
       - log.console.enabled=true
       - log.file.enabled=false
+      - log.file.name={workdir}/log/recorder.log
       - workdir=/data/recorder
     depends_on:
       - ctl
@@ -139,6 +143,7 @@ services:
       - log.level=0
       - log.console.enabled=true
       - log.file.enabled=false
+      - log.file.name={workdir}/log/repo.log
       - workdir=/data/repo
     depends_on:
       - ctl

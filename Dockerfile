@@ -22,20 +22,20 @@ CMD ["/app/ctl","--env:basedir=/app"]
 
 FROM  debian:12-slim as exec
 COPY --from=builder /workdir/bin/executor /bin
-ENTRYPOINT ["/bin/executor", "--env:basedir=/bin"]
+ENTRYPOINT ["/bin/executor", "--env:basedir=/app"]
 
 FROM  debian:12-slim as listener
 COPY --from=builder /workdir/bin/listener /bin/listener
-ENTRYPOINT ["/bin/listener","--env:basedir=/bin"]
+ENTRYPOINT ["/bin/listener","--env:basedir=/app"]
 
 FROM  debian:12-slim as queue
 COPY --from=builder /workdir/bin/queue /bin/queue
-ENTRYPOINT ["/bin/queue","--env:basedir=/bin"]
+ENTRYPOINT ["/bin/queue","--env:basedir=/app"]
 
 FROM  debian:12-slim as recorder
 COPY --from=builder /workdir/bin/recorder /bin/recorder
-ENTRYPOINT ["/bin/recorder","--env:basedir=/bin"]
+ENTRYPOINT ["/bin/recorder","--env:basedir=/app"]
 
 FROM  debian:12-slim as repo
 COPY --from=builder /workdir/bin/repo /bin/repo
-ENTRYPOINT ["/bin/repo","--env:basedir=/bin"]
+ENTRYPOINT ["/bin/repo","--env:basedir=/app"]
