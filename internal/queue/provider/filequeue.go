@@ -5,16 +5,16 @@ import (
 	"encoding/gob"
 	"errors"
 	"os"
-	"path/filepath"
 	"sync"
 
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/ioutil"
 )
 
 const (
 	preffix = "qdata"
 	suffix  = ".q"
-	DIR     = "data"
+	dir     = "data"
 )
 
 var queuesMap sync.Map
@@ -25,7 +25,7 @@ type FileBasedQueue[T any] struct {
 }
 
 func GetFileBasedQueue[T any](id string) *FileBasedQueue[T] {
-	directory := queueDirectory(DIR, id)
+	directory := queueDirectory(dir, id)
 	queue, ok := queuesMap.Load(directory)
 	if !ok {
 		newQueue := &FileBasedQueue[T]{directory: directory}
@@ -37,7 +37,7 @@ func GetFileBasedQueue[T any](id string) *FileBasedQueue[T] {
 // aka Poor man queue
 func NewDefaultFileBasedQueue[T any]() (*FileBasedQueue[T], error) {
 	return &FileBasedQueue[T]{
-		directory: DIR,
+		directory: dir,
 	}, nil
 }
 func (f *FileBasedQueue[T]) Add(data T) error {
@@ -92,5 +92,5 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 	return nil
 }
 func queueDirectory(directory string, id string) string {
-	return filepath.Join([]string{directory, id}...)
+	return env.InWorkDir(directory, id)
 }

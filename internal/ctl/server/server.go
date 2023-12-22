@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"path/filepath"
 
 	"github.com/andrescosta/goico/pkg/database"
 	"github.com/andrescosta/goico/pkg/env"
@@ -19,7 +18,7 @@ type Server struct {
 }
 
 func New(ctx context.Context, dbFileName string) (*Server, error) {
-	dbPath := filepath.Join(env.WorkDir(), dbFileName)
+	dbPath := env.InWorkDir(dbFileName)
 	db, err := database.Open(dbPath)
 	if err != nil {
 		return nil, err

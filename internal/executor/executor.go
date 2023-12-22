@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	cacheDir = ".\\cache"
+	cacheDir = "cache"
 	NoError  = 0
 )
 
@@ -111,7 +111,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	jobPackage.PackageID = pkg.ID
 	modulesForEvents := make(map[string]*wazero.WasmModuleString)
 	nextStepForEvents := make(map[string]*pb.ResultDef)
-	r, err := wazero.NewWasmRuntime(ctx, cacheDir)
+	r, err := wazero.NewWasmRuntime(ctx, env.InWorkDir(cacheDir))
 	if err != nil {
 		return err
 	}
