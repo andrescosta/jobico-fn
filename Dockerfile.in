@@ -1,4 +1,4 @@
-FROM golang:1.21.5-bullseye as builder
+FROM {BUILD_IMAGE} as builder
 
 ENV CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-all"
 ENV GOFLAGS="-buildmode=pie"
@@ -15,27 +15,27 @@ COPY ./pkg ./pkg
 COPY ./api ./api
 RUN go build -o ./bin/ -ldflags "-s -w" -trimpath ./cmd/...
 
-FROM  debian:12-slim as ctl
+FROM  {RUN_IMAGE} as ctl
 WORKDIR /app
 COPY --from=builder /workdir/bin/ctl ctl
 CMD ["/app/ctl","--env:basedir=/app"]
 
-FROM  debian:12-slim as exec
+FROM  {RUN_IMAGE} as exec
 COPY --from=builder /workdir/bin/executor /bin
 ENTRYPOINT ["/bin/executor", "--env:basedir=/app"]
 
-FROM  debian:12-slim as listener
+FROM  {RUN_IMAGE} as listener
 COPY --from=builder /workdir/bin/listener /bin/listener
 ENTRYPOINT ["/bin/listener","--env:basedir=/app"]
 
-FROM  debian:12-slim as queue
+FROM  {RUN_IMAGE} as queue
 COPY --from=builder /workdir/bin/queue /bin/queue
 ENTRYPOINT ["/bin/queue","--env:basedir=/app"]
 
-FROM  debian:12-slim as recorder
+FROM  {RUN_IMAGE} as recorder
 COPY --from=builder /workdir/bin/recorder /bin/recorder
 ENTRYPOINT ["/bin/recorder","--env:basedir=/app"]
 
-FROM  debian:12-slim as repo
+FROM  {RUN_IMAGE} as repo
 COPY --from=builder /workdir/bin/repo /bin/repo
 ENTRYPOINT ["/bin/repo","--env:basedir=/app"]
