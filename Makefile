@@ -1,6 +1,6 @@
 GOFMT_FILES = $(shell find . -type f -name '*.go' -not -path "./api/types/*")
 
-.PHONY: obs up down stop compose lint vuln build release gofmt local $(GOFMT_FILES)
+.PHONY: gosec obs up down stop compose lint vuln build release gofmt local $(GOFMT_FILES)
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -13,6 +13,9 @@ lint:
 vuln:
 	govulncheck ./...
 
+gosec:
+	gosec ./...
+
 build:
 	./build/build.sh
 
@@ -21,7 +24,7 @@ gofmt: $(GOFMT_FILES)
 $(GOFMT_FILES):
 	@gofmt -s -w $@
 
-release: gofmt lint vuln build env 
+release: gofmt lint vuln gosec build env 
 
 local: env build
 

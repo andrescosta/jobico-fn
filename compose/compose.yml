@@ -8,6 +8,8 @@
 # obs: Same as "up" plus the observability stack
 # down:  Stops and removes containers, networks, volumes.
 # stop:  Stops containers without removing them. Use "make start" to start them.
+#
+
 
 x-default-logging: &logging
   driver: "json-file"
