@@ -1,32 +1,44 @@
-GOFMT_FILES = $(shell find . -type f -name '*.go' -not -path "./api/types/*")
+FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 
-.PHONY: gosec obs up down stop compose lint vuln build release format local $(GOFMT_FILES)
+.PHONY: hadolint init gosec obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
 
 APP?=application
 REGISTRY?=gcr.io/images
 COMMIT_SHA=$(shell git rev-parse --short HEAD)
 
+MKDIR_REPO_CMD = mkdir -p reports 
+ifeq ($(OS),Windows_NT)
+ifneq ($(MSYSTEM), MSYS)
+	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
+endif
+endif
 
 lint:
-	golangci-lint run ./...
+	@golangci-lint run ./...
+
+hadolint:
+	@cat ./compose/Dockerfile | docker run --rm -i hadolint/hadolint
 
 vuln:
-	govulncheck ./...
+	@govulncheck ./...
 
-gosec:
-	gosec ./...
+gosec: init
+	@gosec -quiet -out ./reports/gosec.txt ./... 
 
 build:
 	./build/build.sh
 
-format: $(GOFMT_FILES)  
+format: $(FORMAT_FILES)  
 
-$(GOFMT_FILES):
+$(FORMAT_FILES):
 	@gofumpt -w $@
 
 release: format lint vuln gosec build env 
 
 local: env build
+
+init:
+	@$(MKDIR_REPO_CMD) 
 
 ### Docker compose targets.
 compose:
