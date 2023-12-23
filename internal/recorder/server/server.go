@@ -25,6 +25,7 @@ func New(fullpath string) (*Server, error) {
 func (s *Server) AddJobExecution(ctx context.Context, in *pb.AddJobExecutionRequest) (*pb.AddJobExecutionReply, error) {
 	return s.controller.AddJobExecution(ctx, in)
 }
+
 func (s *Server) GetJobExecutions(in *pb.GetJobExecutionsRequest, ctx pb.Recorder_GetJobExecutionsServer) error {
 	return s.controller.GetJobExecutions(in, ctx)
 }

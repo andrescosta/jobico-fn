@@ -19,9 +19,11 @@ var usageTemplate = `{{.Long | trim}}
 	
 	Use "cli help{{with .LongName}} {{.}}{{end}} <command>" for more information about a command.
 	`
+
 var helpTemplate = `usage: {{.UsageLine}}
 	{{.Long | trim}}
 	`
+
 var errorTemplate = `
 Error executing command: {{.Name | printf "%-11s"}}
 Details:
@@ -35,6 +37,7 @@ func printUsage(w io.Writer, cmd *command) {
 	}
 	bw.Flush()
 }
+
 func printHelp(w io.Writer, cmd *command) {
 	bw := bufio.NewWriter(w)
 	err := templatehelper.Render(bw, helpTemplate, cmd)
@@ -43,6 +46,7 @@ func printHelp(w io.Writer, cmd *command) {
 	}
 	bw.Flush()
 }
+
 func printError(w io.Writer, cmd *command, err error) {
 	bw := bufio.NewWriter(w)
 	errr := templatehelper.Render(bw, errorTemplate, cmd)

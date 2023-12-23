@@ -32,9 +32,11 @@ func NewRepoClient(ctx context.Context) (*RepoClient, error) {
 		client:     client,
 	}, nil
 }
+
 func (c *RepoClient) Close() {
 	c.conn.Close()
 }
+
 func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, fileType pb.File_FileType, reader io.Reader) error {
 	bytes, err := io.ReadAll(reader)
 	if err != nil {
@@ -55,6 +57,7 @@ func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, fi
 	}
 	return nil
 }
+
 func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([]byte, error) {
 	r, err := c.client.GetFile(ctx, &pb.GetFileRequest{
 		TenantFile: &pb.TenantFile{
@@ -69,6 +72,7 @@ func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([
 	}
 	return r.File.Content, nil
 }
+
 func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, error) {
 	reply, err := c.client.GetAllFileNames(ctx, &pb.GetAllFileNamesRequest{})
 	if err != nil {
@@ -78,6 +82,7 @@ func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, er
 	ret = append(ret, reply.TenantFiles...)
 	return ret, nil
 }
+
 func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.UpdateToFileStrReply) error {
 	s, err := c.client.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
 	if err != nil {
@@ -85,6 +90,7 @@ func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.Upd
 	}
 	return grpchelper.Recv(s, resChan)
 }
+
 func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToFileStrReply], error) {
 	if c.broadcasterRepoUpdates == nil {
 		if err := c.startListenRepoUpdates(ctx); err != nil {
@@ -93,6 +99,7 @@ func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.L
 	}
 	return c.broadcasterRepoUpdates.Subscribe(), nil
 }
+
 func (c *RepoClient) startListenRepoUpdates(ctx context.Context) error {
 	cb := broadcaster.Start[*pb.UpdateToFileStrReply](ctx)
 	c.broadcasterRepoUpdates = cb

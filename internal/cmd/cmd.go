@@ -26,15 +26,19 @@ func (c *command) LongName() string {
 func (c *command) Name() string {
 	return c.name
 }
+
 func (c *command) Long() string {
 	return c.long
 }
+
 func (c *command) UsageLine() string {
 	return c.usageLine
 }
+
 func (c *command) Commands() []*command {
 	return c.commands
 }
+
 func (c *command) Short() string {
 	return c.short
 }

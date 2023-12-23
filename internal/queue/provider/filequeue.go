@@ -40,9 +40,11 @@ func NewDefaultFileBasedQueue[T any]() (*FileBasedQueue[T], error) {
 		directory: dir,
 	}, nil
 }
+
 func (f *FileBasedQueue[T]) Add(data T) error {
 	return f.writeData(data)
 }
+
 func (f *FileBasedQueue[T]) Remove() (T, error) {
 	return f.readAndRemove()
 }
@@ -77,6 +79,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	}
 	return data, nil
 }
+
 func (f *FileBasedQueue[T]) writeData(data T) error {
 	buffer := bytes.NewBuffer(make([]byte, 0))
 	encoder := gob.NewEncoder(buffer)
@@ -91,6 +94,7 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 	}
 	return nil
 }
+
 func queueDirectory(directory string, id string) string {
 	return env.InWorkDir(directory, id)
 }

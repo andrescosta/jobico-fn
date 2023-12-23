@@ -24,6 +24,7 @@ func initRollback() {
 	cmdRollback.run = runRollback
 	cmdRollback.flag.Usage = func() {}
 }
+
 func runRollback(ctx context.Context, cmd *command, args []string) {
 	if len(args) < 1 {
 		printHelp(os.Stdout, cmd)

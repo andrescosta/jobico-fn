@@ -163,6 +163,7 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 	})
 	return menu
 }
+
 func renderNode(target *node) *tview.TreeNode {
 	// if target.color == tcell.ColorDefault {
 	if len(target.children) > 0 {

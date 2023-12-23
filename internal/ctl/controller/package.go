@@ -28,6 +28,7 @@ func NewPackageController(ctx context.Context, db *database.Database) *PackageCo
 		tenantController: NewTenantController(db),
 	}
 }
+
 func (c *PackageController) Close() {
 	c.bJobPackage.Stop()
 }
@@ -84,6 +85,7 @@ func (c *PackageController) AddPackage(ctx context.Context, in *pb.AddJobPackage
 	c.broadcastAdd(ctx, in.Package)
 	return &pb.AddJobPackageReply{Package: in.Package}, nil
 }
+
 func (c *PackageController) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.UpdateJobPackageReply, error) {
 	mydao, err := c.daoCache.GetForTenant(ctx, in.Package.Tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
@@ -110,9 +112,11 @@ func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeleteJobP
 	c.broadcastDelete(ctx, in.Package)
 	return &pb.DeleteJobPackageReply{}, nil
 }
+
 func (c *PackageController) UpdateToPackagesStr(_ *pb.UpdateToPackagesStrRequest, r pb.Control_UpdateToPackagesStrServer) error {
 	return c.bJobPackage.RcvAndDispatchUpdates(r)
 }
+
 func (c *PackageController) getPackages(ctx context.Context, tenant string) ([]*pb.JobPackage, error) {
 	mydao, err := c.daoCache.GetForTenant(ctx, tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
@@ -125,6 +129,7 @@ func (c *PackageController) getPackages(ctx context.Context, tenant string) ([]*
 	packages := convert.Slices[proto.Message, *pb.JobPackage](ms)
 	return packages, nil
 }
+
 func (c *PackageController) getPackage(ctx context.Context, tenant string, id string) (*pb.JobPackage, error) {
 	mydao, err := c.daoCache.GetForTenant(ctx, tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
@@ -143,12 +148,15 @@ func (c *PackageController) getPackage(ctx context.Context, tenant string, id st
 func (c *PackageController) broadcastAdd(ctx context.Context, m *pb.JobPackage) {
 	c.broadcast(ctx, m, pb.UpdateType_New)
 }
+
 func (c *PackageController) broadcastUpdate(ctx context.Context, m *pb.JobPackage) {
 	c.broadcast(ctx, m, pb.UpdateType_Update)
 }
+
 func (c *PackageController) broadcastDelete(ctx context.Context, m *pb.JobPackage) {
 	c.broadcast(ctx, m, pb.UpdateType_Delete)
 }
+
 func (c *PackageController) broadcast(ctx context.Context, m *pb.JobPackage, utype pb.UpdateType) {
 	c.bJobPackage.Broadcast(ctx, m, utype)
 }

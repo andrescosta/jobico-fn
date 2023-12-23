@@ -26,6 +26,7 @@ func initDeploy() {
 	cmdDeploy.run = runDeploy
 	cmdDeploy.flag.Usage = func() {}
 }
+
 func runDeploy(ctx context.Context, cmd *command, args []string) {
 	if len(args) < 1 {
 		printHelp(os.Stdout, cmd)

@@ -28,9 +28,11 @@ func NewQueueClient(ctx context.Context) (*QueueClient, error) {
 		client:     client,
 	}, nil
 }
+
 func (c *QueueClient) Close() {
 	c.conn.Close()
 }
+
 func (c *QueueClient) Dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
 	request := pb.DequeueRequest{
 		Queue:  queue,
@@ -42,6 +44,7 @@ func (c *QueueClient) Dequeue(ctx context.Context, tenant string, queue string) 
 	}
 	return r.Items, nil
 }
+
 func (c *QueueClient) Queue(ctx context.Context, queueRequest *pb.QueueRequest) error {
 	if _, err := c.client.Queue(ctx, queueRequest); err != nil {
 		return err

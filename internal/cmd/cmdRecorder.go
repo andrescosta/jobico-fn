@@ -27,6 +27,7 @@ func initRecorder() {
 	cmdRecorder.flag.Usage = func() {}
 	cmdRecorder.run = runRecorder
 }
+
 func runRecorder(ctx context.Context, cmd *command, _ []string) {
 	ch := make(chan string)
 	go func(mc <-chan string) {

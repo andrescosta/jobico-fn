@@ -19,6 +19,7 @@ func initHelp() {
 	cmdHelp.run = runHelp
 	cmdHelp.flag.Usage = func() {}
 }
+
 func runHelp(_ context.Context, _ *command, args []string) {
 	if len(args) < 1 || args[0] == "help" {
 		printUsage(os.Stdout, cliCommand)

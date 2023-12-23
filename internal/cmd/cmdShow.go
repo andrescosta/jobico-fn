@@ -22,6 +22,7 @@ func initShow() {
 	cmdShow.run = runShow
 	cmdShow.flag.Usage = func() {}
 }
+
 func runShow(ctx context.Context, cmd *command, args []string) {
 	switch args[0] {
 	case "deploy":
@@ -33,6 +34,7 @@ func runShow(ctx context.Context, cmd *command, args []string) {
 		return
 	}
 }
+
 func showDeploy(ctx context.Context, args []string, cmd *command) {
 	if len(args) < 3 {
 		printHelp(os.Stdout, cmd)
@@ -60,6 +62,7 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 		fmt.Println(*s)
 	}
 }
+
 func showEnv(ctx context.Context, _ []string, cmd *command) {
 	client, err := remote.NewControlClient(ctx)
 	if err != nil {

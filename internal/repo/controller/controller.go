@@ -20,6 +20,7 @@ func New(ctx context.Context, dir string) *Controller {
 		bJobPackage: grpchelper.StartBroadcaster[*pb.UpdateToFileStrReply, proto.Message](ctx),
 	}
 }
+
 func (s *Controller) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.AddFileReply, error) {
 	if err := s.repo.AddFile(r.TenantFile.Tenant, r.TenantFile.File.Name, int32(r.TenantFile.File.Type), r.TenantFile.File.Content); err != nil {
 		return nil, err
@@ -27,6 +28,7 @@ func (s *Controller) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.Add
 	s.bJobPackage.Broadcast(ctx, &pb.TenantFile{Tenant: r.TenantFile.Tenant, File: &pb.File{Name: r.TenantFile.File.Name, Content: r.TenantFile.File.Content}}, pb.UpdateType_New)
 	return &pb.AddFileReply{}, nil
 }
+
 func (s *Controller) GetFile(_ context.Context, r *pb.GetFileRequest) (*pb.GetFileReply, error) {
 	f, err := s.repo.File(r.TenantFile.Tenant, r.TenantFile.File.Name)
 	if err != nil {
@@ -43,6 +45,7 @@ func (s *Controller) GetFile(_ context.Context, r *pb.GetFileRequest) (*pb.GetFi
 		},
 	}, nil
 }
+
 func (s *Controller) GetAllFileNames(_ context.Context, _ *pb.GetAllFileNamesRequest) (*pb.GetAllFileNamesReply, error) {
 	f, err := s.repo.Files()
 	if err != nil {
@@ -52,6 +55,7 @@ func (s *Controller) GetAllFileNames(_ context.Context, _ *pb.GetAllFileNamesReq
 		TenantFiles: f,
 	}, nil
 }
+
 func (s *Controller) UpdateToFileStr(_ *pb.UpdateToFileStrRequest, r pb.Repo_UpdateToFileStrServer) error {
 	return s.bJobPackage.RcvAndDispatchUpdates(r)
 }
