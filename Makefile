@@ -1,6 +1,6 @@
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 
-.PHONY: hadolint init gosec obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
+.PHONY: go-build hadolint init gosec obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -39,6 +39,8 @@ local: env build
 
 init:
 	@$(MKDIR_REPO_CMD) 
+
+
 
 ### Docker compose targets.
 compose:
