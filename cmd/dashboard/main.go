@@ -16,7 +16,6 @@ func main() {
 	flag.Parse()
 
 	tapp, err := tapp.New(context.Background(), "dashboard", *syncUpdatesFlag)
-
 	if err != nil {
 		log.Panic(err)
 	}

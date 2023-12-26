@@ -16,7 +16,7 @@ func NewDAO[T proto.Message](ctx context.Context, db *database.Database, tableNa
 	if err != nil {
 		return nil, err
 	}
-	var res = DAO[T]{
+	res := DAO[T]{
 		table: table,
 	}
 	return &res, nil

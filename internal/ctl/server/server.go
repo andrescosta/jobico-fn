@@ -30,6 +30,7 @@ func New(ctx context.Context, dbFileName string) (*Server, error) {
 		envCont:    controller.NewEnvironmentController(ctx, db),
 	}, nil
 }
+
 func (c *Server) Close() error {
 	c.tenantCont.Close()
 	c.pkgCont.Close()
@@ -48,6 +49,7 @@ func (c *Server) GetAllPackages(ctx context.Context, in *pb.GetAllJobPackagesReq
 func (c *Server) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (*pb.AddJobPackageReply, error) {
 	return c.pkgCont.AddPackage(ctx, in)
 }
+
 func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.UpdateJobPackageReply, error) {
 	return c.pkgCont.UpdatePackage(ctx, in)
 }
@@ -55,24 +57,31 @@ func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageReque
 func (c *Server) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.DeleteJobPackageReply, error) {
 	return c.pkgCont.DeletePackage(ctx, in)
 }
+
 func (c *Server) GetTenants(ctx context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
 	return c.tenantCont.GetTenants(ctx, in)
 }
+
 func (c *Server) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
 	return c.tenantCont.AddTenant(ctx, in)
 }
+
 func (c *Server) AddEnviroment(ctx context.Context, in *pb.AddEnviromentRequest) (*pb.AddEnviromentReply, error) {
 	return c.envCont.AddEnviroment(ctx, in)
 }
+
 func (c *Server) UpdateEnviroment(ctx context.Context, in *pb.UpdateEnviromentRequest) (*pb.UpdateEnviromentReply, error) {
 	return c.envCont.UpdateEnviroment(ctx, in)
 }
+
 func (c *Server) GetEnviroment(ctx context.Context, in *pb.GetEnviromentRequest) (*pb.GetEnviromentReply, error) {
 	return c.envCont.GetEnviroment(ctx, in)
 }
+
 func (c *Server) UpdateToPackagesStr(req *pb.UpdateToPackagesStrRequest, ctl pb.Control_UpdateToPackagesStrServer) error {
 	return c.pkgCont.UpdateToPackagesStr(req, ctl)
 }
+
 func (c *Server) UpdateToEnviromentStr(req *pb.UpdateToEnviromentStrRequest, ctl pb.Control_UpdateToEnviromentStrServer) error {
 	return c.envCont.UpdateToEnviromentStr(req, ctl)
 }

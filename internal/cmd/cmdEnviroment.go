@@ -26,6 +26,7 @@ func initEnv() {
 	cmdEnv.run = runEnv
 	cmdEnv.flag.Usage = func() {}
 }
+
 func runEnv(ctx context.Context, cmd *command, args []string) {
 	if len(args) < 1 {
 		printHelp(os.Stdout, cmd)

@@ -22,6 +22,7 @@ func initRepo() {
 	cmdRepo.run = runRepo
 	cmdRepo.flag.Usage = func() {}
 }
+
 func runRepo(ctx context.Context, cmd *command, args []string) {
 	if len(args) < 4 {
 		printHelp(os.Stdout, cmd)

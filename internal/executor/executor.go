@@ -47,6 +47,7 @@ func NewExecutorMachine(ctx context.Context) (*VM, error) {
 	}
 	return e, nil
 }
+
 func (e *VM) StartExecutors(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
 	defer func() {
@@ -74,6 +75,7 @@ func (e *VM) StartExecutors(ctx context.Context) error {
 	logger.Info().Msg("Workers stoped")
 	return nil
 }
+
 func (e *VM) startPackage(ctx context.Context, pkg *jobPackage) {
 	e.w.Add(1)
 	for _, ex := range pkg.Executors {
@@ -82,6 +84,7 @@ func (e *VM) startPackage(ctx context.Context, pkg *jobPackage) {
 		go e.execute(ctxE, pkg.tenant, ex.queue, pkg.Modules, pkg.NextStep)
 	}
 }
+
 func (e *VM) load(ctx context.Context) error {
 	c, err := remote.NewControlClient(ctx)
 	if err != nil {
@@ -96,6 +99,7 @@ func (e *VM) load(ctx context.Context) error {
 	}
 	return nil
 }
+
 func (e *VM) addOrUpdatePackages(ctx context.Context, pkgs []*pb.JobPackage) error {
 	for _, pkg := range pkgs {
 		err := e.addPackage(ctx, pkg)
@@ -105,6 +109,7 @@ func (e *VM) addOrUpdatePackages(ctx context.Context, pkgs []*pb.JobPackage) err
 	}
 	return nil
 }
+
 func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	jobPackage := &jobPackage{}
 	jobPackage.tenant = pkg.Tenant
@@ -160,9 +165,11 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	e.packages.Store(getFullPackageID(pkg.Tenant, pkg.ID), jobPackage)
 	return nil
 }
+
 func getFullPackageID(tenant string, queue string) string {
 	return tenant + "/" + queue
 }
+
 func getModuleName(supplierQueue string, eventID string) string {
 	return supplierQueue + "/" + eventID
 }
@@ -198,6 +205,7 @@ func (e *VM) listeningUpdates(ctx context.Context, l *broadcaster.Listener[*pb.U
 		}
 	}
 }
+
 func (e *VM) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrReply) {
 	logger := zerolog.Ctx(ctx)
 	switch u.Type {
@@ -213,6 +221,7 @@ func (e *VM) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrReply) {
 		e.deletePackage(ctx, u.Object)
 	}
 }
+
 func (e *VM) newPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	if err := e.addPackage(ctx, pkg); err != nil {
 		return err
@@ -222,6 +231,7 @@ func (e *VM) newPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	e.startPackage(ctx, p)
 	return nil
 }
+
 func (e *VM) deletePackage(_ context.Context, p *pb.JobPackage) {
 	o, ok := e.packages.LoadAndDelete(getFullPackageID(p.Tenant, p.ID))
 	if ok {
@@ -231,10 +241,12 @@ func (e *VM) deletePackage(_ context.Context, p *pb.JobPackage) {
 		}
 	}
 }
+
 func (e *VM) updatePackage(ctx context.Context, p *pb.JobPackage) error {
 	e.deletePackage(ctx, p)
 	return e.newPackage(ctx, p)
 }
+
 func (e *VM) execute(ctx context.Context, tenant string, queue string, modules map[string]*wazero.WasmModuleString, nextSteps map[string]*pb.ResultDef) {
 	defer e.w.Done()
 	logger := zerolog.Ctx(ctx)
@@ -282,6 +294,7 @@ func (e *VM) execute(ctx context.Context, tenant string, queue string, modules m
 		}
 	}
 }
+
 func makeDecisions(ctx context.Context, _ string, tenant string, code uint64, _ string, resultDef *pb.ResultDef) error {
 	r := pb.JobResult{
 		Code: code,
@@ -295,20 +308,22 @@ func makeDecisions(ctx context.Context, _ string, tenant string, code uint64, _ 
 		q = &pb.QueueRequest{
 			Tenant: tenant,
 			Queue:  resultDef.Ok.SupplierQueue,
-			Items: []*pb.QueueItem{{
-				Event: resultDef.Ok.ID,
-				Data:  bytes1,
-			},
+			Items: []*pb.QueueItem{
+				{
+					Event: resultDef.Ok.ID,
+					Data:  bytes1,
+				},
 			},
 		}
 	} else {
 		q = &pb.QueueRequest{
 			Tenant: tenant,
 			Queue:  resultDef.Error.SupplierQueue,
-			Items: []*pb.QueueItem{{
-				Event: resultDef.Error.ID,
-				Data:  bytes1,
-			},
+			Items: []*pb.QueueItem{
+				{
+					Event: resultDef.Error.ID,
+					Data:  bytes1,
+				},
 			},
 		}
 	}
@@ -321,6 +336,7 @@ func makeDecisions(ctx context.Context, _ string, tenant string, code uint64, _ 
 	}
 	return nil
 }
+
 func reportToRecorder(ctx context.Context, queue string, eventID string, tenant string, code uint64, result string) error {
 	now := time.Now()
 	host, err := os.Hostname()
@@ -347,6 +363,7 @@ func reportToRecorder(ctx context.Context, queue string, eventID string, tenant 
 	}
 	return client.AddJobExecution(ctx, ex)
 }
+
 func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
 	client, err := remote.NewQueueClient(ctx)
 	if err != nil {
@@ -354,6 +371,7 @@ func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem,
 	}
 	return client.Dequeue(ctx, tenant, queue)
 }
+
 func executeWasm(ctx context.Context, module *wazero.WasmModuleString, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)

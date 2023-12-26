@@ -79,9 +79,11 @@ func New(ctx context.Context, name string, sync bool) (*TApp, error) {
 		sync:              sync,
 	}, nil
 }
+
 func (c *TApp) DebugOn() {
 	c.debug = true
 }
+
 func (c *TApp) Run() error {
 	ctx, done := context.WithCancel(context.Background())
 	defer done()
@@ -295,6 +297,7 @@ func (c *TApp) deleteNewPackage(p *pb.JobPackage) {
 		}
 	}
 }
+
 func (c *TApp) stopStreamingUpdates() {
 	c.cancelStreamUpdatesFunc()
 	c.debugInfo("Sync services stopped")
@@ -322,24 +325,29 @@ func (c *TApp) showErrorStr(e string, ds ...time.Duration) {
 	d := collection.FirstOrDefault(ds, durationError)
 	showText(c, c.status, e, tcell.ColorRed, d)
 }
+
 func (c *TApp) showError(err error, ds ...time.Duration) {
 	errStr := collection.UnwrapError(err)[0].Error()
 	c.showErrorStr(errStr, collection.FirstOrDefault(ds, durationError))
 }
+
 func (c *TApp) debugError(err error) {
 	log.Err(err)
 	fmt.Fprintln(c.debugTextView, err)
 }
+
 func (c *TApp) debugErrorFromGoRoutine(err error) {
 	c.app.QueueUpdateDraw(func() {
 		c.debugError(err)
 	})
 }
+
 func (c *TApp) debugInfo(info string) {
 	if c.debug {
 		fmt.Fprintln(c.debugTextView, info)
 	}
 }
+
 func (c *TApp) debugInfoFromGoRoutine(info string) {
 	if c.debug {
 		c.app.QueueUpdateDraw(func() {

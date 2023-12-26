@@ -49,19 +49,24 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, f []*pb.TenantFiles) 
 			{text: "Environment", entity: e, children: environmentChildrenNodes(e), rootNodeType: RootNodeEnv},
 			{text: "Packages", entity: j, children: packageChildrenNodes(j), rootNodeType: RootNodePackage},
 			{text: "Files", entity: f, children: tenantFileChildrenNodes(f), rootNodeType: RootNodeFile},
-			{text: "Job Results", color: tcell.ColorGreen, expanded: true,
+			{
+				text: "Job Results", color: tcell.ColorGreen, expanded: true,
 				children: []*node{
-					{text: "<< start >>",
+					{
+						text:     "<< start >>",
 						selected: onSelectedGettingJobResults,
 						focus:    func(_ context.Context, c *TApp, _ *tview.TreeNode) { switchToPageIfExists(c.mainView, "results") },
 					},
-				}},
+				},
+			},
 		},
 	}
 }
+
 var packageChildrenNodes = func(j []*pb.JobPackage) []*node {
 	return convert.SliceWithFn(j, jobPackageNode)
 }
+
 var environmentChildrenNodes = func(e *pb.Environment) []*node {
 	if e == nil {
 		return []*node{}
@@ -72,9 +77,11 @@ var environmentChildrenNodes = func(e *pb.Environment) []*node {
 		}},
 	}
 }
+
 var tenantFileChildrenNodes = func(r []*pb.TenantFiles) []*node {
 	return convert.SliceWithFn(r, tenantFilesNode)
 }
+
 var serviceNode = func(e *pb.Service) *node {
 	return &node{
 		text: e.ID, entity: e,
@@ -84,28 +91,33 @@ var serviceNode = func(e *pb.Service) *node {
 		},
 	}
 }
+
 var jobPackageNode = func(e *pb.JobPackage) *node {
 	return &node{
 		text: e.ID, entity: e, focus: onFocusJobPackageNode,
 	}
 }
+
 var serverNode = func(name string, e *pb.Host) *node {
 	return &node{
 		text: e.Ip + ":" + strconv.Itoa(int(e.Port)), entity: &sServerNode{name, e},
 		focus: onFocusServerNode,
 	}
 }
+
 var storageNode = func(s *pb.Storage) *node {
 	return &node{
 		text: s.ID, entity: s,
 	}
 }
+
 var tenantFilesNode = func(e *pb.TenantFiles) *node {
 	return &node{
 		text: e.Tenant, entity: e,
 		children: convert.SliceWithFn(e.Files, func(f *pb.File) *node { return tenantFileNode(e.Tenant, f) }),
 	}
 }
+
 var tenantFileNode = func(tenant string, file *pb.File) *node {
 	return &node{
 		text: file.Name, entity: &sFile{tenant, file},

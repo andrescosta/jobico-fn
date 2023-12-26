@@ -34,9 +34,11 @@ func ConfigureRoutes(ctx context.Context, r *mux.Router) error {
 	s.Methods("GET").HandlerFunc(c.Get)
 	return nil
 }
+
 func (c Controller) Get(writer http.ResponseWriter, _ *http.Request) {
 	http.Error(writer, "", http.StatusNotFound)
 }
+
 func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 	logger := zerolog.Ctx(request.Context())
 

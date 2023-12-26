@@ -50,6 +50,7 @@ func (j *EventDefCache) Get(tenant string, eventID string) (*EventEntry, error) 
 	}
 	return res, nil
 }
+
 func (j *EventDefCache) startListeningUpdates(ctx context.Context) error {
 	controlClient, err := remote.NewControlClient(ctx)
 	if err != nil {
@@ -141,14 +142,13 @@ func (j *EventDefCache) addOrUpdateEvent(ctx context.Context, tenant string, job
 	return nil
 }
 
-var (
-	ErrEventUnknown = fmt.Errorf("event unknown")
-)
+var ErrEventUnknown = fmt.Errorf("event unknown")
 
 func (j *EventDefCache) existEvent(eventName string) bool {
 	_, ok := j.defs.Load(eventName)
 	return ok
 }
+
 func getEventName(tenant string, eventID string) string {
 	return tenant + "/" + eventID
 }

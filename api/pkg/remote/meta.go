@@ -9,8 +9,7 @@ import (
 	"github.com/andrescosta/goico/pkg/env"
 )
 
-type MetadataClient struct {
-}
+type MetadataClient struct{}
 
 func NewMetadataClient() *MetadataClient {
 	return &MetadataClient{}

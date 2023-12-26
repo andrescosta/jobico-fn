@@ -11,9 +11,7 @@ import (
 	pb "github.com/andrescosta/jobico/api/types"
 )
 
-var (
-	ErrFileExists = errors.New("file exists")
-)
+var ErrFileExists = errors.New("file exists")
 
 const (
 	metFileExt = ".met"
@@ -37,9 +35,11 @@ func New(baseDir string) *FileRepo {
 		dirMeta: filepath.Join(baseDir, dirMeta),
 	}
 }
+
 func (f *FileRepo) File(tenant string, name string) ([]byte, error) {
 	return file(name, f.dirFile, tenant)
 }
+
 func file(name string, dirs ...string) ([]byte, error) {
 	full := filepath.Join(dirs...)
 	res, err := os.ReadFile(filepath.Join(full, name))
@@ -48,6 +48,7 @@ func file(name string, dirs ...string) ([]byte, error) {
 	}
 	return res, nil
 }
+
 func (f *FileRepo) Files() ([]*pb.TenantFiles, error) {
 	dirs, err := ioutil.Dirs(f.dirFile)
 	if err != nil {
@@ -72,6 +73,7 @@ func (f *FileRepo) Files() ([]*pb.TenantFiles, error) {
 	}
 	return ts, nil
 }
+
 func (f *FileRepo) AddFile(tenant string, name string, fileType int32, bytes []byte) error {
 	if err := addFile(name, bytes, f.dirFile, tenant); err != nil {
 		return err
@@ -81,6 +83,7 @@ func (f *FileRepo) AddFile(tenant string, name string, fileType int32, bytes []b
 	}
 	return nil
 }
+
 func addFile(name string, bytes []byte, dirs ...string) error {
 	full := filepath.Join(dirs...)
 	if err := os.MkdirAll(full, os.ModeExclusive); err != nil {
@@ -111,6 +114,7 @@ func (f *FileRepo) WriteMetadataForFile(tenant string, name string, fileType int
 	}
 	return nil
 }
+
 func (f *FileRepo) GetMetadataForFile(tenant string, name string) (*Metadata, error) {
 	c, err := file(name+metFileExt, f.dirMeta, tenant)
 	if err != nil {

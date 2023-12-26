@@ -27,12 +27,14 @@ func New(fullpath string) (*Recorder, error) {
 		fullpath: fullpath,
 	}, nil
 }
+
 func (s *Recorder) AddJobExecution(_ context.Context, r *pb.AddJobExecutionRequest) (*pb.AddJobExecutionReply, error) {
 	if err := s.recorder.AddExecution(r.Execution); err != nil {
 		return nil, err
 	}
 	return &pb.AddJobExecutionReply{}, nil
 }
+
 func (s *Recorder) GetJobExecutions(g *pb.GetJobExecutionsRequest, r pb.Recorder_GetJobExecutionsServer) error {
 	logger := zerolog.Ctx(r.Context())
 	seekInfo := &tail.SeekInfo{

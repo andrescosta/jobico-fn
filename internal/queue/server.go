@@ -21,9 +21,11 @@ func NewServer(ctx context.Context) (*Server, error) {
 		controller: c,
 	}, nil
 }
+
 func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.QueueReply, error) {
 	return s.controller.Queue(ctx, in)
 }
+
 func (s *Server) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
 	return s.controller.Dequeue(ctx, in)
 }

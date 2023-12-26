@@ -1,0 +1,228 @@
+# this file must be ran from the project's root directory:
+#     docker compose -f .\compose\compose.yml [parameters]
+# or
+#     make [compose|up|obs|down|stop]
+#
+# compose: Creates, starts and attaches to the containers. (up without -d)
+# up: Same as "compose" but in the background (up with -d)
+# obs: Same as "up" plus the observability stack
+# down:  Stops and removes containers, networks, volumes.
+# stop:  Stops containers without removing them. Use "make start" to start them.
+#
+
+
+x-default-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "5m"
+    max-file: "2"
+
+x-obs-env: &obs-env
+  obs.enabled: false
+#  obs.enabled: true
+  obs.exporter.trace.grpc.host: jaeger:4317
+  obs.exporter.metrics.http.host: prometheus:9090
+  obs.exporter.metrics.host.path: /api/v1/otlp/v1/metrics
+  obs.metrics.host: true
+  obs.metrics.runtime: true
+
+x-obs-depends_on: &obs-depends_on
+  {}
+  # jaeger:
+  #   condition: service_started
+  # prometheus:
+  #   condition: service_started
+
+x-svc-log: &svc-log
+  log.level: 0
+  log.console.enabled: true
+  log.file.enabled: true
+
+x-env: &env
+  queue.host: queue:50051
+  ctl.host: ctl:50052
+  repo.host: repo:50053
+  recorder.host: recorder:50054
+
+volumes:
+  data:
+
+services:
+  builder:
+    build:
+      target: builder
+      context: ../
+      dockerfile: compose/Dockerfile
+ 
+  ctl:
+    build:
+      target: ctl
+      context: ../
+      dockerfile: compose/Dockerfile
+    volumes:
+      - data:/data/ctl
+    ports:
+      - 50052:50052
+    environment:
+      <<: [*obs-env, *svc-log]
+      ctl.addr: :50052
+      log.file.name: "{workdir}/log/ctl.log"
+      workdir: /data/ctl
+    depends_on: *obs-depends_on
+
+  exec:
+    build:
+      target: exec
+      context: ../
+      dockerfile: compose/Dockerfile
+    volumes:
+      - data:/data/executor
+    environment:
+      <<: [*obs-env, *svc-log, *env]
+      executor.addr: :9595
+      max.queue.errors: 2
+      metadata.enabled: false
+      log.file.name: "{workdir}/log/executor.log"
+      workdir: /data/executor
+    depends_on: 
+      <<: *obs-depends_on
+      ctl:
+        condition: service_started
+      queue:
+        condition: service_started
+      recorder:
+        condition: service_started
+      repo:
+        condition: service_started
+
+  listener:
+    build:
+      target: listener
+      context: ../
+      dockerfile: compose/Dockerfile
+    ports:
+      - 8080:8080
+    volumes:
+      - data:/data/listener
+    environment:
+      listener.addr: :8080
+      <<: [*obs-env, *svc-log, *env]
+      log.file.name: "{workdir}/log/listener.log"
+      workdir: /data/listener
+    depends_on: 
+      <<: *obs-depends_on
+      ctl:
+        condition: service_started
+      queue:
+        condition: service_started
+      recorder:
+        condition: service_started
+      repo:
+        condition: service_started
+
+  queue:
+    build:
+      target: queue
+      context: ../
+      dockerfile: compose/Dockerfile
+    ports:
+      - 50051
+    volumes:
+      - data:/data/queue
+    environment:
+      queue.addr: :50051
+      <<: [*obs-env, *svc-log, *env]
+      log.file.name: "{workdir}/log/queue.log"
+      workdir: /data/queue
+    depends_on: 
+      <<: *obs-depends_on
+      ctl:
+        condition: service_started
+
+  recorder:
+    build:
+      target: recorder
+      context: ../
+      dockerfile: compose/Dockerfile
+    ports:
+      - 50054:50054
+    volumes:
+      - data:/data/recorder
+    environment:
+      recorder.addr: :50054
+      <<: [*obs-env, *svc-log, *env]
+      log.file.name: "{workdir}/log/recorder.log"
+      workdir: /data/recorder
+    depends_on: 
+      <<: *obs-depends_on
+      ctl:
+        condition: service_started
+
+  repo:
+    build:
+      target: repo
+      context: ../
+      dockerfile: compose/Dockerfile
+    ports:
+      - 50053:50053
+    volumes:
+      - data:/data/repo
+    environment:
+      repo.addr: :50053
+      <<: [*obs-env, *svc-log, *env]
+      log.file.name: "{workdir}/log/repo.log"
+      workdir: /data/repo
+    depends_on: 
+      <<: *obs-depends_on
+      ctl:
+        condition: service_started
+
+## Observability services definitions. Only available when compose is executed with --profile obs
+  prometheus:
+    image: quay.io/prometheus/prometheus:latest
+    profiles:
+      - obs
+    command:
+      - --config.file=/etc/prometheus/prometheus-config.yaml
+      - --enable-feature=otlp-write-receiver
+    volumes:
+      - ../obs/prometheus.yml:/etc/prometheus/prometheus-config.yaml
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+    ports:
+      - "9090:9090"
+    logging: *logging
+    # healthcheck:
+    #   test: ["CMD", "wget", "http://localhost:9090"]
+    #   interval: 10s
+    #   timeout: 15s
+    #   retries: 10
+    #   start_period: 40s 
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    profiles:
+      - obs
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+    # healthcheck:
+    #   test: ["CMD", "wget", "localhost:14269"] # jaeger collector health check ping
+    #   interval: 1s
+    #   timeout: 3s
+    #   retries: 60
+    restart: unless-stopped
+    ports:
+      - 5775:5775/udp
+      - 6831:6831/udp
+      - 6832:6832/udp
+      - 5778:5778
+      - 16686:16686
+      - 16687:16687
+      - 14268:14268
+      - 14269:14269
+      - 9411:9411    
+    logging: *logging

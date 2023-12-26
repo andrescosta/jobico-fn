@@ -44,6 +44,7 @@ func (c *TenantController) GetTenants(ctx context.Context, in *pb.GetTenantsRequ
 	}
 	return &pb.GetTenantsReply{Tenants: ts}, nil
 }
+
 func (c *TenantController) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
 	mydao, err := c.daoCache.GetGeneric(ctx, tblTenant, &pb.Tenant{})
 	if err != nil {
@@ -56,6 +57,7 @@ func (c *TenantController) AddTenant(ctx context.Context, in *pb.AddTenantReques
 	}
 	return &pb.AddTenantReply{Tenant: in.Tenant}, nil
 }
+
 func (c *TenantController) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
 	mydao, err := c.daoCache.GetGeneric(ctx, tblTenant, &pb.Tenant{})
 	if err != nil {
@@ -68,6 +70,7 @@ func (c *TenantController) getTenants(ctx context.Context) ([]*pb.Tenant, error)
 	tenants := convert.Slices[proto.Message, *pb.Tenant](ms)
 	return tenants, nil
 }
+
 func (c *TenantController) getTenant(ctx context.Context, id string) (*pb.Tenant, error) {
 	mydao, err := c.daoCache.GetGeneric(ctx, tblTenant, &pb.Tenant{})
 	if err != nil {

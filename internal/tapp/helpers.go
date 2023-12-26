@@ -20,6 +20,7 @@ func buildTextView(text string) *tview.TextView {
 	textView.SetBorder(false)
 	return textView
 }
+
 func switchToPageIfExists(t *tview.Pages, page string) bool {
 	if t.HasPage(page) {
 		t.SwitchToPage(page)
@@ -27,6 +28,7 @@ func switchToPageIfExists(t *tview.Pages, page string) bool {
 	}
 	return false
 }
+
 func trySwitchToPage(name string, pages *tview.Pages, app *TApp, c func() (tview.Primitive, error)) {
 	if !switchToPageIfExists(pages, name) {
 		page, err := c()
@@ -42,9 +44,11 @@ func trySwitchToPage(name string, pages *tview.Pages, app *TApp, c func() (tview
 		pages.AddAndSwitchToPage(name, page, true)
 	}
 }
+
 func switchToEmptyPage(app *TApp) {
 	app.mainView.SwitchToPage(emptyPage)
 }
+
 func showText(app *TApp, status *tview.TextView, text string, color tcell.Color, d time.Duration) {
 	status.SetTextColor(color)
 	status.SetText(text)
@@ -57,11 +61,13 @@ func showText(app *TApp, status *tview.TextView, text string, color tcell.Color,
 		})
 	}()
 }
+
 func disableTreeNode(tn *tview.TreeNode) {
 	tn.SetColor(tcell.ColorGray)
 	n := tn.GetReference().(*node)
 	n.selected = func(ctx context.Context, t *TApp, tn *tview.TreeNode) {}
 }
+
 func newModal(p tview.Primitive, width, height int) tview.Primitive {
 	return tview.NewFlex().
 		AddItem(nil, 0, 1, false).
@@ -71,10 +77,12 @@ func newModal(p tview.Primitive, width, height int) tview.Primitive {
 			AddItem(nil, 0, 1, false), width, 1, true).
 		AddItem(nil, 0, 1, false)
 }
+
 func newTextView(text string) *tview.TextView {
 	return tview.NewTextView().
 		SetText(text)
 }
+
 func getChidren(type1 RootNodeType, tn *tview.TreeNode) (*tview.TreeNode, *node) {
 	for _, t := range tn.GetChildren() {
 		n := t.GetReference().(*node)
@@ -84,6 +92,7 @@ func getChidren(type1 RootNodeType, tn *tview.TreeNode) (*tview.TreeNode, *node)
 	}
 	return nil, nil
 }
+
 func getTenantNode(tenant string, tn *tview.TreeNode) (*tview.TreeNode, *node) {
 	for _, t := range tn.GetChildren() {
 		n := t.GetReference().(*node)

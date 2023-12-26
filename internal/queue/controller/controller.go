@@ -19,6 +19,7 @@ func New(ctx context.Context) (*Controller, error) {
 		store: s,
 	}, nil
 }
+
 func (s *Controller) Queue(_ context.Context, in *pb.QueueRequest) (*pb.QueueReply, error) {
 	myqueue, err := s.store.GetQueue(in.Tenant, in.Queue)
 	if err != nil {
@@ -32,6 +33,7 @@ func (s *Controller) Queue(_ context.Context, in *pb.QueueRequest) (*pb.QueueRep
 	ret := pb.QueueReply{}
 	return &ret, nil
 }
+
 func (s *Controller) Dequeue(_ context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
 	myqueue, err := s.store.GetQueue(in.Tenant, in.Queue)
 	if err != nil {
