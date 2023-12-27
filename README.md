@@ -1,2 +1,2 @@
 # Architecture
-![alt](docs/img/jobico.png?)
+![alt](docs/img/Jobico.png?)
