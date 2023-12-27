@@ -1,4 +1,4 @@
 # Architecture
-![alt](docs/img/arch.png)
+![alt](docs/img/arch.png?)
 
 
