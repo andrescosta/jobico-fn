@@ -1,12 +1,9 @@
-<mxfile host="Electron" modified="2023-12-27T18:16:51.532Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/22.1.11 Chrome/114.0.5735.289 Electron/25.9.8 Safari/537.36" etag="yRmbiexk9_j-hygt__Jt" version="22.1.11" type="device">
+<mxfile host="Electron" modified="2023-12-27T18:18:03.638Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/22.1.11 Chrome/114.0.5735.289 Electron/25.9.8 Safari/537.36" etag="OIdJkFw5eHyQz04oke8b" version="22.1.11" type="device">
   <diagram name="Page-1" id="WZk79Mis1js5u0iVaJR2">
     <mxGraphModel dx="1681" dy="590" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="h0ygzT3zNA7kmTL6owmV-3" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#383838;strokeWidth=3;fillColor=#647687;fontColor=#ffffff;" vertex="1" parent="1">
-          <mxGeometry x="-150" y="100" width="160" height="160" as="geometry" />
-        </mxCell>
         <mxCell id="h0ygzT3zNA7kmTL6owmV-2" value="" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=#F7F7F7;fontColor=#333333;strokeColor=#666666;" vertex="1" parent="1">
           <mxGeometry x="20" width="810" height="890" as="geometry" />
         </mxCell>
@@ -107,7 +104,7 @@
             <mxPoint x="87" y="190" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="wdH5l6EvP93S32GJvvEm-75" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#FFFFFF;shape=mxgraph.mscae.oms.capacity" parent="1" vertex="1">
+        <mxCell id="wdH5l6EvP93S32GJvvEm-75" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#303030;shape=mxgraph.mscae.oms.capacity" parent="1" vertex="1">
           <mxGeometry x="-130" y="138" width="90" height="101" as="geometry" />
         </mxCell>
         <mxCell id="wdH5l6EvP93S32GJvvEm-77" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#505050;shape=mxgraph.mscae.intune.account_portal" parent="1" vertex="1">
