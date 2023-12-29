@@ -186,7 +186,7 @@ services:
       - --config.file=/etc/prometheus/prometheus-config.yaml
       - --enable-feature=otlp-write-receiver
     volumes:
-      - ../obs/prometheus.yml:/etc/prometheus/prometheus-config.yaml
+      - ./prometheus.yml:/etc/prometheus/prometheus-config.yaml
     deploy:
       resources:
         limits:
