@@ -21,13 +21,13 @@ func ConfigureRoutes(ctx context.Context, r *mux.Router) error {
 	if err != nil {
 		return err
 	}
-	eventsStore, err := NewEventDefCache(ctx)
+	eventsCache, err := NewEventDefCache(ctx)
 	if err != nil {
 		return err
 	}
 	c := Controller{
-		eventsCache: eventsStore,
 		queueClient: queueClient,
+		eventsCache: eventsCache,
 	}
 	s := r.PathPrefix("/events").Subrouter()
 	s.Methods("POST").Path("/{tenant_id}/{event_id}").HandlerFunc(c.Post)
