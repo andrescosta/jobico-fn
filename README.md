@@ -45,7 +45,6 @@ The **Command Line Tool** serves as the primary management interface, providing 
 The **Dashboard** is a terminal-based application designed for visualizing Job definitions and execution information. Sporting a colorful and intuitive interface, the Dashboard provides a user-friendly experience for tenants to monitor and analyze the status of their jobs. It serves as a graphical representation of the Jobico platform, offering insights into the dynamic execution of jobs, the current state of the system, and facilitating quick decision-making through its visually appealing display. The Dashboard enhances the overall user experience by providing a vivid and informative overview of the platform's activity.
 
 # Job Definition
-Certainly! Here's a detailed description of the additional attributes for the Job Definition YAML file:
 
 #### `id`
 
@@ -152,6 +151,57 @@ Certainly! Here's a detailed description of the additional attributes for the Jo
   In this example, a runtime named "wasm-runtime" is defined with the associated WASM file and runtime type.
 
 These attributes collectively form a comprehensive YAML file, capturing the essential details for defining and deploying jobs within the Jobico platform. If you have additional attributes or specific details you'd like to cover, feel free to provide them, and I'll be happy to assist further.
+
+### Example
+  ```yaml
+name: test
+id: test
+tenant: m1 
+queues:
+  - id: queue
+    name: queue
+jobs:
+  - event:
+      name: an event
+      id: ev1
+      datatype: 0
+      schema:
+        id: schema
+        name: the schema
+        schemaref: schema.json
+      supplierqueue: queue
+      runtime: runtime1
+    result:
+      ok:
+        name: ev1_ok
+        id: ev1_ok
+        datatype: 0
+        schema:
+          id: sche1
+          name: sche1
+          schemaref: schema.json
+        supplierqueue: queue1
+        runtime: runtime1
+      error:
+        name: ev1_err
+        id: ev1_err
+        datatype: 0
+        schema:
+          id: sche1
+          name: sche1
+          schemaref: schema.json
+        supplierqueue: queue1
+        runtime: runtime1
+
+runtimes:
+  - id: runtime1
+    name: greet.wasm
+    moduleref: greet.wasm
+    mainfuncname: event
+    type: 0
+
+  ```
+
 
 # Jobicolet
 
