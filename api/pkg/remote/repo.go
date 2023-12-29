@@ -34,7 +34,7 @@ func NewRepoClient(ctx context.Context) (*RepoClient, error) {
 }
 
 func (c *RepoClient) Close() {
-	c.conn.Close()
+	_ = c.conn.Close()
 }
 
 func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, fileType pb.File_FileType, reader io.Reader) error {

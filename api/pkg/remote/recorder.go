@@ -31,7 +31,7 @@ func NewRecorderClient(ctx context.Context) (*RecorderClient, error) {
 }
 
 func (c *RecorderClient) Close() {
-	c.conn.Close()
+	_ = c.conn.Close()
 }
 
 func (c *RecorderClient) StreamJobExecutions(ctx context.Context, _ string, lines int32, resChan chan<- string) error {

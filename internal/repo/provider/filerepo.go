@@ -42,7 +42,8 @@ func (f *FileRepo) File(tenant string, name string) ([]byte, error) {
 
 func file(name string, dirs ...string) ([]byte, error) {
 	full := filepath.Join(dirs...)
-	res, err := os.ReadFile(filepath.Join(full, name))
+	fname := filepath.Clean(filepath.Join(full, name))
+	res, err := os.ReadFile(fname)
 	if err != nil {
 		return nil, err
 	}

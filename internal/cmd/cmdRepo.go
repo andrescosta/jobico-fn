@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
@@ -30,7 +31,7 @@ func runRepo(ctx context.Context, cmd *command, args []string) {
 	}
 	tenant := args[0]
 	name := args[1]
-	file := args[2]
+	file := filepath.Clean(args[2])
 	fileTypeStr := args[3]
 	f, err := os.Open(file)
 	if err != nil {

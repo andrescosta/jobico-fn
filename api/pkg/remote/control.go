@@ -40,7 +40,7 @@ func NewControlClient(ctx context.Context) (*ControlClient, error) {
 }
 
 func (c *ControlClient) Close() {
-	c.conn.Close()
+	_ = c.conn.Close()
 }
 
 func (c *ControlClient) GetEnviroment(ctx context.Context) (*pb.Environment, error) {
