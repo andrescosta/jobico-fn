@@ -45,7 +45,7 @@ func runRecorder(ctx context.Context, cmd *command, _ []string) {
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 	}
-	if err := client.StreamJobExecutions(ctx, "", int32(*cmdRecorderflagLines), ch); err != nil {
+	if err := client.StreamJobExecutions(ctx, int32(*cmdRecorderflagLines), ch); err != nil {
 		printError(os.Stderr, cmd, err)
 	}
 	fmt.Println("command stoped.")

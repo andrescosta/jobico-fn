@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	svc, err := http.NewWithWouter(
+	svc, err := http.New(
 		http.WithContext(context.Background()),
 		http.WithName("listener"),
 		http.WithInitRoutesFn(listener.ConfigureRoutes),

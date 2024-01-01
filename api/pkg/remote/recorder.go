@@ -8,6 +8,8 @@ import (
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
 	rpc "google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type RecorderClient struct {
@@ -34,7 +36,7 @@ func (c *RecorderClient) Close() {
 	_ = c.conn.Close()
 }
 
-func (c *RecorderClient) StreamJobExecutions(ctx context.Context, _ string, lines int32, resChan chan<- string) error {
+func (c *RecorderClient) StreamJobExecutions(ctx context.Context, lines int32, resChan chan<- string) error {
 	logger := zerolog.Ctx(ctx)
 	rj, err := c.client.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{
 		Lines: &lines,
@@ -49,15 +51,12 @@ func (c *RecorderClient) StreamJobExecutions(ctx context.Context, _ string, line
 				logger.Warn().AnErr("err", err).Msg("Recorder Client: error closing client stream")
 			}
 			return nil
-		case <-ctx.Done():
-			if err := rj.CloseSend(); err != nil {
-				logger.Warn().AnErr("err", err).Msg("Recorder Client: error closing client stream")
-			}
-			return nil
 		default:
 			ress, err := rj.Recv()
 			if err != nil {
-				logger.Warn().Msgf("error getting message %s", err)
+				if status.Code(err) != codes.Canceled {
+					logger.Warn().Msgf("error getting message %s", err)
+				}
 			} else {
 				for _, r := range ress.Result {
 					resChan <- r

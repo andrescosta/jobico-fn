@@ -255,7 +255,91 @@ A Jobicolet, at its core, represents the embodiment of programmable and scalable
 ## Getting Started
 
 ### Rust
+### Build the Rust Example:
+
+1. **Navigate to the Rust Example Directory:**
+   - Change your working directory to the location of the Rust example in the jobicolet-examples repository:
+
+     ```bash
+     cd jobicolet-examples/rust/greet
+     ```
+
+2. **Compile the Example using Cargo:**
+   - Use the following command to compile the Rust program (`greet.rs`) using Cargo:
+
+     ```bash
+     cargo build --release --target wasm32-unknown-unknown
+     ```
+
+   This command instructs Cargo to build the Rust program in release mode (`--release`) for the WebAssembly target (`--target wasm32-unknown-unknown`).
+
+3. **Verify the Output:**
+   - After a successful build, you should find the compiled WebAssembly module in the `target/wasm32-unknown-unknown/release/` directory. The file will be named `greet.wasm`.
+
+### Summary of Commands:
+
+```bash
+# Step 1: Install Rust
+# Step 2: Clone the Examples Repository
+git clone https://github.com/andrescosta/jobicolet-examples.git
+
+# Step 3: Navigate to the Rust Example Directory
+cd jobicolet-examples/rust/greet
+
+# Step 4: Compile the Example using Cargo
+cargo build --release --target wasm32-unknown-unknown
+```
+
 ### Tinygo
+
+### Prerequisites:
+
+1. **Install TinyGo:**
+   - Download and install TinyGo from [https://tinygo.org/](https://tinygo.org/).
+
+2. **Clone the Examples Repository:**
+   - Clone the jobicolet-examples repository from GitHub using the following command:
+
+     ```bash
+     git clone https://github.com/andrescosta/jobicolet-examples.git
+     ```
+
+### Build the Go Example:
+
+1. **Navigate to the Go Example Directory:**
+   - Change your working directory to the location of the Go example in the jobicolet-examples repository:
+
+     ```bash
+     cd jobicolet-examples/go/greet
+     ```
+
+2. **Compile the Example using TinyGo:**
+   - Use the following command to compile the greet.go example using TinyGo:
+
+     ```bash
+     tinygo build -target wasi greet.go
+     ```
+
+   This command instructs TinyGo to build the Go program (`greet.go`) for the WebAssembly System Interface (WASI) target.
+
+3. **Verify the Output:**
+   - After a successful build, you should see an executable file named `greet.wasm` in the same directory.
+
+### Summary of Commands:
+
+```bash
+# Step 1: Install TinyGo
+# Step 2: Clone the Examples Repository
+git clone https://github.com/andrescosta/jobicolet-examples.git
+
+# Step 3: Navigate to the Go Example Directory
+cd jobicolet-examples/go/greet
+
+# Step 4: Compile the Example using TinyGo
+tinygo build -target wasi greet.go
+```
+
+These steps guide you through the process of downloading TinyGo, cloning the examples repository, and compiling the Go example using TinyGo. Adjust the paths and filenames based on your environment if needed. After successful compilation, you'll have a `greet.wasm` file ready for execution in a WebAssembly runtime environment.
 
 # Tools
 
@@ -436,9 +520,64 @@ Goico goes beyond basic database functionality by providing advanced streaming c
 
 Goico stands as a dedicated framework designed with the singular purpose of supporting the development and advancement of Jobico. Through its service creation capabilities, powerful WASM runtime, embedded database, and streaming functionalities, Goico provides the solid foundation upon which Jobico's innovative features and capabilities thrive. As Jobico evolves, Goico remains a reliable companion, empowering developers to navigate the complexities of job execution and event processing with ease and efficiency.
 
-## Installation
-
 ### Docker
+
+Certainly! To test locally with Docker Compose using the files located in the `/compose` directory, and with the Listener running on port 8080, you can follow these steps:
+
+### Prerequisites:
+
+1. Ensure Docker and Docker Compose are installed on your local machine.
+
+### Steps:
+
+1. **Navigate to the `/compose` directory:**
+
+    ```bash
+    cd /path/to/compose
+    ```
+
+    Replace `/path/to/compose` with the actual path to your `/compose` directory.
+
+2. **Run Docker Compose:**
+
+    ```bash
+    docker-compose up
+    ```
+
+    This command will start the Docker Compose stack based on the configuration defined in the `docker-compose.yml` file.
+
+3. **Verify Listener on Port 8080:**
+
+    Once the Docker Compose stack is up and running, you can verify that the Listener is running on port 8080 by making a request. You can use a tool like `curl` or a web browser.
+
+    - Using `curl`:
+
+        ```bash
+        curl http://localhost:8080
+        ```
+
+    - If using a web browser, navigate to `http://localhost:8080` in your browser.
+
+4. **Test Other Components:**
+
+    Depending on your configuration in the `docker-compose.yml` file, you may have other components such as queues or job executors. Test these components as needed based on your project requirements.
+
+5. **Stop and Cleanup:**
+
+    When you are done testing, you can stop the Docker Compose stack using:
+
+    ```bash
+    docker-compose down
+    ```
+
+    This will stop and remove the containers defined in the `docker-compose.yml` file.
+
+### Notes:
+
+- Ensure that your `docker-compose.yml` file is configured properly with the necessary services, networks, and volumes.
+- Adjust the commands based on the specific configurations and requirements of your Jobico project.
+
+This set of steps assumes a basic configuration, and you may need to modify the Docker Compose file and commands based on your specific project structure and dependencies.
 
 ## Stack
 
@@ -452,7 +591,93 @@ Tview: https://github.com/rivo/tview
 
 ## Roadmap
 
+Certainly! Crafting a roadmap is an essential step in guiding the development of a project, and it's great that you've identified key areas of focus. Here's a suggested roadmap based on the areas you've mentioned: High Availability, Scalability/Performance, and Security (AuthN/AuthZ, Data Encryption, etc.).
 
+### Roadmap for Jobico Project
+
+#### Phase 1: Experimental Features and Prototyping
+
+- **Objective:**
+  - Establish a solid foundation for the project with experimental features and initial prototypes.
+
+- **Tasks:**
+  1. Implement basic event processing and job execution capabilities.
+  2. Create an initial version of the Jobicolet framework.
+  3. Set up a simple listener, queue, and job executor architecture.
+
+#### Phase 2: High Availability
+
+- **Objective:**
+  - Enhance the reliability and availability of the Jobico platform.
+
+- **Tasks:**
+  1. Implement redundancy in critical components (e.g., listeners, queues, executors).
+  2. Introduce failover mechanisms to handle component failures gracefully.
+  3. Explore and implement clustering strategies for improved availability.
+
+#### Phase 3: Scalability/Performance
+
+- **Objective:**
+  - Optimize the Jobico platform for increased scalability and performance.
+
+- **Tasks:**
+  1. Conduct performance analysis to identify bottlenecks.
+  2. Implement horizontal scaling for components requiring it (e.g., job executors).
+  3. Integrate caching mechanisms to enhance data retrieval performance.
+
+#### Phase 4: Security (AuthN/AuthZ)
+
+- **Objective:**
+  - Strengthen the security posture of the Jobico platform by implementing authentication and authorization mechanisms.
+
+- **Tasks:**
+  1. Introduce user authentication for platform access.
+  2. Implement role-based access control (RBAC) to regulate user permissions.
+  3. Secure critical API endpoints with proper authentication mechanisms.
+
+#### Phase 5: Security (Data Encryption)
+
+- **Objective:**
+  - Enhance data security through encryption mechanisms.
+
+- **Tasks:**
+  1. Implement encryption for data at rest.
+  2. Integrate transport layer security (TLS) for secure communication.
+  3. Explore and implement end-to-end encryption for sensitive data.
+
+#### Phase 6: Documentation and User Guides
+
+- **Objective:**
+  - Provide comprehensive documentation for users and developers.
+
+- **Tasks:**
+  1. Create detailed documentation for installation and configuration.
+  2. Develop user guides for platform usage and administration.
+  3. Maintain up-to-date API documentation for developers.
+
+#### Phase 7: Community Engagement
+
+- **Objective:**
+  - Foster a community around Jobico by encouraging user engagement and contributions.
+
+- **Tasks:**
+  1. Establish communication channels (e.g., forums, chat) for users.
+  2. Encourage external contributions through documentation and code.
+  3. Respond to user feedback and feature requests.
+
+#### Phase 8: Continuous Improvement
+
+- **Objective:**
+  - Iterate on the platform based on user feedback, emerging technologies, and evolving requirements.
+
+- **Tasks:**
+  1. Regularly release updates with new features and improvements.
+  2. Monitor community forums for feedback and bug reports.
+  3. Stay informed about advancements in relevant technologies.
+
+### Conclusion:
+
+This roadmap is designed to guide the development of the Jobico project through iterative phases, each focusing on specific aspects of reliability, scalability, security, documentation, community engagement, and continuous improvement. Adjust the roadmap based on evolving priorities and feedback from the user community.
 
 
 ### Acknowledgements

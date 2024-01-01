@@ -260,7 +260,7 @@ func (c *TApp) startGettingJobResults(n *tview.TreeNode) {
 	}(ch)
 	go func() {
 		defer close(ch)
-		err := c.recorderClient.StreamJobExecutions(ctxJobResultsGetter, "", lines, ch)
+		err := c.recorderClient.StreamJobExecutions(ctxJobResultsGetter, lines, ch)
 		if err != nil {
 			c.debugErrorFromGoRoutine(err)
 			c.showErrorStr("Error getting results", 3*time.Second)
