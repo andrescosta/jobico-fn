@@ -2,14 +2,13 @@
 
 ## Introduction
 
-Welcome to Jobico – An Experimental, Multi-Tenancy Job Execution Platform!
+Welcome to Jobico – An Experimental, Multi-Tenancy asynchronous computing Platform!
 
-Jobico is a project in the realm of experimental development with no commercial objectives. Specifically crafted for exploring job execution using WebAssembly (WASM) in a multi-tenancy environment, Jobico emphasizes flexibility and customization. It empowers tenants to define events, validate incoming data using JSON Schema, and execute custom programs written in any WASM-compatible language.
+Jobico is a project in the realm of experimental development. Specifically crafted for exploring asynchronous computing  using WebAssembly (WASM) in a multi-tenancy environment, Jobico emphasizes flexibility and customization. It empowers tenants to define events, validate incoming data using JSON Schema, and execute custom programs written in any WASM-compatible language.
 
 ## Key Characteristics
 
-- **Exploratory Nature**: Jobico is an exploratory project, offering a platform to delve into innovative approaches to job execution technologies.
-- **Non-Commercial Objective**: Our primary goal is not commercial gain but rather fostering exploration and creativity in the realm of job execution and event processing.
+- **Exploratory Nature**: Jobico is an exploratory project, offering a platform to delve into innovative approaches to asynchronous computing technologies.
 - **Multi-Tenancy Focus**: Jobico is architected to support multi-tenancy, allowing for the simultaneous operation of multiple isolated tenants on the platform.
 - **Event Definition with JSON Schema**: Tenants can define events by providing JSON Schema, enabling structured and dynamic event handling. Incoming requests are validated against the defined schema.
 - **WASM-Compatible Language Support**: Tenants have the freedom to create custom programs in any WASM-compatible language, promoting flexibility and diversity in job execution.
@@ -42,9 +41,24 @@ The **Executions Recorder** is a service designed to capture and store log infor
 The **Command Line Tool** serves as the primary management interface, providing a comprehensive set of commands for tenants to interact with the Jobico platform. This tool empowers tenants to deploy job definitions, upload associated WASM and JSON schema files, and query the Executions Recorder for log information. Its command-line interface offers flexibility and efficiency in managing and overseeing job-related activities within the system.
 
 ### Dashboard
-The **Dashboard** is a terminal-based application designed for visualizing Job definitions and execution information. Sporting a colorful and intuitive interface, the Dashboard provides a user-friendly experience for tenants to monitor and analyze the status of their jobs. It serves as a graphical representation of the Jobico platform, offering insights into the dynamic execution of jobs, the current state of the system, and facilitating quick decision-making through its visually appealing display. The Dashboard enhances the overall user experience by providing a vivid and informative overview of the platform's activity.
+The **Dashboard** is a terminal-based application designed for visualizing Job definitions and execution information. The Dashboard provides a user-friendly experience for tenants to monitor and analyze the status of their jobs. 
 
 # Job Definition
+
+Job Definition is a fundamental concept within the Jobico platform, representing the structured description of how a job will be validated, executed, and how its results will be handled. Jobs are specified using YAML, providing a clear and human-readable format to articulate the job's configuration and behavior.
+
+### Anatomy of a Job Definition YAML:
+A Job Definition YAML file includes various attributes that define the job's characteristics:
+
+#### `name`
+
+- **Description:** A friendly name for the job, used for identification and management.
+
+- **Example:**
+
+```yaml
+name: My Job
+```
 
 #### `id`
 
@@ -53,7 +67,7 @@ The **Dashboard** is a terminal-based application designed for visualizing Job d
 - **Example:**
 
   ```yaml
-  id: 12345
+  id: my-job
   ```
 
   In this example, "12345" is the unique identifier assigned to the job.
@@ -65,7 +79,7 @@ The **Dashboard** is a terminal-based application designed for visualizing Job d
 - **Example:**
 
   ```yaml
-  tenant: 56789
+  tenant: Tenant-1
   ```
 
   In this example, "56789" is the ID of the tenant associated with the job.
@@ -80,11 +94,9 @@ The **Dashboard** is a terminal-based application designed for visualizing Job d
 - **Example:**
 
   ```yaml
-  queues:
-    - id: 1
-      name: high-priority-queue
-    - id: 2
-      name: default-queue
+     queues:
+       - id: default-queue
+         name: Default to all events
   ```
 
   In this example, two queues, "high-priority-queue" and "default-queue," are defined with their respective IDs.
@@ -113,13 +125,13 @@ The **Dashboard** is a terminal-based application designed for visualizing Job d
   ```yaml
   jobs:
     - event:
-        name: user-registration
-        id: 6789
+        name: User's registration
+        id: user-registration
         datatype: 0
         schema:
-          id: 9876
-          name: user-registration-schema
-          schemaref: /schemas/user-registration-schema.json
+           id: user-registration-schema
+           name: Registration schema
+           schemaref: /schemas/user-registration-schema.json
         supplierqueue: 1
         runtime: 1
         result: under-construction
@@ -141,72 +153,68 @@ The **Dashboard** is a terminal-based application designed for visualizing Job d
 
   ```yaml
   runtimes:
-    - id: 1
-      name: wasm-runtime
+    - id: wasm-runtime-user-reg-v1
+      name: Wasm runtime for User reg.
       moduleref: /runtimes/wasm-runtime.wasm
-      mainfuncname: main
+      mainfuncname: event
       type: 0
   ```
 
   In this example, a runtime named "wasm-runtime" is defined with the associated WASM file and runtime type.
 
-These attributes collectively form a comprehensive YAML file, capturing the essential details for defining and deploying jobs within the Jobico platform. If you have additional attributes or specific details you'd like to cover, feel free to provide them, and I'll be happy to assist further.
+These attributes collectively form a comprehensive YAML file, capturing the essential details for defining and deploying jobs within the Jobico platform. 
 
 ### Example
-  ```yaml
-name: test
-id: test
-tenant: m1 
+
+```yaml
+name: My Job
+id: my-job
+tenant: Tenant-1 
 queues:
-  - id: queue
-    name: queue
+  - id: default-queue
+    name: Default to all events
 jobs:
   - event:
-      name: an event
-      id: ev1
+      name: User's registration
+      id: user-registration
       datatype: 0
       schema:
-        id: schema
-        name: the schema
-        schemaref: schema.json
-      supplierqueue: queue
-      runtime: runtime1
+        id: user-registration-schema
+        name: Registration schema
+        schemaref: /schemas/user-registration-schema.json
+      supplierqueue: default-queue
+      runtime: wasm-runtime-user-reg-v1
+    ## This section is highly experimental and subject to change
     result:
       ok:
-        name: ev1_ok
-        id: ev1_ok
+        name: Ok
+        id: user-registration-ok
         datatype: 0
         schema:
           id: sche1
           name: sche1
           schemaref: schema.json
-        supplierqueue: queue1
-        runtime: runtime1
+        supplierqueue: default-queue
+        runtime: wasm-runtime-user-ok-v1
       error:
-        name: ev1_err
-        id: ev1_err
-        datatype: 0
-        schema:
-          id: sche1
-          name: sche1
-          schemaref: schema.json
-        supplierqueue: queue1
-        runtime: runtime1
+        name: error
+        id: user-registration-error
+        supplierqueue: default-queue
+        runtime: wasm-runtime-user-error-v1
 
 runtimes:
-  - id: runtime1
-    name: greet.wasm
-    moduleref: greet.wasm
+  - id: wasm-runtime-user-reg-v1
+    name: Wasm runtime for User reg.
+    moduleref: /runtimes/wasm-runtime.wasm
     mainfuncname: event
     type: 0
-
   ```
 
 ## Jobicolet
 
 ### What is a Jobicolet?
 
-A **Jobicolet** is a specialized WebAssembly (WASM) program designed to process an event and generate a result within the Jobico platform. It represents the executable logic that is dynamically loaded and executed by the Job Executors when handling specific events. The term "Jobicolet" is coined by combining "Job" and "Wasm," emphasizing its role in executing jobs written in any WASM-supported programming language.
+A **Jobicolet** is a specialized WebAssembly (WASM) program designed to process an event and generate a result within the Jobico platform. It represents the executable logic that is dynamically loaded and executed by the Job Executors when handling specific 
 
 ### Key Characteristics:
 
@@ -221,23 +229,6 @@ A **Jobicolet** is a specialized WebAssembly (WASM) program designed to process 
 
 4. **Language Agnostic:**
    - Jobicolets are language-agnostic in the sense that they can be written in any programming language that supports compilation to WebAssembly. This feature provides developers with the freedom to choose a language that aligns with their expertise and the requirements of their event processing tasks.
-
-### Workflow:
-
-1. **Implementation:**
-   - Developers implement a Jobicolet by writing the event processing logic in a programming language that compiles to WebAssembly. The code is encapsulated within a WebAssembly module.
-
-2. **Compilation:**
-   - The source code of the Jobicolet is then compiled to WebAssembly bytecode, creating a binary module that can be executed on any WebAssembly runtime.
-
-3. **Deployment:**
-   - The compiled Jobicolet is deployed within the Jobico platform, and its metadata, such as the module reference, is registered in the Job Repository.
-
-4. **Execution:**
-   - When an event occurs that triggers the associated job, the Job Executors retrieve the corresponding Jobicolet from the Job Repository and execute it in the designated runtime environment.
-
-5. **Result Handling:**
-   - The executed Jobicolet produces a result, which is then handled according to the specified result processing rules defined in the job configuration.
 
 ### Benefits:
 
@@ -255,6 +246,26 @@ A Jobicolet, at its core, represents the embodiment of programmable and scalable
 ## Getting Started
 
 ### Rust
+
+### Prerequisites:
+
+1. **Install Rust:**
+   - Download and install Rust from [https://www.rust-lang.org/](https://www.rust-lang.org/).
+
+2. **Install wasm-pack:**
+   - After installing Rust, install `wasm-pack` by running the following command:
+
+     ```bash
+     cargo install wasm-pack
+     ```
+
+3. **Clone the Examples Repository:**
+   - Clone the jobicolet-examples repository from GitHub using the following command:
+
+     ```bash
+     git clone https://github.com/andrescosta/jobicolet-examples.git
+     ```
+
 ### Build the Rust Example:
 
 1. **Navigate to the Rust Example Directory:**
@@ -339,71 +350,71 @@ cd jobicolet-examples/go/greet
 tinygo build -target wasi greet.go
 ```
 
-These steps guide you through the process of downloading TinyGo, cloning the examples repository, and compiling the Go example using TinyGo. Adjust the paths and filenames based on your environment if needed. After successful compilation, you'll have a `greet.wasm` file ready for execution in a WebAssembly runtime environment.
-
 # Tools
-
-## Command Line
 
 ## Jobico Command Line Tool
 
 ### Overview:
 
-The **Jobico Command Line Tool** is a powerful management interface designed to facilitate the deployment, rollback, or redeployment of jobs within the Jobico platform. It offers a range of commands for uploading WebAssembly (WASM) and schema files, as well as streaming information from the Executions Recorder. This tool is an indispensable component for administrators and tenants alike, providing a streamlined and efficient way to interact with the platform.
+The **Jobico Command Line Tool** is a management interface designed to facilitate the deployment, rollback, or redeployment of jobs within the Jobico platform. It offers a range of commands for uploading WebAssembly (WASM) and schema files, as well as streaming information from the Executions Recorder. This tool is an indispensable component for administrators and tenants alike, providing a streamlined and efficient way to interact with the platform.
 
 ### Key Features:
 
 1. **Deployment Commands:**
    - **Deploy:**
-     - The `deploy` command is used to deploy a job definition to the Jobico platform. It includes the necessary parameters, such as the name of the job, the associated WASM and schema files, and any additional configuration.
-
+     - The `deploy` command is employed to add a job definition to the Jobico platform.If the `-update` flag is provided and the job has already been deployed, the command will redeploy it.
+ 
      ```bash
-     jobico deploy my-job-definition
+     jobico deploy [-update] my-job-definition.yaml
      ```
 
    - **Rollback:**
-     - The `rollback` command allows for the rollback of a deployed job to a previous state. It's a useful feature for reverting to a stable configuration in case of issues.
+     - The `rollback` command allows for the rollback of a deployed job to a previous state. It's a useful feature for reverting to a stable configuration in case of issues. The executor associated with the JOB are stopped.
 
      ```bash
-     jobico rollback my-job-definition --version 1
-     ```
-
-   - **Redeploy:**
-     - The `redeploy` command facilitates the redeployment of a job, updating its configuration or associated files without disrupting the ongoing execution.
-
-     ```bash
-     jobico redeploy my-job-definition --config new-config.yaml
+     jobico rollback my-job-definition.yaml
      ```
 
 2. **File Upload Commands:**
    - **Upload WASM:**
-     - The `upload-wasm` command enables the upload of a WebAssembly file to the Job Repository. This file can then be referenced by Jobicolets during deployment.
+     - The `upload wasm` command enables the upload of a WebAssembly file to the Job Repository. This file can then be referenced by Jobicolets during deployment.
 
      ```bash
-     jobico upload-wasm my-job-logic.wasm
+     jobico upload wasm <tenant id> <file id> <my-job-logic.wasm>
      ```
 
    - **Upload Schema:**
-     - The `upload-schema` command allows the upload of JSON schema files to the Job Repository. These files define the structure of events processed by the platform.
+     - The `upload json` command allows the upload of JSON schema files to the Job Repository. These files define the structure of events processed by the platform.
 
      ```bash
-     jobico upload-schema event-schema.json
+     jobico upload json <tenant id> <file id> <my-job-logic.json>
      ```
 
 3. **Streaming Information:**
    - **Stream from Recorder:**
-     - The `stream-from-recorder` command allows users to stream information from the Executions Recorder. This feature is valuable for real-time monitoring and analysis of job executions.
+     - The `recorder` command allows users to stream information from the Executions Recorder. This feature is valuable for real-time monitoring and analysis of job executions. Using the '-lines <NM>' flag outputs the last NM lines produced by the Jobs for the latest executions.
 
      ```bash
-     jobico stream-from-recorder my-job-definition
+     jobico recorder [-lines NM]
      ```
+4. **Information Commands:**
+   - **Deployments**
+     -  The `show deploy` command prints information about a Job Definition deployed previously. It offers details on the configuration, queues, runtims, and associated schema of a deployed job. 
 
-### Example Workflows:
+     ```bash
+     jobico show deploy <tenant id> <definition id>
+     ```
+   - **Enviroment**
+     -  The `show env` command prints information about the nodes that composed a Jobico's cluster. This optionand the information provided is not used by the platform at this moment. 
+
+     ```bash
+     jobico show env
+     ```
 
 #### Deploying a Job:
 
 ```bash
-jobico deploy my-job-definition --config job-config.yaml --wasm my-job-logic.wasm --schema event-schema.json
+jobico deploy job-config.yaml 
 ```
 
 This command deploys a job named "my-job-definition" with the specified configuration, WebAssembly logic, and event schema.
@@ -423,19 +434,6 @@ jobico stream-from-recorder my-job-definition --logs
 ```
 
 This command streams log information from the Executions Recorder for the specified job.
-
-### Benefits:
-
-- **Simplified Management:**
-  - The Command Line Tool simplifies job management tasks, providing a command-line interface for deploying, updating, and monitoring jobs within the Jobico platform.
-
-- **Efficient Deployment:**
-  - With deployment, rollback, and redeployment commands, administrators can efficiently manage the lifecycle of jobs, ensuring flexibility and adaptability.
-
-- **Real-time Monitoring:**
-  - The streaming capability from the Executions Recorder allows users to monitor job executions in real-time, aiding in debugging and performance analysis.
-
-The Jobico Command Line Tool is an essential companion for users interacting with the Jobico platform, providing a versatile set of commands to streamline job management and facilitate efficient operation within the platform.
 
 ## Dashboard - Terminal GUI
 
@@ -459,30 +457,16 @@ The **Jobico Dashboard** is a terminal-based graphical user interface (GUI) desi
 #### Launching the Dashboard:
 
 ```bash
-jobico dashboard
+dashboard [-debug] [-sync]
 ```
 
 Executing this command launches the Dashboard GUI, initiating an interactive environment for users to visually explore deployed jobs and related information.
-
-### Benefits:
-
-- **Intuitive Visual Interface:**
-  - The Dashboard GUI provides an intuitive and graphical representation of key platform components, enhancing user experience and accessibility.
-
-- **Efficient Navigation:**
-  - Users can efficiently navigate through deployed jobs and repository files, leveraging the visual cues and interactive features offered by the graphical interface.
-
-- **Real-time Visualization:**
-  - Real-time streaming of job results within the GUI enables users to monitor and analyze outcomes promptly, facilitating quick decision-making.
-
-The Jobico Dashboard as a terminal GUI elevates the user experience by offering a visually rich and interactive interface for exploring and managing jobs within the Jobico platform. Its graphical features provide an efficient and streamlined approach to monitoring, navigation, and real-time visualization of critical information.
-
 
 # Goico: The Jobico Framework
 
 ## Overview:
 
-**Goico** is a specialized framework meticulously crafted to support the development and evolution of Jobico, the innovative job execution platform. Tailored to meet the unique requirements of Jobico, Goico offers a versatile set of features and capabilities, empowering developers to create services, expose REST or gRPC APIs, and build headless worker services seamlessly.
+**Goico** is a specialized framework  crafted to support the development and evolution of Jobico, the innovative job execution platform. Tailored to meet the unique requirements of Jobico, Goico offers a versatile set of features and capabilities, empowering developers to create services, expose REST or gRPC APIs, and build headless worker services seamlessly.
 
 ## Key Features:
 
@@ -502,27 +486,7 @@ Goico integrates a powerful embedded database based on bbolt, offering a key/val
 
 Goico goes beyond basic database functionality by providing advanced streaming capabilities for database updates. This feature enables real-time monitoring and reaction to changes within the embedded database, facilitating dynamic adjustments, and enhancing the responsiveness of Jobico to evolving requirements.
 
-## Use Cases:
-
-- **Microservices Development:**
-  - Goico streamlines the creation of microservices, enabling developers to build modular components that contribute to the overall functionality of Jobico.
-
-- **Language-Agnostic WASM Execution:**
-  - With the WAZERO-based WASM runtime, Goico allows developers to implement Jobicolets in any programming language that compiles to WebAssembly, promoting flexibility and diversity in event processing.
-
-- **Efficient Data Storage and Retrieval:**
-  - The embedded database based on bbolt provides a reliable and performant key/value store, supporting the storage and retrieval of essential data within the Jobico framework.
-
-- **Real-time Monitoring and Adaptation:**
-  - Goico's streaming capabilities for database updates empower Jobico to react in real-time to changes, facilitating dynamic adjustments and ensuring responsiveness to evolving requirements.
-
-## Conclusion:
-
-Goico stands as a dedicated framework designed with the singular purpose of supporting the development and advancement of Jobico. Through its service creation capabilities, powerful WASM runtime, embedded database, and streaming functionalities, Goico provides the solid foundation upon which Jobico's innovative features and capabilities thrive. As Jobico evolves, Goico remains a reliable companion, empowering developers to navigate the complexities of job execution and event processing with ease and efficiency.
-
 ### Docker
-
-Certainly! To test locally with Docker Compose using the files located in the `/compose` directory, and with the Listener running on port 8080, you can follow these steps:
 
 ### Prerequisites:
 
@@ -588,10 +552,6 @@ GRPC
 Tview: https://github.com/rivo/tview
 
 
-
-## Roadmap
-
-Certainly! Crafting a roadmap is an essential step in guiding the development of a project, and it's great that you've identified key areas of focus. Here's a suggested roadmap based on the areas you've mentioned: High Availability, Scalability/Performance, and Security (AuthN/AuthZ, Data Encryption, etc.).
 
 ### Roadmap for Jobico Project
 

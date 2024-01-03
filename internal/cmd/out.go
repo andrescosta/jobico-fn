@@ -21,8 +21,8 @@ var usageTemplate = `{{.Long | trim}}
 	`
 
 var helpTemplate = `usage: {{.UsageLine}}
-	{{.Long | trim}}
-	`
+
+{{.Long | trim | capitalize}}`
 
 var errorTemplate = `
 Error executing command: {{.Name | printf "%-11s"}}

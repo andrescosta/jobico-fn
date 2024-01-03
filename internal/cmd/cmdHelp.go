@@ -23,6 +23,7 @@ func initHelp() {
 func runHelp(_ context.Context, _ *command, args []string) {
 	if len(args) < 1 || args[0] == "help" {
 		printUsage(os.Stdout, cliCommand)
+		return
 	}
 	for _, c := range cliCommand.commands {
 		if c.Name() == args[0] {
