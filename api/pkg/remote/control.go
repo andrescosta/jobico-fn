@@ -158,7 +158,7 @@ func (c *ControlClient) startListenEnvironmentUpdates(ctx context.Context) error
 		return err
 	}
 	go func() {
-		_ = grpchelper.Listen(s, cb)
+		_ = grpchelper.Listen(ctx, s, cb)
 	}()
 	return nil
 }
@@ -180,7 +180,7 @@ func (c *ControlClient) startListenerForPackageUpdates(ctx context.Context) erro
 		return err
 	}
 	go func() {
-		_ = grpchelper.Listen(s, cb)
+		_ = grpchelper.Listen(ctx, s, cb)
 	}()
 	return nil
 }

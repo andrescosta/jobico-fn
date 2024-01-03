@@ -16,6 +16,7 @@ const (
 )
 
 type PackageController struct {
+	ctx              context.Context
 	daoCache         *dao.Cache
 	bJobPackage      *grpchelper.GrpcBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message]
 	tenantController *TenantController
@@ -23,6 +24,7 @@ type PackageController struct {
 
 func NewPackageController(ctx context.Context, db *database.Database) *PackageController {
 	return &PackageController{
+		ctx:              ctx,
 		daoCache:         dao.NewCache(db),
 		bJobPackage:      grpchelper.StartBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message](ctx),
 		tenantController: NewTenantController(db),
@@ -114,7 +116,7 @@ func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeleteJobP
 }
 
 func (c *PackageController) UpdateToPackagesStr(_ *pb.UpdateToPackagesStrRequest, r pb.Control_UpdateToPackagesStrServer) error {
-	return c.bJobPackage.RcvAndDispatchUpdates(r)
+	return c.bJobPackage.RcvAndDispatchUpdates(c.ctx, r)
 }
 
 func (c *PackageController) getPackages(ctx context.Context, tenant string) ([]*pb.JobPackage, error) {

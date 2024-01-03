@@ -16,12 +16,14 @@ const (
 )
 
 type EnvironmentController struct {
+	ctx         context.Context
 	daoCache    *dao.Cache
 	bEnviroment *grpchelper.GrpcBroadcaster[*pb.UpdateToEnviromentStrReply, proto.Message]
 }
 
 func NewEnvironmentController(ctx context.Context, db *database.Database) *EnvironmentController {
 	return &EnvironmentController{
+		ctx:         ctx,
 		daoCache:    dao.NewCache(db),
 		bEnviroment: grpchelper.StartBroadcaster[*pb.UpdateToEnviromentStrReply, proto.Message](ctx),
 	}
@@ -42,7 +44,7 @@ func (c *EnvironmentController) AddEnviroment(ctx context.Context, in *pb.AddEnv
 	if err != nil {
 		return nil, err
 	}
-	c.broadcastAdd(ctx, in.Environment)
+	c.broadcastAdd(in.Environment)
 	return &pb.AddEnviromentReply{Environment: in.Environment}, nil
 }
 
@@ -57,7 +59,7 @@ func (c *EnvironmentController) UpdateEnviroment(ctx context.Context, in *pb.Upd
 	if err != nil {
 		return nil, err
 	}
-	c.broadcastUpdate(ctx, in.Environment)
+	c.broadcastUpdate(in.Environment)
 	return &pb.UpdateEnviromentReply{}, nil
 }
 
@@ -78,17 +80,17 @@ func (c *EnvironmentController) GetEnviroment(ctx context.Context, _ *pb.GetEnvi
 }
 
 func (c *EnvironmentController) UpdateToEnviromentStr(_ *pb.UpdateToEnviromentStrRequest, r pb.Control_UpdateToEnviromentStrServer) error {
-	return c.bEnviroment.RcvAndDispatchUpdates(r)
+	return c.bEnviroment.RcvAndDispatchUpdates(c.ctx, r)
 }
 
-func (c *EnvironmentController) broadcastAdd(ctx context.Context, m *pb.Environment) {
-	c.broadcast(ctx, m, pb.UpdateType_New)
+func (c *EnvironmentController) broadcastAdd(m *pb.Environment) {
+	c.broadcast(m, pb.UpdateType_New)
 }
 
-func (c *EnvironmentController) broadcastUpdate(ctx context.Context, m *pb.Environment) {
-	c.broadcast(ctx, m, pb.UpdateType_Update)
+func (c *EnvironmentController) broadcastUpdate(m *pb.Environment) {
+	c.broadcast(m, pb.UpdateType_Update)
 }
 
-func (c *EnvironmentController) broadcast(ctx context.Context, m *pb.Environment, utype pb.UpdateType) {
-	c.bEnviroment.Broadcast(ctx, m, utype)
+func (c *EnvironmentController) broadcast(m *pb.Environment, utype pb.UpdateType) {
+	c.bEnviroment.Broadcast(c.ctx, m, utype)
 }

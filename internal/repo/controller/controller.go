@@ -12,10 +12,12 @@ import (
 type Controller struct {
 	repo        *provider.FileRepo
 	bJobPackage *grpchelper.GrpcBroadcaster[*pb.UpdateToFileStrReply, proto.Message]
+	ctx         context.Context
 }
 
 func New(ctx context.Context, dir string) *Controller {
 	return &Controller{
+		ctx:         ctx,
 		repo:        provider.New(dir),
 		bJobPackage: grpchelper.StartBroadcaster[*pb.UpdateToFileStrReply, proto.Message](ctx),
 	}
@@ -57,5 +59,5 @@ func (s *Controller) GetAllFileNames(_ context.Context, _ *pb.GetAllFileNamesReq
 }
 
 func (s *Controller) UpdateToFileStr(_ *pb.UpdateToFileStrRequest, r pb.Repo_UpdateToFileStrServer) error {
-	return s.bJobPackage.RcvAndDispatchUpdates(r)
+	return s.bJobPackage.RcvAndDispatchUpdates(s.ctx, r)
 }

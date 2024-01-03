@@ -15,7 +15,7 @@ func main() {
 		grpc.WithContext(context.Background()),
 		grpc.WithServiceDesc(&pb.Recorder_ServiceDesc),
 		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
-			return server.New(".\\log.log")
+			return server.New(ctx, ".\\log.log")
 		}),
 	)
 	if err != nil {

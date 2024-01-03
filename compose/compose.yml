@@ -126,7 +126,7 @@ services:
       context: ../
       dockerfile: compose/Dockerfile
     ports:
-      - 50051
+      - 50051:50051
     volumes:
       - data:/data/queue
     environment:
