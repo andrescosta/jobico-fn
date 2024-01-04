@@ -33,7 +33,7 @@ func runUpload(ctx context.Context, cmd *command, args []string) {
 	}
 	fileTypeStr := args[0]
 	tenant := args[1]
-	fileId := args[2]
+	fileID := args[2]
 	fullFileName := filepath.Clean(args[3])
 	f, err := os.Open(fullFileName)
 	if err != nil {
@@ -54,7 +54,7 @@ func runUpload(ctx context.Context, cmd *command, args []string) {
 		printHelp(os.Stdout, cmd)
 		return
 	}
-	if err = client.AddFile(context.Background(), tenant, fileId, fileType, f); err != nil {
+	if err = client.AddFile(context.Background(), tenant, fileID, fileType, f); err != nil {
 		printError(os.Stderr, cmd, err)
 		return
 	}

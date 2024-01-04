@@ -49,7 +49,7 @@ func runEnv(ctx context.Context, cmd *command, args []string) {
 		return
 	}
 	var environ *pb.Environment
-	environ, err = client.GetEnviroment(ctx)
+	environ, err = client.GetEnvironment(ctx)
 	if err != nil {
 		printError(os.Stdout, cmd, err)
 		return

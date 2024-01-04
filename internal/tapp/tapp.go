@@ -126,7 +126,7 @@ func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 		original.children = g
 		refreshTreeNode(n)
 	case RootNodeEnv:
-		ep, err := c.controlClient.GetEnviroment(ctx)
+		ep, err := c.controlClient.GetEnvironment(ctx)
 		if err != nil {
 			c.showErrorStr("error refreshing environment data")
 			return

@@ -192,7 +192,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	return nil
 }
 
-func (m module) sendLogToRecorder(ctx context.Context, id uint32, lvl uint32, msg string) error {
+func (m module) sendLogToRecorder(ctx context.Context, _ uint32, lvl uint32, msg string) error {
 	now := time.Now()
 	host, err := os.Hostname()
 	if err != nil {

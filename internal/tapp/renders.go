@@ -110,7 +110,7 @@ func (c *TApp) renderUI(ctx context.Context) *tview.Pages {
 }
 
 func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
-	e, err := c.controlClient.GetEnviroment(ctx)
+	e, err := c.controlClient.GetEnvironment(ctx)
 	if err != nil {
 		panic(err)
 	}

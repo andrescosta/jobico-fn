@@ -441,7 +441,7 @@ The **Jobico Command Line Tool** is a management interface designed to facilitat
      ```bash
      jobico show deploy <tenant id> <definition id>
      ```
-   - **Enviroment**
+   - **Environment**
      -  The `show env` command prints information about the nodes that composed a Jobico's cluster. This optionand the information provided is not used by the platform at this moment. 
 
      ```bash

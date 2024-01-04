@@ -16,24 +16,24 @@ const (
 )
 
 type EnvironmentController struct {
-	ctx         context.Context
-	daoCache    *dao.Cache
-	bEnviroment *grpchelper.GrpcBroadcaster[*pb.UpdateToEnviromentStrReply, proto.Message]
+	ctx          context.Context
+	daoCache     *dao.Cache
+	bEnvironment *grpchelper.GrpcBroadcaster[*pb.UpdateToEnvironmentStrReply, proto.Message]
 }
 
 func NewEnvironmentController(ctx context.Context, db *database.Database) *EnvironmentController {
 	return &EnvironmentController{
-		ctx:         ctx,
-		daoCache:    dao.NewCache(db),
-		bEnviroment: grpchelper.StartBroadcaster[*pb.UpdateToEnviromentStrReply, proto.Message](ctx),
+		ctx:          ctx,
+		daoCache:     dao.NewCache(db),
+		bEnvironment: grpchelper.StartBroadcaster[*pb.UpdateToEnvironmentStrReply, proto.Message](ctx),
 	}
 }
 
 func (c *EnvironmentController) Close() {
-	c.bEnviroment.Stop()
+	c.bEnvironment.Stop()
 }
 
-func (c *EnvironmentController) AddEnviroment(ctx context.Context, in *pb.AddEnviromentRequest) (*pb.AddEnviromentReply, error) {
+func (c *EnvironmentController) AddEnvironment(ctx context.Context, in *pb.AddEnvironmentRequest) (*pb.AddEnvironmentReply, error) {
 	mydao, err := c.daoCache.GetGeneric(ctx, tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
@@ -45,10 +45,10 @@ func (c *EnvironmentController) AddEnviroment(ctx context.Context, in *pb.AddEnv
 		return nil, err
 	}
 	c.broadcastAdd(in.Environment)
-	return &pb.AddEnviromentReply{Environment: in.Environment}, nil
+	return &pb.AddEnvironmentReply{Environment: in.Environment}, nil
 }
 
-func (c *EnvironmentController) UpdateEnviroment(ctx context.Context, in *pb.UpdateEnviromentRequest) (*pb.UpdateEnviromentReply, error) {
+func (c *EnvironmentController) UpdateEnvironment(ctx context.Context, in *pb.UpdateEnvironmentRequest) (*pb.UpdateEnvironmentReply, error) {
 	in.Environment.ID = environmentID
 	mydao, err := c.daoCache.GetGeneric(ctx, tblEnvironment, &pb.Environment{})
 	if err != nil {
@@ -60,10 +60,10 @@ func (c *EnvironmentController) UpdateEnviroment(ctx context.Context, in *pb.Upd
 		return nil, err
 	}
 	c.broadcastUpdate(in.Environment)
-	return &pb.UpdateEnviromentReply{}, nil
+	return &pb.UpdateEnvironmentReply{}, nil
 }
 
-func (c *EnvironmentController) GetEnviroment(ctx context.Context, _ *pb.GetEnviromentRequest) (*pb.GetEnviromentReply, error) {
+func (c *EnvironmentController) GetEnvironment(ctx context.Context, _ *pb.GetEnvironmentRequest) (*pb.GetEnvironmentReply, error) {
 	mydao, err := c.daoCache.GetGeneric(ctx, tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
@@ -76,11 +76,11 @@ func (c *EnvironmentController) GetEnviroment(ctx context.Context, _ *pb.GetEnvi
 	if ms != nil {
 		environment = (*ms).(*pb.Environment)
 	}
-	return &pb.GetEnviromentReply{Environment: environment}, nil
+	return &pb.GetEnvironmentReply{Environment: environment}, nil
 }
 
-func (c *EnvironmentController) UpdateToEnviromentStr(_ *pb.UpdateToEnviromentStrRequest, r pb.Control_UpdateToEnviromentStrServer) error {
-	return c.bEnviroment.RcvAndDispatchUpdates(c.ctx, r)
+func (c *EnvironmentController) UpdateToEnvironmentStr(_ *pb.UpdateToEnvironmentStrRequest, r pb.Control_UpdateToEnvironmentStrServer) error {
+	return c.bEnvironment.RcvAndDispatchUpdates(c.ctx, r)
 }
 
 func (c *EnvironmentController) broadcastAdd(m *pb.Environment) {
@@ -92,5 +92,5 @@ func (c *EnvironmentController) broadcastUpdate(m *pb.Environment) {
 }
 
 func (c *EnvironmentController) broadcast(m *pb.Environment, utype pb.UpdateType) {
-	c.bEnviroment.Broadcast(c.ctx, m, utype)
+	c.bEnvironment.Broadcast(c.ctx, m, utype)
 }

@@ -66,22 +66,22 @@ func (c *Server) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.Ad
 	return c.tenantCont.AddTenant(ctx, in)
 }
 
-func (c *Server) AddEnviroment(ctx context.Context, in *pb.AddEnviromentRequest) (*pb.AddEnviromentReply, error) {
-	return c.envCont.AddEnviroment(ctx, in)
+func (c *Server) AddEnvironment(ctx context.Context, in *pb.AddEnvironmentRequest) (*pb.AddEnvironmentReply, error) {
+	return c.envCont.AddEnvironment(ctx, in)
 }
 
-func (c *Server) UpdateEnviroment(ctx context.Context, in *pb.UpdateEnviromentRequest) (*pb.UpdateEnviromentReply, error) {
-	return c.envCont.UpdateEnviroment(ctx, in)
+func (c *Server) UpdateEnvironment(ctx context.Context, in *pb.UpdateEnvironmentRequest) (*pb.UpdateEnvironmentReply, error) {
+	return c.envCont.UpdateEnvironment(ctx, in)
 }
 
-func (c *Server) GetEnviroment(ctx context.Context, in *pb.GetEnviromentRequest) (*pb.GetEnviromentReply, error) {
-	return c.envCont.GetEnviroment(ctx, in)
+func (c *Server) GetEnvironment(ctx context.Context, in *pb.GetEnvironmentRequest) (*pb.GetEnvironmentReply, error) {
+	return c.envCont.GetEnvironment(ctx, in)
 }
 
 func (c *Server) UpdateToPackagesStr(req *pb.UpdateToPackagesStrRequest, ctl pb.Control_UpdateToPackagesStrServer) error {
 	return c.pkgCont.UpdateToPackagesStr(req, ctl)
 }
 
-func (c *Server) UpdateToEnviromentStr(req *pb.UpdateToEnviromentStrRequest, ctl pb.Control_UpdateToEnviromentStrServer) error {
-	return c.envCont.UpdateToEnviromentStr(req, ctl)
+func (c *Server) UpdateToEnvironmentStr(req *pb.UpdateToEnvironmentStrRequest, ctl pb.Control_UpdateToEnvironmentStrServer) error {
+	return c.envCont.UpdateToEnvironmentStr(req, ctl)
 }
