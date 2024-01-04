@@ -583,16 +583,25 @@ This set of steps assumes a basic configuration, and you may need to modify the 
 
 ### Short Term
 
-#### WASM runtime
-#### Testing
+(https://github.com/users/andrescosta/projects/3/views/1?pane=issue&itemId=47027269)
 
+- Testing
+- Release and deployment
+  - Terraform
+- Complete demo of a Jobicolet
+- WASM runtime improvements
 ### Long Term
-#### High Availability
+#### Mid effort
 #### Scalability/Performance
 #### Security 
 - AuthN
 - AuthZ
 - Encrytion at rest and in transit
+  - https://grpc.io/docs/languages/go/alts/ 
+#### Big effort
+#### High Availability
+- Distributed storage
+- Durable Computing for Jobicolets 
 
 ### Acknowledgements
 
