@@ -375,6 +375,23 @@ A Jobicolet, at its core, represents the embodiment of programmable and scalable
 
     This will stop and remove the containers defined in the `compose.yml` file.
 
+### Open Telemetry
+
+
+A Docker Compose file with the OpenTelemetry stack enabled is provided. You can initiate it by executing the following command:
+
+```bash
+docker compose -f compose-otel.yml --profile obs up
+```
+
+To shut it down, use the following command:
+
+```bash
+docker compose -f compose-otel.yml --profile obs down
+```
+
+The Prometheus console is reachable at: http://localhost:9090/, while the Jaeger console can be accessed at: http://localhost:16686/search
+
 ### Rust
 
 #### Prerequisites:
@@ -525,7 +542,6 @@ A Jobicolet, at its core, represents the embodiment of programmable and scalable
      ```
    - Return to the terminal where the results are currently being streamed and review the log.
 
-
 # Goico: The Jobico Framework
 
 ## Overview:
@@ -553,7 +569,7 @@ Goico provides streaming capabilities for database updates based on Grpc. This f
 
 ## Roadmap
 
-The roadmap can be queried here:
+The roadmap can be accessed or queried at this location:
 
 https://github.com/users/andrescosta/projects/3/views/1
 
@@ -562,6 +578,7 @@ https://github.com/users/andrescosta/projects/3/views/1
 - Create unit and integration tests
 - DevOps
   - Terraform scripts
+  - Improve Open Telemetry integration
 - Complete demo of a Jobicolet
 ### Mid term
 - Improvements to the Wasm runtime
