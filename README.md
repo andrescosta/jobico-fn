@@ -46,9 +46,14 @@ The **Command Line Tool** serves as the primary management interface, providing 
 ### Dashboard
 The **Dashboard** is a terminal-based application designed for visualizing Job definitions and execution information. The Dashboard provides a user-friendly experience to monitor and analyze the status of their jobs. 
 
+# Stack
+
+![alt](docs/img/stack.svg?)
+
+
 # Job Definition
 
-Job Definition is a fundamental concept within the Jobico platform, representing the structured description of how a job will be validated, executed, and how its results will be handled. Jobs are specified using YAML, providing a clear and human-readable format to articulate the job's configuration and behavior.
+"Job Definition" provides a comprehensive specification within the Jobico framework, outlining how Events are validated, processed by a Job, and how the results are managed. Utilizing YAML for this purpose ensures a structured and human-readable format, allowing clear articulation of rules and conditions governing event validation, processing, and result management by Jobs.
 
 ### Anatomy of a Job Definition YAML:
 A Job Definition YAML file includes various attributes that define the job's characteristics:
@@ -60,7 +65,7 @@ A Job Definition YAML file includes various attributes that define the job's cha
 - **Example:**
 
 ```yaml
-name: My Job
+name: Customer events 
 ```
 
 #### `id`
@@ -70,7 +75,7 @@ name: My Job
 - **Example:**
 
   ```yaml
-  id: my-job
+  id: customer:job
   ```
 
 #### `tenant`
@@ -80,7 +85,7 @@ name: My Job
 - **Example:**
 
   ```yaml
-  tenant: tenant-1
+  tenant: prittythebest
   ```
 
 #### `queues`
@@ -100,7 +105,7 @@ name: My Job
 
 #### `jobs`
 
-- **Description:** The "jobs" section is where the events are defined and how they will be validated and processed.
+- **Description:** The "jobs" section is where the jobs and events are defined and how they will be validated and processed.
 
   - `jobs.event`: An event definition.
   - `jobs.event.name`: Friendly name for the event.
@@ -142,21 +147,21 @@ name: My Job
   - `runtimes.id`: ID of the runtime, used to reference a specific runtime.
   - `runtimes.name`: Friendly name.
   - `runtimes.moduleref`: Reference used to retrieve the file from the repository.
-  - `runtimes.mainfuncname`: Not used at the moment.
+  - `runtimes.mainfuncname`: Future usage.
   - `runtimes.type`: "0" represents WASM as the runtime type.
 
 - **Example:**
 
   ```yaml
   runtimes:
-    - id: wasm-runtime-user-reg-v1
-      name: Wasm runtime for User reg.
-      moduleref: /runtimes/wasm-runtime.wasm
+    - id: wasm-runtime-customer-ev
+      name: Wasm runtime for Customer events
+      moduleref: wasm-runtime-customer-ev.wasm
       mainfuncname: event
       type: 0
   ```
 
-  In this example, a runtime named "wasm-runtime" is defined with the associated WASM file and runtime type.
+  In this example, a runtime named "wasm-runtime-customer-ev" is defined with the associated WASM file and runtime type.
 
 These attributes collectively form a comprehensive YAML file, capturing the essential details for defining and deploying jobs within the Jobico platform. 
 
@@ -574,34 +579,24 @@ Goico provides streaming capabilities for database updates based on Grpc. This f
 
 This set of steps assumes a basic configuration, and you may need to modify the Docker Compose file and commands based on your specific project structure and dependencies.
 
-## Stack
+## Roadmap
 
-![alt](docs/img/stack.svg?)
+The roadmap can be queried here:
 
+https://github.com/users/andrescosta/projects/3/views/1
 
-## Roadmap (in no particular order)
 
 ### Short Term
-
-(https://github.com/users/andrescosta/projects/3/views/1?pane=issue&itemId=47027269)
-
-- Testing
-- Release and deployment
-  - Terraform
+- Create unit and integration tests
+- DevOps
+  - Terraform scripts
 - Complete demo of a Jobicolet
-- WASM runtime improvements
+### Mid term
+- Improvements to the Wasm runtime
+
 ### Long Term
-#### Mid effort
-#### Scalability/Performance
-#### Security 
-- AuthN
-- AuthZ
-- Encrytion at rest and in transit
-  - https://grpc.io/docs/languages/go/alts/ 
-#### Big effort
-#### High Availability
-- Distributed storage
-- Durable Computing for Jobicolets 
+- Distributed storage for the queue and control services
+- Durable computing exploration
 
 ### Acknowledgements
 
