@@ -44,21 +44,21 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/srv/cmd/executor/main.go"
+        "program": "${workspaceFolder}/cmd/executor/main.go"
     },
     {
         "name": "Launch listener",
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/srv/cmd/listener/main.go"
+        "program": "${workspaceFolder}/cmd/listener/main.go"
     },
     {
         "name": "Launch CLI Repo",
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/tools/cmd/cli/main.go",
+        "program": "${workspaceFolder}/cmd/cli/main.go",
         "args": [
             "repo",
             "merch1",
@@ -71,7 +71,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/tools/cmd/cli/main.go",
+        "program": "${workspaceFolder}/cmd/cli/main.go",
         "args": [
             "deploy",
             "-update",
@@ -79,11 +79,21 @@
         ]
     },
     {
+        "name": "Launch CLI Help",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/cmd/cli/main.go",
+        "args": [
+            "help",
+        ]
+    },
+    {
         "name": "Launch CLI Env",
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/tools/cmd/cli/main.go",
+        "program": "${workspaceFolder}/cmd/cli/main.go",
         "args": [
             "env",
             "./e.yml",
@@ -94,7 +104,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/tools/cmd/cli/main.go",
+        "program": "${workspaceFolder}/cmd/cli/main.go",
         "args": [
             "show",
             "env",
@@ -105,7 +115,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/tools/cmd/cli/main.go",
+        "program": "${workspaceFolder}/cmd/cli/main.go",
         "args": [
             "recorder",
             "-lines=3"
@@ -116,7 +126,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/tools/cmd/cli/main.go",
+        "program": "${workspaceFolder}/cmd/cli/main.go",
         "args": [
             "show",
             "deploy",
@@ -129,7 +139,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/tools/cmd/dashboard/main.go",
+        "program": "${workspaceFolder}/cmd/dashboard/main.go",
         "console": "integratedTerminal",
         "args": [
             "-sync",

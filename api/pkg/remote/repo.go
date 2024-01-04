@@ -34,7 +34,7 @@ func NewRepoClient(ctx context.Context) (*RepoClient, error) {
 }
 
 func (c *RepoClient) Close() {
-	c.conn.Close()
+	_ = c.conn.Close()
 }
 
 func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, fileType pb.File_FileType, reader io.Reader) error {
@@ -88,7 +88,7 @@ func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.Upd
 	if err != nil {
 		return err
 	}
-	return grpchelper.Recv(s, resChan)
+	return grpchelper.Recv(ctx, s, resChan)
 }
 
 func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToFileStrReply], error) {
@@ -108,7 +108,7 @@ func (c *RepoClient) startListenRepoUpdates(ctx context.Context) error {
 		return err
 	}
 	go func() {
-		_ = grpchelper.Listen(s, cb)
+		_ = grpchelper.Listen(ctx, s, cb)
 	}()
 	return nil
 }

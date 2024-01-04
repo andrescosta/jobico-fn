@@ -15,8 +15,9 @@ import (
 var cmdEnv = &command{
 	name:      "env",
 	usageLine: `cli env <file>`,
-	short:     "uploads environment information",
-	long:      `Uploads env information`,
+	short:     "upload environment information",
+	long: `
+Uploads environment information. This option is reserved for future usage.`,
 }
 var cmdEnvflagUpdate *bool
 
@@ -45,11 +46,13 @@ func runEnv(ctx context.Context, cmd *command, args []string) {
 	client, err := remote.NewControlClient(ctx)
 	if err != nil {
 		printError(os.Stdout, cmd, err)
+		return
 	}
 	var environ *pb.Environment
-	environ, err = client.GetEnviroment(ctx)
+	environ, err = client.GetEnvironment(ctx)
 	if err != nil {
 		printError(os.Stdout, cmd, err)
+		return
 	}
 	if environ != nil && !*cmdEnvflagUpdate {
 		fmt.Println("environment exists. use -update command to override.")
@@ -63,6 +66,7 @@ func runEnv(ctx context.Context, cmd *command, args []string) {
 	_, err = client.AddEnvironment(ctx, environ)
 	if err != nil {
 		printError(os.Stdout, cmd, err)
+		return
 	}
 	fmt.Println("The environment was updated.")
 }

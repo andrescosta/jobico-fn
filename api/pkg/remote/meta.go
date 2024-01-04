@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/andrescosta/goico/pkg/env"
+	"github.com/rs/zerolog"
 )
 
 type MetadataClient struct{}
@@ -16,6 +17,7 @@ func NewMetadataClient() *MetadataClient {
 }
 
 func (c *MetadataClient) GetMetadata(ctx context.Context, name string) (map[string]string, error) {
+	logger := zerolog.Ctx(ctx)
 	host := env.Env(name + ".host")
 	url := fmt.Sprintf("http://%s/%s", host, "meta")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -24,7 +26,9 @@ func (c *MetadataClient) GetMetadata(ctx context.Context, name string) (map[stri
 	}
 	defer func() {
 		if req.Body != nil {
-			req.Body.Close()
+			if err := req.Body.Close(); err != nil {
+				logger.Warn().Err(err)
+			}
 		}
 	}()
 	resp, err := http.DefaultClient.Do(req)
@@ -33,7 +37,9 @@ func (c *MetadataClient) GetMetadata(ctx context.Context, name string) (map[stri
 	}
 	defer func() {
 		if resp.Body != nil {
-			resp.Body.Close()
+			if err := resp.Body.Close(); err != nil {
+				logger.Warn().Err(err)
+			}
 		}
 	}()
 	r := make(map[string]string)

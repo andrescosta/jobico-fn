@@ -9,13 +9,13 @@ func initCliCommand() *command {
 	initHelp()
 	initDeploy()
 	initRecorder()
-	initRepo()
+	initUpload()
 	initShow()
 	initEnv()
 	initRollback()
 	cliCommand.commands = []*command{
 		cmdHelp,
-		cmdRepo,
+		cmdUpload,
 		cmdDeploy,
 		cmdRollback,
 		cmdRecorder,

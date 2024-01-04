@@ -37,14 +37,17 @@ func (b *GrpcBroadcaster[T, S]) Broadcast(_ context.Context, value S, utype pb.U
 	b.b.Write(n)
 }
 
-func (b *GrpcBroadcaster[T, S]) RcvAndDispatchUpdates(s grpc.ServerStream) error {
+func (b *GrpcBroadcaster[T, S]) RcvAndDispatchUpdates(ctx context.Context, s grpc.ServerStream) error {
 	l := b.b.Subscribe()
-	logger := zerolog.Ctx(s.Context())
+	logger := zerolog.Ctx(ctx)
 	for {
 		select {
+		case <-ctx.Done():
+			b.b.Unsubscribe(l)
+			return ctx.Err()
 		case <-s.Context().Done():
 			b.b.Unsubscribe(l)
-			return nil
+			return s.Context().Err()
 		case d, ok := <-l.C:
 			if !ok {
 				return ErrListeningData

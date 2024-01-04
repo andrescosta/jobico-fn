@@ -15,8 +15,9 @@ import (
 var cmdRollback = &command{
 	name:      "rollback",
 	usageLine: `cli rollabck < deployment file >.yaml`,
-	short:     "rollaback the specified by the deployment file ",
-	long:      `Rollback the file`,
+	short:     "remove a Job definition",
+	long: `
+The rollback command eliminates a Job definition from the platform, halting associated queue executors.`,
 }
 
 func initRollback() {

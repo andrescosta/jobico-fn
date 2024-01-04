@@ -31,6 +31,7 @@ func New(fullpath string) (*LogRecorder, error) {
 
 func (r *LogRecorder) AddExecution(ex *pb.JobExecution) error {
 	r.logger.Info().
+		Str("Type", ex.Result.TypeDesc).
 		Str("Event", ex.Event).
 		Str("Queue", ex.Queue).
 		Uint64("Code", ex.Result.Code).

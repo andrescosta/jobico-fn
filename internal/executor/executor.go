@@ -30,21 +30,38 @@ type Executor struct {
 type VM struct {
 	packages sync.Map
 	w        *sync.WaitGroup
+	recorder *remote.RecorderClient
+}
+type module struct {
+	id         uint32
+	wasmModule *wazero.WasmModuleString
+	tenant     string
+	event      string
+	vm         *VM
 }
 type jobPackage struct {
 	PackageID string
 	tenant    string
 	Executors []*Executor
 	Runtime   *wazero.WasmRuntime
-	Modules   map[string]*wazero.WasmModuleString
+	Modules   map[string]module
 	NextStep  map[string]*pb.ResultDef
 }
 
 func NewExecutorMachine(ctx context.Context) (*VM, error) {
-	e := &VM{packages: sync.Map{}}
-	if err := e.load(ctx); err != nil {
+	r, err := remote.NewRecorderClient(ctx)
+	if err != nil {
 		return nil, err
 	}
+	e := &VM{
+		packages: sync.Map{},
+		recorder: r,
+	}
+
+	if err := e.loadJobs(ctx); err != nil {
+		return nil, err
+	}
+
 	return e, nil
 }
 
@@ -54,7 +71,7 @@ func (e *VM) StartExecutors(ctx context.Context) error {
 		e.packages.Range(func(key, value any) bool {
 			pkg, _ := value.(*jobPackage)
 			for _, m := range pkg.Modules {
-				m.Close(ctx)
+				m.wasmModule.Close(ctx)
 			}
 			pkg.Runtime.Close(ctx)
 			return true
@@ -85,7 +102,7 @@ func (e *VM) startPackage(ctx context.Context, pkg *jobPackage) {
 	}
 }
 
-func (e *VM) load(ctx context.Context) error {
+func (e *VM) loadJobs(ctx context.Context) error {
 	c, err := remote.NewControlClient(ctx)
 	if err != nil {
 		return err
@@ -114,7 +131,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	jobPackage := &jobPackage{}
 	jobPackage.tenant = pkg.Tenant
 	jobPackage.PackageID = pkg.ID
-	modulesForEvents := make(map[string]*wazero.WasmModuleString)
+	modulesForEvents := make(map[string]module)
 	nextStepForEvents := make(map[string]*pb.ResultDef)
 	r, err := wazero.NewWasmRuntime(ctx, env.InWorkDir(cacheDir))
 	if err != nil {
@@ -131,6 +148,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 		return err
 	}
 	files := make(map[string][]byte)
+	var id uint32
 	for _, job := range pkg.Jobs {
 		event := job.Event
 		for _, runtime := range pkg.Runtimes {
@@ -148,11 +166,19 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 				if runtime.MainFuncName != nil {
 					funcName = *runtime.MainFuncName
 				}
-				wasmModule, err := wazero.NewWasmModuleString(ctx, runtime.ID, jobPackage.Runtime, wasmfile, funcName)
+				module := module{
+					id:     id,
+					event:  event.ID,
+					tenant: pkg.Tenant,
+					vm:     e,
+				}
+				id = id + 1
+				wasmModule, err := wazero.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, funcName, module.sendLogToRecorder)
 				if err != nil {
 					return err
 				}
-				modulesForEvents[getModuleName(event.SupplierQueue, event.ID)] = wasmModule
+				module.wasmModule = wasmModule
+				modulesForEvents[getModuleName(event.SupplierQueue, event.ID)] = module
 				break
 			}
 		}
@@ -164,6 +190,31 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	jobPackage.NextStep = nextStepForEvents
 	e.packages.Store(getFullPackageID(pkg.Tenant, pkg.ID), jobPackage)
 	return nil
+}
+
+func (m module) sendLogToRecorder(ctx context.Context, _ uint32, lvl uint32, msg string) error {
+	now := time.Now()
+	host, err := os.Hostname()
+	if err != nil {
+		host = "<error>"
+	}
+
+	return m.vm.recorder.AddJobExecution(ctx, &pb.JobExecution{
+		Event:  m.event,
+		Tenant: m.tenant,
+		Queue:  "",
+		Date: &timestamppb.Timestamp{
+			Seconds: now.Unix(),
+			Nanos:   int32(now.Nanosecond()),
+		},
+		Server: host,
+		Result: &pb.JobResult{
+			Type:     pb.JobResult_Log,
+			TypeDesc: "log",
+			Code:     uint64(lvl),
+			Message:  msg,
+		},
+	})
 }
 
 func getFullPackageID(tenant string, queue string) string {
@@ -247,7 +298,7 @@ func (e *VM) updatePackage(ctx context.Context, p *pb.JobPackage) error {
 	return e.newPackage(ctx, p)
 }
 
-func (e *VM) execute(ctx context.Context, tenant string, queue string, modules map[string]*wazero.WasmModuleString, nextSteps map[string]*pb.ResultDef) {
+func (e *VM) execute(ctx context.Context, tenant string, queue string, modules map[string]module, nextSteps map[string]*pb.ResultDef) {
 	defer e.w.Done()
 	logger := zerolog.Ctx(ctx)
 	ticker := time.NewTicker(5 * time.Second)
@@ -278,14 +329,14 @@ func (e *VM) execute(ctx context.Context, tenant string, queue string, modules m
 					logger.Warn().Msgf("event %s not supported", item.Event)
 					continue
 				}
-				code, result, err := executeWasm(ctx, module, item.Data)
+				code, result, err := executeWasm(ctx, module.wasmModule, module.id, item.Data)
 				if err != nil {
 					logger.Err(err).Msg("error executing")
 				}
+				if err := e.reportResultToRecorder(ctx, queue, item.Event, tenant, code, result); err != nil {
+					logger.Err(err).Msg("error reporting to recorder")
+				}
 				if nextSteps, ok := nextSteps[item.Event]; ok {
-					if err := reportToRecorder(ctx, queue, item.Event, tenant, code, result); err != nil {
-						logger.Err(err).Msg("error reporting to recorder")
-					}
 					if err := makeDecisions(ctx, item.Event, tenant, code, result, nextSteps); err != nil {
 						logger.Err(err).Msg("error enqueuing the result")
 					}
@@ -337,7 +388,7 @@ func makeDecisions(ctx context.Context, _ string, tenant string, code uint64, _ 
 	return nil
 }
 
-func reportToRecorder(ctx context.Context, queue string, eventID string, tenant string, code uint64, result string) error {
+func (e *VM) reportResultToRecorder(ctx context.Context, queue string, eventID string, tenant string, code uint64, result string) error {
 	now := time.Now()
 	host, err := os.Hostname()
 	if err != nil {
@@ -353,15 +404,13 @@ func reportToRecorder(ctx context.Context, queue string, eventID string, tenant 
 		},
 		Server: host,
 		Result: &pb.JobResult{
-			Code:    code,
-			Message: result,
+			Type:     pb.JobResult_Result,
+			TypeDesc: "result",
+			Code:     code,
+			Message:  result,
 		},
 	}
-	client, err := remote.NewRecorderClient(ctx)
-	if err != nil {
-		return err
-	}
-	return client.AddJobExecution(ctx, ex)
+	return e.recorder.AddJobExecution(ctx, ex)
 }
 
 func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
@@ -372,10 +421,10 @@ func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem,
 	return client.Dequeue(ctx, tenant, queue)
 }
 
-func executeWasm(ctx context.Context, module *wazero.WasmModuleString, data []byte) (uint64, string, error) {
+func executeWasm(ctx context.Context, module *wazero.WasmModuleString, id uint32, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
-	code, result, err := module.ExecuteMainFunc(ctx, string(data))
+	code, result, err := module.ExecuteMainFunc(ctx, id, string(data))
 	if err != nil {
 		return 0, "", errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}

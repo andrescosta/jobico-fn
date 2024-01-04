@@ -18,6 +18,8 @@
 *.test
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+*.tmp
+*.dtmp
 issues
 
 # Dependency directories (remove the comment below to include it)
@@ -35,3 +37,4 @@ go.work.sum
 **/bin/
 **/notes/
 reports/
+**/export/

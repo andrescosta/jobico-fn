@@ -14,15 +14,17 @@ import (
 
 var cmdDeploy = &command{
 	name:      "deploy",
-	usageLine: `cli deploy < deployment file >.yaml`,
-	short:     "deploy the specified by the deployment file ",
-	long:      `Deploy the file`,
+	usageLine: `cli deploy [-update] < deployment file >.yaml`,
+	short:     "deploy a Job",
+	long: `
+The 'deploy' command is employed to add a job definition to the Jobico platform.
+If the '-update' flag is provided and the job has already been deployed, the command will redeploy it.`,
 }
 var cmdDeployflagUpdate *bool
 
 func initDeploy() {
 	cmdDeploy.flag = *flag.NewFlagSet("deploy", flag.ContinueOnError)
-	cmdDeployflagUpdate = cmdDeploy.flag.Bool("update", false, "override deployment")
+	cmdDeployflagUpdate = cmdDeploy.flag.Bool("update", false, "override a deployment")
 	cmdDeploy.run = runDeploy
 	cmdDeploy.flag.Usage = func() {}
 }

@@ -35,8 +35,8 @@ func (s *Recorder) AddJobExecution(_ context.Context, r *pb.AddJobExecutionReque
 	return &pb.AddJobExecutionReply{}, nil
 }
 
-func (s *Recorder) GetJobExecutions(g *pb.GetJobExecutionsRequest, r pb.Recorder_GetJobExecutionsServer) error {
-	logger := zerolog.Ctx(r.Context())
+func (s *Recorder) GetJobExecutions(ctx context.Context, g *pb.GetJobExecutionsRequest, r pb.Recorder_GetJobExecutionsServer) error {
+	logger := zerolog.Ctx(ctx)
 	seekInfo := &tail.SeekInfo{
 		Offset: 0,
 		Whence: io.SeekEnd,
@@ -62,8 +62,10 @@ func (s *Recorder) GetJobExecutions(g *pb.GetJobExecutionsRequest, r pb.Recorder
 	}
 	for {
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case <-r.Context().Done():
-			return nil
+			return r.Context().Err()
 		case line := <-tail.Lines:
 			if line != nil && strings.TrimSpace(line.Text) != "" {
 				if line.Err != nil {

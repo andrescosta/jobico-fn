@@ -30,7 +30,7 @@ func NewQueueClient(ctx context.Context) (*QueueClient, error) {
 }
 
 func (c *QueueClient) Close() {
-	c.conn.Close()
+	_ = c.conn.Close()
 }
 
 func (c *QueueClient) Dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {

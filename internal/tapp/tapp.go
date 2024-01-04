@@ -126,7 +126,7 @@ func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 		original.children = g
 		refreshTreeNode(n)
 	case RootNodeEnv:
-		ep, err := c.controlClient.GetEnviroment(ctx)
+		ep, err := c.controlClient.GetEnvironment(ctx)
 		if err != nil {
 			c.showErrorStr("error refreshing environment data")
 			return
@@ -260,7 +260,7 @@ func (c *TApp) startGettingJobResults(n *tview.TreeNode) {
 	}(ch)
 	go func() {
 		defer close(ch)
-		err := c.recorderClient.StreamJobExecutions(ctxJobResultsGetter, "", lines, ch)
+		err := c.recorderClient.StreamJobExecutions(ctxJobResultsGetter, lines, ch)
 		if err != nil {
 			c.debugErrorFromGoRoutine(err)
 			c.showErrorStr("Error getting results", 3*time.Second)

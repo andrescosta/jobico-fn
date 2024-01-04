@@ -13,17 +13,17 @@ service Control {
   rpc UpdatePackage (UpdateJobPackageRequest) returns (UpdateJobPackageReply) {}
   rpc DeletePackage (DeleteJobPackageRequest) returns (DeleteJobPackageReply) {}
   rpc UpdateToPackagesStr (UpdateToPackagesStrRequest) returns (stream UpdateToPackagesStrReply) {}
-  rpc GetEnviroment(GetEnviromentRequest) returns (GetEnviromentReply){}
-  rpc UpdateToEnviromentStr(UpdateToEnviromentStrRequest) returns (stream UpdateToEnviromentStrReply){}
-  rpc AddEnviroment(AddEnviromentRequest) returns (AddEnviromentReply){}
-  rpc UpdateEnviroment(UpdateEnviromentRequest) returns (UpdateEnviromentReply){}
+  rpc GetEnvironment(GetEnvironmentRequest) returns (GetEnvironmentReply){}
+  rpc UpdateToEnvironmentStr(UpdateToEnvironmentStrRequest) returns (stream UpdateToEnvironmentStrReply){}
+  rpc AddEnvironment(AddEnvironmentRequest) returns (AddEnvironmentReply){}
+  rpc UpdateEnvironment(UpdateEnvironmentRequest) returns (UpdateEnvironmentReply){}
 }
 
 
 
-message UpdateToEnviromentStrRequest {}
+message UpdateToEnvironmentStrRequest {}
 
-message UpdateToEnviromentStrReply {
+message UpdateToEnvironmentStrReply {
   UpdateType type=1;
   Environment object = 2;
 }
@@ -66,25 +66,25 @@ message DeleteJobPackageRequest{
 message DeleteJobPackageReply{
 }
 
-message GetEnviromentRequest {
+message GetEnvironmentRequest {
 }
 
-message GetEnviromentReply {
+message GetEnvironmentReply {
   optional Environment environment = 1;
 }
 
-message AddEnviromentRequest {
+message AddEnvironmentRequest {
   Environment environment = 1;
 }
 
-message UpdateEnviromentReply {
+message UpdateEnvironmentReply {
 }
 
-message UpdateEnviromentRequest {
+message UpdateEnvironmentRequest {
   Environment environment = 1;
 }
 
-message AddEnviromentReply {
+message AddEnvironmentReply {
   Environment environment = 1;
 }
 

@@ -21,8 +21,8 @@ var usageTemplate = `{{.Long | trim}}
 	`
 
 var helpTemplate = `usage: {{.UsageLine}}
-	{{.Long | trim}}
-	`
+
+{{.Long | trim | capitalize}}`
 
 var errorTemplate = `
 Error executing command: {{.Name | printf "%-11s"}}
@@ -31,11 +31,14 @@ Details:
 
 func printUsage(w io.Writer, cmd *command) {
 	bw := bufio.NewWriter(w)
-	err := templatehelper.Render(bw, usageTemplate, cmd)
-	if err != nil {
+
+	if err := templatehelper.Render(bw, usageTemplate, cmd); err != nil {
+		fmt.Fprintf(bw, "error rendering template %v\n", err)
+		return
+	}
+	if err := bw.Flush(); err != nil {
 		fmt.Fprintf(bw, "error rendering template %v\n", err)
 	}
-	bw.Flush()
 }
 
 func printHelp(w io.Writer, cmd *command) {
@@ -43,17 +46,22 @@ func printHelp(w io.Writer, cmd *command) {
 	err := templatehelper.Render(bw, helpTemplate, cmd)
 	if err != nil {
 		fmt.Fprintf(bw, "error rendering template %v\n", err)
+		return
 	}
-	bw.Flush()
+	if err := bw.Flush(); err != nil {
+		fmt.Fprintf(bw, "error rendering template %v\n", err)
+	}
 }
 
-func printError(w io.Writer, cmd *command, err error) {
+func printError(w io.Writer, cmd *command, errCmd error) {
 	bw := bufio.NewWriter(w)
-	errr := templatehelper.Render(bw, errorTemplate, cmd)
-	if errr != nil {
-		fmt.Fprintf(bw, "error rendering template %v\n", errr)
+	if err := templatehelper.Render(bw, errorTemplate, cmd); err != nil {
+		fmt.Fprintf(bw, "error rendering template %v\n", err)
+		return
 	}
-	fmt.Fprintln(bw, err.Error())
+	fmt.Fprintln(bw, errCmd.Error())
 	fmt.Fprintln(bw, "")
-	bw.Flush()
+	if err := bw.Flush(); err != nil {
+		fmt.Fprintf(bw, "error rendering template %v\n", err)
+	}
 }

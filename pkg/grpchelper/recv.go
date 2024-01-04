@@ -1,6 +1,8 @@
 package grpchelper
 
 import (
+	"context"
+
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
@@ -9,11 +11,15 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func Recv[T proto.Message](s grpc.ClientStream, c chan<- T) error {
-	logger := zerolog.Ctx(s.Context())
-
+func Recv[T proto.Message](ctx context.Context, s grpc.ClientStream, c chan<- T) error {
+	logger := zerolog.Ctx(ctx)
 	for {
 		select {
+		case <-ctx.Done():
+			if err := s.CloseSend(); err != nil {
+				logger.Warn().AnErr("error", err).Msg("Recv: Error while closing stream.")
+			}
+			return ctx.Err()
 		case <-s.Context().Done():
 			if err := s.CloseSend(); err != nil {
 				logger.Warn().AnErr("error", err).Msg("Recv: Error while closing stream.")
@@ -37,12 +43,19 @@ func Recv[T proto.Message](s grpc.ClientStream, c chan<- T) error {
 	}
 }
 
-func Listen[T proto.Message](s grpc.ClientStream, b *broadcaster.Broadcaster[T]) error {
-	logger := zerolog.Ctx(s.Context())
+func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *broadcaster.Broadcaster[T]) error {
+	logger := zerolog.Ctx(ctx)
 
 	for {
 		select {
+		case <-ctx.Done():
+			logger.Debug().Msg("End signal recv")
+			if err := s.CloseSend(); err != nil {
+				logger.Warn().AnErr("error", err).Msg("Listen: Error while closing stream.")
+			}
+			return ctx.Err()
 		case <-s.Context().Done():
+			logger.Debug().Msg("End stream signal recv")
 			if err := s.CloseSend(); err != nil {
 				logger.Warn().AnErr("error", err).Msg("Listen: Error while closing stream.")
 			}
