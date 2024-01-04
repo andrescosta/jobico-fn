@@ -53,7 +53,7 @@ The **Dashboard** is a terminal-based application designed for visualizing Job d
 
 # Job Definition
 
-"Job Definition" provides a comprehensive specification within the Jobico framework, outlining how Events are validated, processed by a Job, and how the results are managed. Utilizing YAML for this purpose ensures a structured and human-readable format, allowing clear articulation of rules and conditions governing event validation, processing, and result management by Jobs.
+"Job Definition" provides a comprehensive specification within the Jobico framework, outlining how Events are validated, and processed by a Job, and how the results are managed. Utilizing YAML for this purpose ensures a structured and human-readable format, allowing clear articulation of rules and conditions governing event validation, processing, and result management by Jobs.
 
 ### Anatomy of a Job Definition YAML:
 A Job Definition YAML file includes various attributes that define the job's characteristics:
