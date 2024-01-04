@@ -576,13 +576,7 @@ This set of steps assumes a basic configuration, and you may need to modify the 
 
 ## Stack
 
-Golang
-Zerolog
-Wazero
-GRPC
-BBolt
-Tview: https://github.com/rivo/tview
-
+![alt](docs/img/stack.svg?)
 
 
 ## Roadmap (in no particular order)
