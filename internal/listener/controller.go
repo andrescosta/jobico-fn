@@ -29,6 +29,12 @@ func ConfigureRoutes(ctx context.Context, r *mux.Router) error {
 		queueClient: queueClient,
 		eventsCache: eventsCache,
 	}
+
+	r.HandleFunc("/",
+		func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte("Jobico started."))
+		}).Methods("GET", "POST")
+
 	s := r.PathPrefix("/events").Subrouter()
 	s.Methods("POST").Path("/{tenant_id}/{event_id}").HandlerFunc(c.Post)
 	s.Methods("GET").HandlerFunc(c.Get)

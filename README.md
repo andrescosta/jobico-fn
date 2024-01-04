@@ -15,7 +15,7 @@ Jobico is a Go project designed for experimental development, with a focus on ex
 - **Event Definition with JSON Schema**: Tenants can define events through JSON Schema, allowing for structured and dynamic event handling. Incoming requests undergo validation against the specified schema.
 
 - **WASM-Compatible Language Support**: Jobico offers support for custom program creation in any WASM-compatible language, fostering flexibility and diversity in the execution of jobs.
-- 
+
 
 # Architecture
 ![alt](docs/img/Jobico.svg?)
@@ -65,7 +65,7 @@ A Job Definition YAML file includes various attributes that define the job's cha
 - **Example:**
 
 ```yaml
-name: Customer events 
+name: Customer Event Processing Definitions 
 ```
 
 #### `id`
@@ -75,7 +75,7 @@ name: Customer events
 - **Example:**
 
   ```yaml
-  id: customer:job
+  id: customer-proc-jobs
   ```
 
 #### `tenant`
@@ -85,7 +85,7 @@ name: Customer events
 - **Example:**
 
   ```yaml
-  tenant: prittythebest
+  tenant: pritty-tenant
   ```
 
 #### `queues`
@@ -127,19 +127,17 @@ name: Customer events
   ```yaml
   jobs:
     - event:
-        name: User's registration
-        id: user-registration
+        name: New customer
+        id: customer-registration
         datatype: 0
         schema:
-           id: user-registration-schema
-           name: Registration schema
-           schemaref: /schemas/user-registration-schema.json
+           id: customer-registration-schema
+           name: Customer registration schema
+           schemaref: customer-registration-schema.json
         supplierqueue: 1
         runtime: 1
   ```
-
-  In this example, a job is defined for processing "user-registration" events with the associated schema and runtime details.
-
+ 
 #### `runtimes`
 
 - **Description:** The "runtimes" section specifies the runtimes available to process the events.
@@ -168,230 +166,30 @@ These attributes collectively form a comprehensive YAML file, capturing the esse
 ### Example
 
 ```yaml
-name: Demo JOB
-id: go-demo-job
-tenant: demogo
+name: Customer Event Processing Definitions
+id: customer-proc-jobs
+tenant: pritty-tenant
 queues:
   - id: queue-default
-    name: Q.Default
+    name: Default to all events
 jobs:
   - event:
-      name: Greet event
-      id: evgo
+      name: New customer
+      id: customer-registration
       datatype: 0
       schema:
-        id: greet-event-schema
-        name: Greet's schema
-        schemaref: greet-schema-go.json
+        id: customer-registration-schema
+        name: Customer registration schema
+        schemaref: customer-registration-schema.json
       supplierqueue: queue-default
-      runtime: greet-event-go
+      runtime: wasm-runtime-customer-ev
 runtimes:
-  - id: greet-event-go
-    name: Greet Evenent Func
-    moduleref: greet-wasm-go.wasm
+  - id: wasm-runtime-customer-ev
+    name:  Wasm runtime for Customer events
+    moduleref: wasm-runtime-customer-ev.wasm
     mainfuncname: event
     type: 0
 ```
-
-## Jobicolet
-
-### What is a Jobicolet?
-
-A **Jobicolet** is a specialized WebAssembly (WASM) program designed to process an event and generate a result within the Jobico platform. It represents the executable logic that is dynamically loaded and executed by the Job Executors when handling specific 
-
-### Key Characteristics:
-
-1. **WASM Execution:**
-   - A Jobicolet is implemented as a WebAssembly module, allowing it to be written in any programming language that compiles to WebAssembly. This flexibility empowers users to express their event processing logic in a language of their choice.
-
-2. **Event Processing:**
-   - The primary function of a Jobicolet is to process events. It takes as input the event data, performs the specified logic defined within the WASM module, and produces a result based on the defined processing rules.
-
-3. **Result Generation:**
-   - Upon processing an event, a Jobicolet generates a result. The nature of the result depends on the specific logic implemented in the WASM module. It could be a computation outcome, a transformed dataset, or any other relevant output.
-
-4. **Language Agnostic:**
-   - Jobicolets are language-agnostic in the sense that they can be written in any programming language that supports compilation to WebAssembly. This feature provides developers with the freedom to choose a language that aligns with their expertise and the requirements of their event processing tasks.
-
-### Benefits:
-
-- **Flexibility:**
-  - The language-agnostic nature of Jobicolets provides developers with flexibility, allowing them to choose the most suitable programming language for expressing their event processing logic.
-
-- **Scalability:**
-  - As Jobicolets are executed within the scalable and isolated environment of Job Executors, the platform can efficiently scale to handle a large number of concurrent event processing tasks.
-
-- **Interoperability:**
-  - Jobicolets can interact with other components within the Jobico platform, facilitating seamless integration with queues, event definitions, and runtime environments.
-
-A Jobicolet, at its core, represents the embodiment of programmable and scalable event processing within the Jobico platform, offering developers the freedom to innovate using the power of WebAssembly.
-
-## Getting Started
-
-### Rust
-
-### Prerequisites:
-
-1. **Install Rust:**
-   - Download and install Rust from [https://www.rust-lang.org/](https://www.rust-lang.org/).
-
-2. **Install wasm-pack:**
-   - After installing Rust, install `wasm-pack` by running the following command:
-
-     ```bash
-     cargo install wasm-pack
-     ```
-
-3. **Clone the Examples Repository:**
-   - Clone the jobicolet-examples repository from GitHub using the following command:
-
-     ```bash
-     git clone https://github.com/andrescosta/jobicolet-examples.git
-     ```
-
-### Build the Rust Example:
-
-1. **Navigate to the Rust Example Directory:**
-   - Change your working directory to the location of the Rust example in the jobicolet-examples repository:
-
-     ```bash
-     cd jobicolet-examples/rust/greet
-     ```
-
-2. **Compile the Example using Cargo:**
-   - Use the following command to compile the Rust program (`greet.rs`) using Cargo:
-
-     ```bash
-     cargo build --release --target wasm32-unknown-unknown
-     ```
-
-   This command instructs Cargo to build the Rust program in release mode (`--release`) for the WebAssembly target (`--target wasm32-unknown-unknown`).
-
-3. **Verify the Output:**
-   - After a successful build, you should find the compiled WebAssembly module in the `target/wasm32-unknown-unknown/release/` directory. The file will be named `greet.wasm`.
-
-4. **Upload the WASM file to Jobico:**
-   - After compiling the file, it must be uploaded to Jobico using this command:
-
-    ```bash
-     cli upload wasm demorust greet-wasm-rust.wasm target\wasm32-unknown-unknown\release\greet.wasm
-     ```
-5. **Upload the schema file to Jobico:**
-   - This command will upload the schema file to validate the event:
-
-    ```bash
-     cli upload json demorust  greet-schema-rust.json schema.json
-     ```
-6. **Deploy the job:**
-   - This command will deploy the Job:
-
-    ```bash
-     cli deploy job-rust-greet.yml
-     ```
-7. **Start streaming results:**
-   - This command will start streaming results from the Recorder component:
-
-    ```bash
-     cli recorder
-     ```
-8. **Send an event:**
-   - This command will send an event:
-
-    ```bash
-          curl --request POST \ 
-          --url http://localhost:8080/events/demogo/evgo \  
-          --header 'content-type: application/json' \
-          --data '{"data": [{"firstName": "Andres","lastName": "C"}]}'
-     ```
-   - The command started in point 7 should be displaying the log generated by the event.
-
-### Summary of Commands:
-
-```bash
-# Step 1: Install Rust
-# Step 2: Clone the Examples Repository
-git clone https://github.com/andrescosta/jobicolet-examples.git
-
-# Step 3: Navigate to the Rust Example Directory
-cd jobicolet-examples/rust/greet
-
-# Step 4: Compile the Example using Cargo
-cargo build --release --target wasm32-unknown-unknown
-```
-
-### Tinygo
-
-### Prerequisites:
-
-1. **Install TinyGo:**
-   - Download and install TinyGo from [https://tinygo.org/](https://tinygo.org/).
-
-2. **Clone the Examples Repository:**
-   - Clone the jobicolet-examples repository from GitHub using the following command:
-
-     ```bash
-     git clone https://github.com/andrescosta/jobicolet-examples.git
-     ```
-
-3. ** The Jobico platform is up and running **
-   - The Docker section taches you how to start Jobico
-
-### Build the Go Example:
-
-1. **Navigate to the Go Example Directory:**
-   - Change your working directory to the location of the Go example in the jobicolet-examples repository:
-
-     ```bash
-     cd jobicolet-examples/go/greet
-     ```
-
-2. **Compile the Example using TinyGo:**
-   - Use the following command to compile the greet.go example using TinyGo:
-
-     ```bash
-     tinygo build -target wasi greet.go
-     ```
-
-   This command instructs TinyGo to build the Go program (`greet.go`) for the WebAssembly System Interface (WASI) target.
-
-3. **Verify the Output:**
-   - After a successful build, you should see an executable file named `greet.wasm` in the same directory.
-
-4. **Upload the WASM file to Jobico:**
-   - After compiling the file, it must be uploaded to Jobico using this command:
-
-    ```bash
-     cli upload wasm demogo greet-wasm-go.wasm greet.wasm
-     ```
-5. **Upload the schema file to Jobico:**
-   - This command will upload the schema file to validate the event:
-
-    ```bash
-     cli upload json demogo greet-schema-go.json schema.json
-     ```
-6. **Deploy the job:**
-   - This command will deploy the Job:
-
-    ```bash
-     cli deploy job-go-greet.yml
-     ```
-7. **Start streaming results:**
-   - This command will start streaming results from the Recorder component:
-
-    ```bash
-     cli recorder
-     ```
-8. **Send an event:**
-   - This command will send an event:
-
-    ```bash
-          curl --request POST \ 
-          --url http://localhost:8080/events/demogo/evgo \  
-          --header 'content-type: application/json' \
-          --data '{"data": [{"firstName": "Andres","lastName": "C"}]}'
-     ```
-   - The command started in point 7 should be displaying the log generated by the event.
-
 # Tools
 
 ## Jobico Command Line Tool
@@ -446,36 +244,12 @@ The **Jobico Command Line Tool** is a management interface designed to facilitat
      ```bash
      jobico show deploy <tenant id> <definition id>
      ```
-   - **Environment**
-     -  The `show env` command prints information about the nodes that composed a Jobico's cluster. This optionand the information provided is not used by the platform at this moment. 
+   - **Environment(experimental)** 
+     -  The `show env` command prints information about the nodes that composed a Jobico's cluster. This information provided is currently not used by the platform at this moment. 
 
      ```bash
      jobico show env
      ```
-
-#### Deploying a Job:
-
-```bash
-jobico deploy job-config.yaml 
-```
-
-This command deploys a job named "my-job-definition" with the specified configuration, WebAssembly logic, and event schema.
-
-#### Uploading a WASM File:
-
-```bash
-jobico upload wasm my-job-logic-v2.wasm my-job-logic-v2.wasm
-```
-
-This command uploads a new version of the WebAssembly logic file to the Job Repository.
-
-#### Streaming Information from Recorder:
-
-```bash
-jobico recorder [--lines NM]
-```
-
-This command streams log information from the Executions Recorder for the specified job.
 
 ## Dashboard - Terminal GUI
 
@@ -494,8 +268,6 @@ The **Jobico Dashboard** is a terminal-based graphical user interface (GUI) desi
 3. **Streaming Job Results:**
    - The Dashboard supports real-time streaming of results produced by executed jobs. The GUI provides a dynamic display of outcomes, offering users immediate visibility into the status and performance of their jobs.
 
-### Example Dashboard Commands:
-
 #### Launching the Dashboard:
 
 ```bash
@@ -504,39 +276,70 @@ dashboard [-debug] [-sync]
 
 Executing this command launches the Dashboard GUI, initiating an interactive environment for users to visually explore deployed jobs and related information.
 
-# Goico: The Jobico Framework
+### Screenshots
 
-## Overview:
+1. **Job definitions**
+   
+![alt](docs/screenshots/gen-jobd.png?)
 
-**Goico** is a specialized framework  crafted to support the development and evolution of Jobico. 
+2. **Schema**
+   
+![alt](docs/screenshots/gen-schema.png?)
 
-## Key Features:
+3. **Recorder output**
+   
+![alt](docs/screenshots/gen-recorder.png?)
 
-### 1. Service Creation and API Exposure:
+# Jobicolet
 
-Goico simplifies the development of microservices within the Jobico ecosystem. It supports creating services that expose REST or gRPC APIs, fostering a modular and scalable architecture. 
+## What is a Jobicolet?
 
-### 2. WASM Runtime Based on WAZERO:
+A **Jobicolet** is a specialized WebAssembly (WASM) program designed to process an event and generate a result within the Jobico platform. It represents the executable logic that is dynamically loaded and executed by the Job Executors when handling specific 
 
-A core strength of Goico lies in its WebAssembly (WASM) runtime, built on the robust foundation of WAZERO. This runtime facilitates the execution of custom logic written in any WASM-supported programming language. 
+## Key Characteristics:
 
-### 3. Key/Value Embedded Database:
+1. **WASM Execution:**
+   - A Jobicolet is implemented as a WebAssembly module, allowing it to be written in any programming language that compiles to WebAssembly. This flexibility empowers users to express their event processing logic in a language of their choice.
 
-Goico integrates an embedded database based on [BBolt](https://github.com/etcd-io/bbolt), offering a key/value store for data management. This embedded database serves as the backbone for storing critical information, supporting the reliable and fast retrieval of data essential for the operation of Jobico.
+2. **Event Processing:**
+   - The primary function of a Jobicolet is to process events. It takes as input the event data, performs the specified logic defined within the WASM module, and produces a result based on the defined processing rules.
 
-### 4. Streaming Capabilities for Database Updates:
+3. **Result Generation:**
+   - Upon processing an event, a Jobicolet generates a result. The nature of the result depends on the specific logic implemented in the WASM module. It could be a computation outcome, a transformed dataset, or any other relevant output.
 
-Goico provides streaming capabilities for database updates based on Grpc. This feature enables real-time monitoring and reaction to changes within the embedded database, facilitating dynamic adjustments, and enhancing the responsiveness of Jobico to evolving requirements.
+4. **Language Agnostic:**
+   - Jobicolets are language-agnostic in the sense that they can be written in any programming language that supports compilation to WebAssembly. This feature provides developers with the freedom to choose a language that aligns with their expertise and the requirements of their event processing tasks.
+
+## Benefits:
+
+- **Flexibility:**
+  - The language-agnostic nature of Jobicolets provides developers with flexibility, allowing them to choose the most suitable programming language for expressing their event processing logic.
+
+- **Scalability:**
+  - As Jobicolets are executed within the scalable and isolated environment of Job Executors, the platform can efficiently scale to handle a large number of concurrent event processing tasks.
+
+- **Interoperability:**
+  - Jobicolets can interact with other components within the Jobico platform, facilitating seamless integration with queues, event definitions, and runtime environments.
+
+A Jobicolet, at its core, represents the embodiment of programmable and scalable event processing within the Jobico platform, offering developers the freedom to innovate using the power of WebAssembly.
+
+## Getting Started
 
 ### Docker
 
-### Prerequisites:
+#### Prerequisites:
 
-1. Ensure Docker and Docker Compose are installed on your local machine.
+1. Ensure Docker are installed on your local machine.
 
-### Steps:
+#### Steps:
 
-1. **Navigate to the `/compose` directory:**
+1. Clone the jobicolet-examples repository from GitHub using the following command:
+
+     ```bash
+     git clone https://github.com/andrescosta/jobico
+     ```
+
+2. **Navigate to the `/compose` directory:**
 
     ```bash
     cd compose
@@ -572,12 +375,181 @@ Goico provides streaming capabilities for database updates based on Grpc. This f
 
     This will stop and remove the containers defined in the `compose.yml` file.
 
-### Notes:
+### Rust
 
-- Ensure that your `docker-compose.yml` file is configured properly with the necessary services, networks, and volumes.
-- Adjust the commands based on the specific configurations and requirements of your Jobico project.
+#### Prerequisites:
 
-This set of steps assumes a basic configuration, and you may need to modify the Docker Compose file and commands based on your specific project structure and dependencies.
+1. **Install Rust:**
+   - Download and install Rust from [https://www.rust-lang.org/](https://www.rust-lang.org/).
+
+2. **Install wasm-pack:**
+   - After installing Rust, install `wasm-pack` by running the following command:
+
+     ```bash
+     cargo install wasm-pack
+     ```
+
+3. **Clone the Examples Repository:**
+   - Clone the jobicolet-examples repository from GitHub using the following command:
+
+     ```bash
+     git clone https://github.com/andrescosta/jobicolet-examples.git
+     ```
+
+#### Build the Rust Example:
+
+1. **Navigate to the Rust Example Directory:**
+   - Change your working directory to the location of the Rust example in the jobicolet-examples repository:
+
+     ```bash
+     cd jobicolet-examples/rust/greet
+     ```
+
+2. **Compile the Example using Cargo:**
+   - Use the following command to compile the Rust program (`greet.rs`) using Cargo:
+
+     ```bash
+     cargo build --release --target wasm32-unknown-unknown
+     ```
+
+   This command instructs Cargo to build the Rust program in release mode (`--release`) for the WebAssembly target (`--target wasm32-unknown-unknown`).
+
+3. **Verify the Output:**
+   - After a successful build, you should find the compiled WebAssembly module in the `target/wasm32-unknown-unknown/release/` directory. The file will be named `greet.wasm`.
+
+4. **Upload the WASM file to Jobico:**
+   - Following the compilation of the file, it is imperative to upload it to Jobico by executing the following command:
+
+    ```bash
+     cli upload wasm demorust greet-wasm-rust.wasm target\wasm32-unknown-unknown\release\greet.wasm
+     ```
+5. **Upload the schema file to Jobico:**
+   - Executing this command will upload the schema file, facilitating the validation of the associated event:
+
+    ```bash
+     cli upload json demorust  greet-schema-rust.json schema.json
+     ```
+6. **Deploy the job:**
+   - Executing this command will initiate the deployment of the Job:
+
+    ```bash
+     cli deploy job-rust-greet.yml
+     ```
+7. **Start streaming results:**
+   - Executing this command will initiate the streaming of results from the Recorder component:
+
+    ```bash
+     cli recorder
+     ```
+8. **Send an event:**
+   - Executing this command will dispatch an event to Jobico:
+
+    ```bash
+          curl --request POST \ 
+          --url http://localhost:8080/events/demogo/evgo \  
+          --header 'content-type: application/json' \
+          --data '{"data": [{"firstName": "Andres","lastName": "C"}]}'
+     ```
+   - Return to the terminal where the results are currently being streamed and review the log.
+
+### Tinygo
+
+#### Prerequisites:
+
+1. **Install TinyGo:**
+   - Download and install TinyGo from [https://tinygo.org/](https://tinygo.org/).
+
+2. **Clone the Examples Repository:**
+   - Clone the jobicolet-examples repository from GitHub using the following command:
+
+     ```bash
+     git clone https://github.com/andrescosta/jobicolet-examples.git
+     ```
+
+3. ** The Jobico platform is up and running **
+   - The Docker section taches you how to start Jobico
+
+#### Build the Go Example:
+
+1. **Navigate to the Go Example Directory:**
+   - Change your working directory to the location of the Go example in the jobicolet-examples repository:
+
+     ```bash
+     cd jobicolet-examples/go/greet
+     ```
+
+2. **Compile the Example using TinyGo:**
+   - Use the following command to compile the greet.go example using TinyGo:
+
+     ```bash
+     tinygo build -target wasi greet.go
+     ```
+
+   This command instructs TinyGo to build the Go program (`greet.go`) for the WebAssembly System Interface (WASI) target.
+
+3. **Verify the Output:**
+   - After a successful build, you should see an executable file named `greet.wasm` in the same directory.
+
+4. **Upload the WASM file to Jobico:**
+   - Following the compilation of the file, it is imperative to upload it to Jobico by executing the following command:
+
+    ```bash
+     cli upload wasm demogo greet-wasm-go.wasm greet.wasm
+     ```
+5. **Upload the schema file to Jobico:**
+   - Executing this command will upload the schema file, facilitating the validation of the associated event:
+
+    ```bash
+     cli upload json demogo greet-schema-go.json schema.json
+     ```
+6. **Deploy the job:**
+   - Executing this command will initiate the deployment of the Job:
+
+    ```bash
+     cli deploy job-go-greet.yml
+     ```
+7. **Start streaming results:**
+   - Executing this command will initiate the streaming of results from the Recorder component:
+
+    ```bash
+     cli recorder
+     ```
+8. **Send an event:**
+   - Executing this command will dispatch an event to Jobico:
+
+    ```bash
+          curl --request POST \ 
+          --url http://localhost:8080/events/demogo/evgo \  
+          --header 'content-type: application/json' \
+          --data '{"data": [{"firstName": "Andres","lastName": "C"}]}'
+     ```
+   - Return to the terminal where the results are currently being streamed and review the log.
+
+
+# Goico: The Jobico Framework
+
+## Overview:
+
+**Goico** is a specialized framework  crafted to support the development and evolution of Jobico. 
+
+## Key Features:
+
+### 1. Service Creation and API Exposure:
+
+Goico simplifies the development of microservices within the Jobico ecosystem. It supports creating services that expose REST or gRPC APIs, fostering a modular and scalable architecture. 
+
+### 2. WASM Runtime Based on WAZERO:
+
+A core strength of Goico lies in its WebAssembly (WASM) runtime, built on the robust foundation of WAZERO. This runtime facilitates the execution of custom logic written in any WASM-supported programming language. 
+
+### 3. Key/Value Embedded Database:
+
+Goico integrates an embedded database based on [BBolt](https://github.com/etcd-io/bbolt), offering a key/value store for data management. This embedded database serves as the backbone for storing critical information, supporting the reliable and fast retrieval of data essential for the operation of Jobico.
+
+### 4. Streaming Capabilities for Database Updates:
+
+Goico provides streaming capabilities for database updates based on Grpc. This feature enables real-time monitoring and reaction to changes within the embedded database, facilitating dynamic adjustments, and enhancing the responsiveness of Jobico to evolving requirements.
+
 
 ## Roadmap
 
@@ -598,8 +570,6 @@ https://github.com/users/andrescosta/projects/3/views/1
 - Distributed storage for the queue and control services
 - Durable computing exploration
 
-### Acknowledgements
-
 ## Support and Contact
 
-For questions, feedback, or assistance, reach out to us at [jobicowasm@gmail.com].
+For questions, feedback reach out to us at jobicowasm@gmail.com
