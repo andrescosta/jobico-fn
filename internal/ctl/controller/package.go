@@ -3,8 +3,8 @@ package controller
 import (
 	"context"
 
-	"github.com/andrescosta/goico/pkg/convert"
 	"github.com/andrescosta/goico/pkg/database"
+	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/dao"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
@@ -68,7 +68,7 @@ func (c *PackageController) GetAllPackages(ctx context.Context, _ *pb.GetAllJobP
 		if err != nil {
 			return nil, err
 		}
-		ps := convert.Slices[proto.Message, *pb.JobPackage](ms)
+		ps := grpcutil.Slices[*pb.JobPackage](ms)
 		packages = append(packages, ps...)
 	}
 	return &pb.GetAllJobPackagesReply{Packages: packages}, nil
@@ -80,8 +80,7 @@ func (c *PackageController) AddPackage(ctx context.Context, in *pb.AddJobPackage
 		return nil, err
 	}
 	var m proto.Message = in.Package
-	_, err = mydao.Add(ctx, m)
-	if err != nil {
+	if err := mydao.Add(m); err != nil {
 		return nil, err
 	}
 	c.broadcastAdd(ctx, in.Package)
@@ -94,7 +93,7 @@ func (c *PackageController) UpdatePackage(ctx context.Context, in *pb.UpdateJobP
 		return nil, err
 	}
 	var m proto.Message = in.Package
-	err = mydao.Update(ctx, m)
+	err = mydao.Update(m)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +106,7 @@ func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeleteJobP
 	if err != nil {
 		return nil, err
 	}
-	err = mydao.Delete(ctx, in.Package.ID)
+	err = mydao.Delete(in.Package.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +127,7 @@ func (c *PackageController) getPackages(ctx context.Context, tenant string) ([]*
 	if err != nil {
 		return nil, err
 	}
-	packages := convert.Slices[proto.Message, *pb.JobPackage](ms)
+	packages := grpcutil.Slices[*pb.JobPackage](ms)
 	return packages, nil
 }
 
@@ -137,7 +136,7 @@ func (c *PackageController) getPackage(ctx context.Context, tenant string, id st
 	if err != nil {
 		return nil, err
 	}
-	ms, err := mydao.Get(ctx, id)
+	ms, err := mydao.Get(id)
 	if err != nil {
 		return nil, err
 	}

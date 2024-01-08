@@ -11,8 +11,8 @@ type DAO[T proto.Message] struct {
 	table *database.Table[T]
 }
 
-func NewDAO[T proto.Message](ctx context.Context, db *database.Database, tableName string, m database.Marshaler[T]) (*DAO[T], error) {
-	table, err := database.NewTable(ctx, db, tableName, m)
+func NewDAO[T proto.Message](db *database.Database, tableName string, m database.Marshaler[T]) (*DAO[T], error) {
+	table, err := database.CreateTableIfNotExist(db, tableName, m)
 	if err != nil {
 		return nil, err
 	}
@@ -23,31 +23,21 @@ func NewDAO[T proto.Message](ctx context.Context, db *database.Database, tableNa
 }
 
 func (q *DAO[T]) All(ctx context.Context) ([]T, error) {
-	return q.table.All(ctx)
+	return q.table.All()
 }
 
-func (q *DAO[T]) Get(ctx context.Context, id string) (*T, error) {
-	return q.table.Get(ctx, id)
+func (q *DAO[T]) Get(id string) (*T, error) {
+	return q.table.Get(id)
 }
 
-func (q *DAO[T]) Add(ctx context.Context, data T) (uint64, error) {
-	i, err := q.table.Add(ctx, data)
-	if err != nil {
-		return 0, err
-	}
-	return i, nil
+func (q *DAO[T]) Add(data T) error {
+	return q.table.Add(data)
 }
 
-func (q *DAO[T]) Update(ctx context.Context, data T) error {
-	if err := q.table.Update(ctx, data); err != nil {
-		return err
-	}
-	return nil
+func (q *DAO[T]) Update(data T) error {
+	return q.table.Update(data)
 }
 
-func (q *DAO[T]) Delete(ctx context.Context, id string) error {
-	if err := q.table.Delete(ctx, id); err != nil {
-		return err
-	}
-	return nil
+func (q *DAO[T]) Delete(id string) error {
+	return q.table.Delete(id)
 }

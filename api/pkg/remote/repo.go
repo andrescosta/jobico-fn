@@ -20,7 +20,7 @@ type RepoClient struct {
 }
 
 func NewRepoClient(ctx context.Context) (*RepoClient, error) {
-	addr := env.Env("repo.host")
+	addr := env.String("repo.host")
 	conn, err := grpcutil.Dial(ctx, addr)
 	if err != nil {
 		return nil, err

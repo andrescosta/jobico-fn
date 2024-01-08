@@ -66,7 +66,7 @@ services:
     environment:
       <<: [*obs-env, *svc-log]
       ctl.addr: :50052
-      log.file.name: "{workdir}/log/ctl.log"
+      log.file.name: "${workdir}/log/ctl.log"
       workdir: /data/ctl
     depends_on: *obs-depends_on
 
@@ -82,7 +82,7 @@ services:
       executor.addr: :9595
       max.queue.errors: 2
       metadata.enabled: false
-      log.file.name: "{workdir}/log/executor.log"
+      log.file.name: "${workdir}/log/executor.log"
       workdir: /data/executor
     depends_on: 
       <<: *obs-depends_on
@@ -107,7 +107,7 @@ services:
     environment:
       listener.addr: :8080
       <<: [*obs-env, *svc-log, *env]
-      log.file.name: "{workdir}/log/listener.log"
+      log.file.name: "${workdir}/log/listener.log"
       workdir: /data/listener
     depends_on: 
       <<: *obs-depends_on
@@ -132,7 +132,7 @@ services:
     environment:
       queue.addr: :50051
       <<: [*obs-env, *svc-log, *env]
-      log.file.name: "{workdir}/log/queue.log"
+      log.file.name: "${workdir}/log/queue.log"
       workdir: /data/queue
     depends_on: 
       <<: *obs-depends_on
@@ -151,7 +151,7 @@ services:
     environment:
       recorder.addr: :50054
       <<: [*obs-env, *svc-log, *env]
-      log.file.name: "{workdir}/log/recorder.log"
+      log.file.name: "${workdir}/log/recorder.log"
       workdir: /data/recorder
     depends_on: 
       <<: *obs-depends_on
@@ -170,7 +170,7 @@ services:
     environment:
       repo.addr: :50053
       <<: [*obs-env, *svc-log, *env]
-      log.file.name: "{workdir}/log/repo.log"
+      log.file.name: "${workdir}/log/repo.log"
       workdir: /data/repo
     depends_on: 
       <<: *obs-depends_on

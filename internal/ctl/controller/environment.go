@@ -40,8 +40,8 @@ func (c *EnvironmentController) AddEnvironment(ctx context.Context, in *pb.AddEn
 	}
 	in.Environment.ID = environmentID
 	var m proto.Message = in.Environment
-	_, err = mydao.Add(ctx, m)
-	if err != nil {
+
+	if err := mydao.Add(m); err != nil {
 		return nil, err
 	}
 	c.broadcastAdd(in.Environment)
@@ -55,7 +55,7 @@ func (c *EnvironmentController) UpdateEnvironment(ctx context.Context, in *pb.Up
 		return nil, err
 	}
 	var m proto.Message = in.Environment
-	err = mydao.Update(ctx, m)
+	err = mydao.Update(m)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (c *EnvironmentController) GetEnvironment(ctx context.Context, _ *pb.GetEnv
 	if err != nil {
 		return nil, err
 	}
-	ms, err := mydao.Get(ctx, environmentID)
+	ms, err := mydao.Get(environmentID)
 	if err != nil {
 		return nil, err
 	}
