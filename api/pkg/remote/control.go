@@ -23,7 +23,7 @@ type ControlClient struct {
 var ErrCtlHostAddr = errors.New("the control service address was not specified in the env file using ctl.host")
 
 func NewControlClient(ctx context.Context) (*ControlClient, error) {
-	host := env.OrNil("ctl.host")
+	host := env.StringOrNil("ctl.host")
 	if host == nil {
 		return nil, ErrCtlHostAddr
 	}
@@ -147,7 +147,7 @@ func (c *ControlClient) ListenerForEnvironmentUpdates(ctx context.Context) (*bro
 			return nil, err
 		}
 	}
-	return c.broadcasterEnvUpdates.Subscribe(), nil
+	return c.broadcasterEnvUpdates.Subscribe()
 }
 
 func (c *ControlClient) startListenEnvironmentUpdates(ctx context.Context) error {
@@ -169,7 +169,7 @@ func (c *ControlClient) ListenerForPackageUpdates(ctx context.Context) (*broadca
 			return nil, err
 		}
 	}
-	return c.broadcasterJobPackage.Subscribe(), nil
+	return c.broadcasterJobPackage.Subscribe()
 }
 
 func (c *ControlClient) startListenerForPackageUpdates(ctx context.Context) error {

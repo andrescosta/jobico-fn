@@ -21,7 +21,7 @@ func New(fullpath string) (*LogRecorder, error) {
 	logger := zerolog.New(writer).With().Timestamp().Logger()
 	logger.Level(zerolog.InfoLevel)
 	// we create the file if not exists because tail has issues when the file is not present
-	if err := ioutil.CreateEmptyIfNotExists(fullpath); err != nil {
+	if err := ioutil.Touch(fullpath); err != nil {
 		return nil, err
 	}
 	return &LogRecorder{

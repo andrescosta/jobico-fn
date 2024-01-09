@@ -18,7 +18,7 @@ func NewMetadataClient() *MetadataClient {
 
 func (c *MetadataClient) GetMetadata(ctx context.Context, name string) (map[string]string, error) {
 	logger := zerolog.Ctx(ctx)
-	host := env.Env(name + ".host")
+	host := env.String(name + ".host")
 	url := fmt.Sprintf("http://%s/%s", host, "meta")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

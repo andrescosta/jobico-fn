@@ -16,7 +16,7 @@ type QueueClient struct {
 }
 
 func NewQueueClient(ctx context.Context) (*QueueClient, error) {
-	host := env.Env("queue.host")
+	host := env.String("queue.host")
 	conn, err := grpcutil.Dial(ctx, host)
 	if err != nil {
 		return nil, err

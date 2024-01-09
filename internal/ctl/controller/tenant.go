@@ -3,8 +3,8 @@ package controller
 import (
 	"context"
 
-	"github.com/andrescosta/goico/pkg/convert"
 	"github.com/andrescosta/goico/pkg/database"
+	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/dao"
 	"google.golang.org/protobuf/proto"
@@ -51,8 +51,7 @@ func (c *TenantController) AddTenant(ctx context.Context, in *pb.AddTenantReques
 		return nil, err
 	}
 	var m proto.Message = in.Tenant
-	_, err = mydao.Add(ctx, m)
-	if err != nil {
+	if err := mydao.Add(m); err != nil {
 		return nil, err
 	}
 	return &pb.AddTenantReply{Tenant: in.Tenant}, nil
@@ -67,7 +66,7 @@ func (c *TenantController) getTenants(ctx context.Context) ([]*pb.Tenant, error)
 	if err != nil {
 		return nil, err
 	}
-	tenants := convert.Slices[proto.Message, *pb.Tenant](ms)
+	tenants := grpcutil.Slices[*pb.Tenant](ms)
 	return tenants, nil
 }
 
@@ -76,7 +75,7 @@ func (c *TenantController) getTenant(ctx context.Context, id string) (*pb.Tenant
 	if err != nil {
 		return nil, err
 	}
-	ms, err := mydao.Get(ctx, id)
+	ms, err := mydao.Get(id)
 	if err != nil {
 		return nil, err
 	}

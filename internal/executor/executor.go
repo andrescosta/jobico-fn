@@ -133,7 +133,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	jobPackage.PackageID = pkg.ID
 	modulesForEvents := make(map[string]module)
 	nextStepForEvents := make(map[string]*pb.ResultDef)
-	r, err := wazero.NewWasmRuntime(ctx, env.InWorkDir(cacheDir))
+	r, err := wazero.NewWasmRuntime(ctx, env.ElemInWorkDir(cacheDir))
 	if err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func (e *VM) execute(ctx context.Context, tenant string, queue string, modules m
 	defer ticker.Stop()
 	logger.Debug().Msgf("Worker for Tenant: %s and queue: %s started", tenant, queue)
 	queueErrors := 0
-	maxQueueErrors := env.AsInt("max.queue.errors", 10)
+	maxQueueErrors := env.Int("max.queue.errors", 10)
 	for {
 		select {
 		case <-ctx.Done():

@@ -38,7 +38,10 @@ func (b *GrpcBroadcaster[T, S]) Broadcast(_ context.Context, value S, utype pb.U
 }
 
 func (b *GrpcBroadcaster[T, S]) RcvAndDispatchUpdates(ctx context.Context, s grpc.ServerStream) error {
-	l := b.b.Subscribe()
+	l, err := b.b.Subscribe()
+	if err != nil {
+		return err
+	}
 	logger := zerolog.Ctx(ctx)
 	for {
 		select {

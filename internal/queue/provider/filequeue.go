@@ -53,7 +53,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	// sync the access to the "queue"
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	bdata, filename, err := ioutil.OldestFile(f.directory, preffix, suffix)
+	bdata, filename, err := ioutil.ReadOldestFile(f.directory, preffix, suffix)
 	if err != nil {
 		var d T
 		return d, errors.Join(errors.New("error removing file"), err)
@@ -96,5 +96,5 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 }
 
 func queueDirectory(directory string, id string) string {
-	return env.InWorkDir(directory, id)
+	return env.ElemInWorkDir(directory, id)
 }

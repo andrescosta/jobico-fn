@@ -19,7 +19,7 @@ type RecorderClient struct {
 }
 
 func NewRecorderClient(ctx context.Context) (*RecorderClient, error) {
-	addr := env.Env("recorder.host")
+	addr := env.String("recorder.host")
 	conn, err := grpcutil.Dial(ctx, addr)
 	if err != nil {
 		return nil, err

@@ -16,7 +16,7 @@ func main() {
 		grpc.WithContext(context.Background()),
 		grpc.WithServiceDesc(&pb.Repo_ServiceDesc),
 		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
-			return server.New(ctx, env.Env("repo.dir", "./")), nil
+			return server.New(ctx, env.String("repo.dir", "./")), nil
 		}),
 	)
 	if err != nil {

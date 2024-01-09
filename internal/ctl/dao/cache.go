@@ -27,8 +27,8 @@ func (c *Cache) GetForTenant(ctx context.Context, tenant string, entity string, 
 	mydao, ok := c.daos[tenant]
 	if !ok {
 		var err error
-		mydao, err = NewDAO(ctx, c.db, tenant+"/"+entity,
-			&ProtoMessageMarshaler{
+		mydao, err = NewDAO(c.db, tenant+"/"+entity,
+			&ProtoMessageMarshaller{
 				prototype: message,
 			})
 		if err != nil {
