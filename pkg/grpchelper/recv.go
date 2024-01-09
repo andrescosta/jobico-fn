@@ -70,7 +70,9 @@ func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *broadc
 				}
 				continue
 			}
-			b.Write(p.Interface().(T))
+			if err := b.Write(p.Interface().(T)); err != nil {
+				return err
+			}
 		}
 	}
 }

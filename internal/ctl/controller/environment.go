@@ -33,8 +33,8 @@ func (c *EnvironmentController) Close() {
 	c.bEnvironment.Stop()
 }
 
-func (c *EnvironmentController) AddEnvironment(ctx context.Context, in *pb.AddEnvironmentRequest) (*pb.AddEnvironmentReply, error) {
-	mydao, err := c.daoCache.GetGeneric(ctx, tblEnvironment, &pb.Environment{})
+func (c *EnvironmentController) AddEnvironment(in *pb.AddEnvironmentRequest) (*pb.AddEnvironmentReply, error) {
+	mydao, err := c.daoCache.GetGeneric(tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +48,9 @@ func (c *EnvironmentController) AddEnvironment(ctx context.Context, in *pb.AddEn
 	return &pb.AddEnvironmentReply{Environment: in.Environment}, nil
 }
 
-func (c *EnvironmentController) UpdateEnvironment(ctx context.Context, in *pb.UpdateEnvironmentRequest) (*pb.UpdateEnvironmentReply, error) {
+func (c *EnvironmentController) UpdateEnvironment(in *pb.UpdateEnvironmentRequest) (*pb.UpdateEnvironmentReply, error) {
 	in.Environment.ID = environmentID
-	mydao, err := c.daoCache.GetGeneric(ctx, tblEnvironment, &pb.Environment{})
+	mydao, err := c.daoCache.GetGeneric(tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +63,8 @@ func (c *EnvironmentController) UpdateEnvironment(ctx context.Context, in *pb.Up
 	return &pb.UpdateEnvironmentReply{}, nil
 }
 
-func (c *EnvironmentController) GetEnvironment(ctx context.Context, _ *pb.GetEnvironmentRequest) (*pb.GetEnvironmentReply, error) {
-	mydao, err := c.daoCache.GetGeneric(ctx, tblEnvironment, &pb.Environment{})
+func (c *EnvironmentController) GetEnvironment() (*pb.GetEnvironmentReply, error) {
+	mydao, err := c.daoCache.GetGeneric(tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
 	}

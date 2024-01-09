@@ -1,8 +1,6 @@
 package dao
 
 import (
-	"context"
-
 	"github.com/andrescosta/goico/pkg/database"
 	"google.golang.org/protobuf/proto"
 )
@@ -22,7 +20,7 @@ func NewDAO[T proto.Message](db *database.Database, tableName string, m database
 	return &res, nil
 }
 
-func (q *DAO[T]) All(ctx context.Context) ([]T, error) {
+func (q *DAO[T]) All() ([]T, error) {
 	return q.table.All()
 }
 

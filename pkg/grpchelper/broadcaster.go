@@ -28,13 +28,13 @@ func StartBroadcaster[T, S proto.Message](ctx context.Context) *GrpcBroadcaster[
 }
 
 func (b *GrpcBroadcaster[T, S]) Stop() {
-	b.b.Stop()
+	_ = b.b.Stop()
 }
 
 func (b *GrpcBroadcaster[T, S]) Broadcast(_ context.Context, value S, utype pb.UpdateType) {
 	var prototype T
 	n := b.new(prototype, value, utype)
-	b.b.Write(n)
+	_ = b.b.Write(n)
 }
 
 func (b *GrpcBroadcaster[T, S]) RcvAndDispatchUpdates(ctx context.Context, s grpc.ServerStream) error {
@@ -46,10 +46,10 @@ func (b *GrpcBroadcaster[T, S]) RcvAndDispatchUpdates(ctx context.Context, s grp
 	for {
 		select {
 		case <-ctx.Done():
-			b.b.Unsubscribe(l)
+			_ = b.b.Unsubscribe(l)
 			return ctx.Err()
 		case <-s.Context().Done():
-			b.b.Unsubscribe(l)
+			_ = b.b.Unsubscribe(l)
 			return s.Context().Err()
 		case d, ok := <-l.C:
 			if !ok {
