@@ -97,7 +97,7 @@ func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.L
 			return nil, err
 		}
 	}
-	return c.broadcasterRepoUpdates.Subscribe(), nil
+	return c.broadcasterRepoUpdates.Subscribe()
 }
 
 func (c *RepoClient) startListenRepoUpdates(ctx context.Context) error {
