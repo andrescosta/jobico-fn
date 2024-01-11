@@ -12,6 +12,7 @@ func main() {
 	e, err := process.New(
 		process.WithContext(context.Background()),
 		process.WithName("executor"),
+		process.WithEnableSidecar(true),
 		process.WithServeHandler(func(ctx context.Context) error {
 			m, err := executor.NewExecutorMachine(ctx)
 			if err != nil {
