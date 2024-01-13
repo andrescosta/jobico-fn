@@ -26,7 +26,7 @@ func (s *Server) GetFile(ctx context.Context, in *pb.GetFileRequest) (*pb.GetFil
 	return s.controller.GetFile(ctx, in)
 }
 
-func (s *Server) GetAllFileNames(ctx context.Context, in *pb.GetAllFileNamesRequest) (*pb.GetAllFileNamesReply, error) {
+func (s *Server) GetAllFileNames(ctx context.Context, in *pb.Void) (*pb.GetAllFileNamesReply, error) {
 	return s.controller.GetAllFileNames(ctx, in)
 }
 

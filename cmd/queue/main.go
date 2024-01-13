@@ -16,7 +16,7 @@ func main() {
 		grpc.WithName("queue"),
 		grpc.WithContext(context.Background()),
 		grpc.WithServiceDesc(&pb.Queue_ServiceDesc),
-		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
+		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			return queue.NewServer(ctx)
 		}),
 	)

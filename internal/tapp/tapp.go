@@ -32,7 +32,7 @@ type TApp struct {
 	repoClient              *remote.RepoClient
 	recorderClient          *remote.RecorderClient
 	metadataClient          *remote.MetadataClient
-	infoClients             map[string]*svcmeta.ServerInfoClient
+	infoClients             map[string]*svcmeta.InfoClient
 	helthCheckClients       map[string]*grpc.HelthCheckClient
 	app                     *tview.Application
 	mainView                *tview.Pages
@@ -73,7 +73,7 @@ func New(ctx context.Context, name string, sync bool) (*TApp, error) {
 		repoClient:        repoClient,
 		recorderClient:    recorderClient,
 		metadataClient:    metadataClient,
-		infoClients:       make(map[string]*svcmeta.ServerInfoClient),
+		infoClients:       make(map[string]*svcmeta.InfoClient),
 		helthCheckClients: make(map[string]*grpc.HelthCheckClient),
 		app:               app,
 		sync:              sync,

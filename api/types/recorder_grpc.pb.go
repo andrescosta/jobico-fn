@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RecorderClient interface {
 	GetJobExecutions(ctx context.Context, in *GetJobExecutionsRequest, opts ...grpc.CallOption) (Recorder_GetJobExecutionsClient, error)
-	AddJobExecution(ctx context.Context, in *AddJobExecutionRequest, opts ...grpc.CallOption) (*AddJobExecutionReply, error)
+	AddJobExecution(ctx context.Context, in *AddJobExecutionRequest, opts ...grpc.CallOption) (*Void, error)
 }
 
 type recorderClient struct {
@@ -71,8 +71,8 @@ func (x *recorderGetJobExecutionsClient) Recv() (*GetJobExecutionsReply, error) 
 	return m, nil
 }
 
-func (c *recorderClient) AddJobExecution(ctx context.Context, in *AddJobExecutionRequest, opts ...grpc.CallOption) (*AddJobExecutionReply, error) {
-	out := new(AddJobExecutionReply)
+func (c *recorderClient) AddJobExecution(ctx context.Context, in *AddJobExecutionRequest, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
 	err := c.cc.Invoke(ctx, Recorder_AddJobExecution_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (c *recorderClient) AddJobExecution(ctx context.Context, in *AddJobExecutio
 // for forward compatibility
 type RecorderServer interface {
 	GetJobExecutions(*GetJobExecutionsRequest, Recorder_GetJobExecutionsServer) error
-	AddJobExecution(context.Context, *AddJobExecutionRequest) (*AddJobExecutionReply, error)
+	AddJobExecution(context.Context, *AddJobExecutionRequest) (*Void, error)
 	mustEmbedUnimplementedRecorderServer()
 }
 
@@ -96,7 +96,7 @@ type UnimplementedRecorderServer struct {
 func (UnimplementedRecorderServer) GetJobExecutions(*GetJobExecutionsRequest, Recorder_GetJobExecutionsServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetJobExecutions not implemented")
 }
-func (UnimplementedRecorderServer) AddJobExecution(context.Context, *AddJobExecutionRequest) (*AddJobExecutionReply, error) {
+func (UnimplementedRecorderServer) AddJobExecution(context.Context, *AddJobExecutionRequest) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddJobExecution not implemented")
 }
 func (UnimplementedRecorderServer) mustEmbedUnimplementedRecorderServer() {}

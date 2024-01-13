@@ -42,7 +42,7 @@ func (c *Server) GetPackages(_ context.Context, in *pb.GetJobPackagesRequest) (*
 	return c.pkgCont.GetPackages(in)
 }
 
-func (c *Server) GetAllPackages(_ context.Context, _ *pb.GetAllJobPackagesRequest) (*pb.GetAllJobPackagesReply, error) {
+func (c *Server) GetAllPackages(_ context.Context, _ *pb.Void) (*pb.GetAllJobPackagesReply, error) {
 	return c.pkgCont.GetAllPackages()
 }
 
@@ -50,11 +50,11 @@ func (c *Server) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (*
 	return c.pkgCont.AddPackage(ctx, in)
 }
 
-func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.UpdateJobPackageReply, error) {
+func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.Void, error) {
 	return c.pkgCont.UpdatePackage(ctx, in)
 }
 
-func (c *Server) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.DeleteJobPackageReply, error) {
+func (c *Server) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.Void, error) {
 	return c.pkgCont.DeletePackage(ctx, in)
 }
 
@@ -70,11 +70,11 @@ func (c *Server) AddEnvironment(_ context.Context, in *pb.AddEnvironmentRequest)
 	return c.envCont.AddEnvironment(in)
 }
 
-func (c *Server) UpdateEnvironment(_ context.Context, in *pb.UpdateEnvironmentRequest) (*pb.UpdateEnvironmentReply, error) {
+func (c *Server) UpdateEnvironment(_ context.Context, in *pb.UpdateEnvironmentRequest) (*pb.Void, error) {
 	return c.envCont.UpdateEnvironment(in)
 }
 
-func (c *Server) GetEnvironment(_ context.Context, _ *pb.GetEnvironmentRequest) (*pb.GetEnvironmentReply, error) {
+func (c *Server) GetEnvironment(_ context.Context, _ *pb.Void) (*pb.GetEnvironmentReply, error) {
 	return c.envCont.GetEnvironment()
 }
 
@@ -82,6 +82,6 @@ func (c *Server) UpdateToPackagesStr(req *pb.UpdateToPackagesStrRequest, ctl pb.
 	return c.pkgCont.UpdateToPackagesStr(req, ctl)
 }
 
-func (c *Server) UpdateToEnvironmentStr(req *pb.UpdateToEnvironmentStrRequest, ctl pb.Control_UpdateToEnvironmentStrServer) error {
+func (c *Server) UpdateToEnvironmentStr(req *pb.Void, ctl pb.Control_UpdateToEnvironmentStrServer) error {
 	return c.envCont.UpdateToEnvironmentStr(req, ctl)
 }

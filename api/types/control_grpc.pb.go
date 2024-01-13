@@ -40,15 +40,15 @@ type ControlClient interface {
 	GetTenants(ctx context.Context, in *GetTenantsRequest, opts ...grpc.CallOption) (*GetTenantsReply, error)
 	AddTenant(ctx context.Context, in *AddTenantRequest, opts ...grpc.CallOption) (*AddTenantReply, error)
 	AddPackage(ctx context.Context, in *AddJobPackageRequest, opts ...grpc.CallOption) (*AddJobPackageReply, error)
-	GetAllPackages(ctx context.Context, in *GetAllJobPackagesRequest, opts ...grpc.CallOption) (*GetAllJobPackagesReply, error)
+	GetAllPackages(ctx context.Context, in *Void, opts ...grpc.CallOption) (*GetAllJobPackagesReply, error)
 	GetPackages(ctx context.Context, in *GetJobPackagesRequest, opts ...grpc.CallOption) (*GetJobPackagesReply, error)
-	UpdatePackage(ctx context.Context, in *UpdateJobPackageRequest, opts ...grpc.CallOption) (*UpdateJobPackageReply, error)
-	DeletePackage(ctx context.Context, in *DeleteJobPackageRequest, opts ...grpc.CallOption) (*DeleteJobPackageReply, error)
+	UpdatePackage(ctx context.Context, in *UpdateJobPackageRequest, opts ...grpc.CallOption) (*Void, error)
+	DeletePackage(ctx context.Context, in *DeleteJobPackageRequest, opts ...grpc.CallOption) (*Void, error)
 	UpdateToPackagesStr(ctx context.Context, in *UpdateToPackagesStrRequest, opts ...grpc.CallOption) (Control_UpdateToPackagesStrClient, error)
-	GetEnvironment(ctx context.Context, in *GetEnvironmentRequest, opts ...grpc.CallOption) (*GetEnvironmentReply, error)
-	UpdateToEnvironmentStr(ctx context.Context, in *UpdateToEnvironmentStrRequest, opts ...grpc.CallOption) (Control_UpdateToEnvironmentStrClient, error)
+	GetEnvironment(ctx context.Context, in *Void, opts ...grpc.CallOption) (*GetEnvironmentReply, error)
+	UpdateToEnvironmentStr(ctx context.Context, in *Void, opts ...grpc.CallOption) (Control_UpdateToEnvironmentStrClient, error)
 	AddEnvironment(ctx context.Context, in *AddEnvironmentRequest, opts ...grpc.CallOption) (*AddEnvironmentReply, error)
-	UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentRequest, opts ...grpc.CallOption) (*UpdateEnvironmentReply, error)
+	UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentRequest, opts ...grpc.CallOption) (*Void, error)
 }
 
 type controlClient struct {
@@ -86,7 +86,7 @@ func (c *controlClient) AddPackage(ctx context.Context, in *AddJobPackageRequest
 	return out, nil
 }
 
-func (c *controlClient) GetAllPackages(ctx context.Context, in *GetAllJobPackagesRequest, opts ...grpc.CallOption) (*GetAllJobPackagesReply, error) {
+func (c *controlClient) GetAllPackages(ctx context.Context, in *Void, opts ...grpc.CallOption) (*GetAllJobPackagesReply, error) {
 	out := new(GetAllJobPackagesReply)
 	err := c.cc.Invoke(ctx, Control_GetAllPackages_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -104,8 +104,8 @@ func (c *controlClient) GetPackages(ctx context.Context, in *GetJobPackagesReque
 	return out, nil
 }
 
-func (c *controlClient) UpdatePackage(ctx context.Context, in *UpdateJobPackageRequest, opts ...grpc.CallOption) (*UpdateJobPackageReply, error) {
-	out := new(UpdateJobPackageReply)
+func (c *controlClient) UpdatePackage(ctx context.Context, in *UpdateJobPackageRequest, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
 	err := c.cc.Invoke(ctx, Control_UpdatePackage_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -113,8 +113,8 @@ func (c *controlClient) UpdatePackage(ctx context.Context, in *UpdateJobPackageR
 	return out, nil
 }
 
-func (c *controlClient) DeletePackage(ctx context.Context, in *DeleteJobPackageRequest, opts ...grpc.CallOption) (*DeleteJobPackageReply, error) {
-	out := new(DeleteJobPackageReply)
+func (c *controlClient) DeletePackage(ctx context.Context, in *DeleteJobPackageRequest, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
 	err := c.cc.Invoke(ctx, Control_DeletePackage_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func (x *controlUpdateToPackagesStrClient) Recv() (*UpdateToPackagesStrReply, er
 	return m, nil
 }
 
-func (c *controlClient) GetEnvironment(ctx context.Context, in *GetEnvironmentRequest, opts ...grpc.CallOption) (*GetEnvironmentReply, error) {
+func (c *controlClient) GetEnvironment(ctx context.Context, in *Void, opts ...grpc.CallOption) (*GetEnvironmentReply, error) {
 	out := new(GetEnvironmentReply)
 	err := c.cc.Invoke(ctx, Control_GetEnvironment_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -163,7 +163,7 @@ func (c *controlClient) GetEnvironment(ctx context.Context, in *GetEnvironmentRe
 	return out, nil
 }
 
-func (c *controlClient) UpdateToEnvironmentStr(ctx context.Context, in *UpdateToEnvironmentStrRequest, opts ...grpc.CallOption) (Control_UpdateToEnvironmentStrClient, error) {
+func (c *controlClient) UpdateToEnvironmentStr(ctx context.Context, in *Void, opts ...grpc.CallOption) (Control_UpdateToEnvironmentStrClient, error) {
 	stream, err := c.cc.NewStream(ctx, &Control_ServiceDesc.Streams[1], Control_UpdateToEnvironmentStr_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
@@ -204,8 +204,8 @@ func (c *controlClient) AddEnvironment(ctx context.Context, in *AddEnvironmentRe
 	return out, nil
 }
 
-func (c *controlClient) UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentRequest, opts ...grpc.CallOption) (*UpdateEnvironmentReply, error) {
-	out := new(UpdateEnvironmentReply)
+func (c *controlClient) UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentRequest, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
 	err := c.cc.Invoke(ctx, Control_UpdateEnvironment_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -220,15 +220,15 @@ type ControlServer interface {
 	GetTenants(context.Context, *GetTenantsRequest) (*GetTenantsReply, error)
 	AddTenant(context.Context, *AddTenantRequest) (*AddTenantReply, error)
 	AddPackage(context.Context, *AddJobPackageRequest) (*AddJobPackageReply, error)
-	GetAllPackages(context.Context, *GetAllJobPackagesRequest) (*GetAllJobPackagesReply, error)
+	GetAllPackages(context.Context, *Void) (*GetAllJobPackagesReply, error)
 	GetPackages(context.Context, *GetJobPackagesRequest) (*GetJobPackagesReply, error)
-	UpdatePackage(context.Context, *UpdateJobPackageRequest) (*UpdateJobPackageReply, error)
-	DeletePackage(context.Context, *DeleteJobPackageRequest) (*DeleteJobPackageReply, error)
+	UpdatePackage(context.Context, *UpdateJobPackageRequest) (*Void, error)
+	DeletePackage(context.Context, *DeleteJobPackageRequest) (*Void, error)
 	UpdateToPackagesStr(*UpdateToPackagesStrRequest, Control_UpdateToPackagesStrServer) error
-	GetEnvironment(context.Context, *GetEnvironmentRequest) (*GetEnvironmentReply, error)
-	UpdateToEnvironmentStr(*UpdateToEnvironmentStrRequest, Control_UpdateToEnvironmentStrServer) error
+	GetEnvironment(context.Context, *Void) (*GetEnvironmentReply, error)
+	UpdateToEnvironmentStr(*Void, Control_UpdateToEnvironmentStrServer) error
 	AddEnvironment(context.Context, *AddEnvironmentRequest) (*AddEnvironmentReply, error)
-	UpdateEnvironment(context.Context, *UpdateEnvironmentRequest) (*UpdateEnvironmentReply, error)
+	UpdateEnvironment(context.Context, *UpdateEnvironmentRequest) (*Void, error)
 	mustEmbedUnimplementedControlServer()
 }
 
@@ -245,31 +245,31 @@ func (UnimplementedControlServer) AddTenant(context.Context, *AddTenantRequest) 
 func (UnimplementedControlServer) AddPackage(context.Context, *AddJobPackageRequest) (*AddJobPackageReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddPackage not implemented")
 }
-func (UnimplementedControlServer) GetAllPackages(context.Context, *GetAllJobPackagesRequest) (*GetAllJobPackagesReply, error) {
+func (UnimplementedControlServer) GetAllPackages(context.Context, *Void) (*GetAllJobPackagesReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllPackages not implemented")
 }
 func (UnimplementedControlServer) GetPackages(context.Context, *GetJobPackagesRequest) (*GetJobPackagesReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPackages not implemented")
 }
-func (UnimplementedControlServer) UpdatePackage(context.Context, *UpdateJobPackageRequest) (*UpdateJobPackageReply, error) {
+func (UnimplementedControlServer) UpdatePackage(context.Context, *UpdateJobPackageRequest) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePackage not implemented")
 }
-func (UnimplementedControlServer) DeletePackage(context.Context, *DeleteJobPackageRequest) (*DeleteJobPackageReply, error) {
+func (UnimplementedControlServer) DeletePackage(context.Context, *DeleteJobPackageRequest) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePackage not implemented")
 }
 func (UnimplementedControlServer) UpdateToPackagesStr(*UpdateToPackagesStrRequest, Control_UpdateToPackagesStrServer) error {
 	return status.Errorf(codes.Unimplemented, "method UpdateToPackagesStr not implemented")
 }
-func (UnimplementedControlServer) GetEnvironment(context.Context, *GetEnvironmentRequest) (*GetEnvironmentReply, error) {
+func (UnimplementedControlServer) GetEnvironment(context.Context, *Void) (*GetEnvironmentReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEnvironment not implemented")
 }
-func (UnimplementedControlServer) UpdateToEnvironmentStr(*UpdateToEnvironmentStrRequest, Control_UpdateToEnvironmentStrServer) error {
+func (UnimplementedControlServer) UpdateToEnvironmentStr(*Void, Control_UpdateToEnvironmentStrServer) error {
 	return status.Errorf(codes.Unimplemented, "method UpdateToEnvironmentStr not implemented")
 }
 func (UnimplementedControlServer) AddEnvironment(context.Context, *AddEnvironmentRequest) (*AddEnvironmentReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddEnvironment not implemented")
 }
-func (UnimplementedControlServer) UpdateEnvironment(context.Context, *UpdateEnvironmentRequest) (*UpdateEnvironmentReply, error) {
+func (UnimplementedControlServer) UpdateEnvironment(context.Context, *UpdateEnvironmentRequest) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateEnvironment not implemented")
 }
 func (UnimplementedControlServer) mustEmbedUnimplementedControlServer() {}
@@ -340,7 +340,7 @@ func _Control_AddPackage_Handler(srv interface{}, ctx context.Context, dec func(
 }
 
 func _Control_GetAllPackages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAllJobPackagesRequest)
+	in := new(Void)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -352,7 +352,7 @@ func _Control_GetAllPackages_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: Control_GetAllPackages_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetAllPackages(ctx, req.(*GetAllJobPackagesRequest))
+		return srv.(ControlServer).GetAllPackages(ctx, req.(*Void))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -433,7 +433,7 @@ func (x *controlUpdateToPackagesStrServer) Send(m *UpdateToPackagesStrReply) err
 }
 
 func _Control_GetEnvironment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetEnvironmentRequest)
+	in := new(Void)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -445,13 +445,13 @@ func _Control_GetEnvironment_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: Control_GetEnvironment_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServer).GetEnvironment(ctx, req.(*GetEnvironmentRequest))
+		return srv.(ControlServer).GetEnvironment(ctx, req.(*Void))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Control_UpdateToEnvironmentStr_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(UpdateToEnvironmentStrRequest)
+	m := new(Void)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}

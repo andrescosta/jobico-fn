@@ -87,7 +87,7 @@ func (c *PackageController) AddPackage(ctx context.Context, in *pb.AddJobPackage
 	return &pb.AddJobPackageReply{Package: in.Package}, nil
 }
 
-func (c *PackageController) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.UpdateJobPackageReply, error) {
+func (c *PackageController) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.Void, error) {
 	mydao, err := c.daoCache.GetForTenant(in.Package.Tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
@@ -98,10 +98,10 @@ func (c *PackageController) UpdatePackage(ctx context.Context, in *pb.UpdateJobP
 		return nil, err
 	}
 	c.broadcastUpdate(ctx, in.Package)
-	return &pb.UpdateJobPackageReply{}, nil
+	return &pb.Void{}, nil
 }
 
-func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.DeleteJobPackageReply, error) {
+func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.Void, error) {
 	mydao, err := c.daoCache.GetForTenant(in.Package.Tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeleteJobP
 		return nil, err
 	}
 	c.broadcastDelete(ctx, in.Package)
-	return &pb.DeleteJobPackageReply{}, nil
+	return &pb.Void{}, nil
 }
 
 func (c *PackageController) UpdateToPackagesStr(_ *pb.UpdateToPackagesStrRequest, r pb.Control_UpdateToPackagesStrServer) error {

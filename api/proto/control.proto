@@ -8,20 +8,18 @@ service Control {
   rpc GetTenants (GetTenantsRequest) returns (GetTenantsReply) {}
   rpc AddTenant (AddTenantRequest) returns (AddTenantReply) {}
   rpc AddPackage (AddJobPackageRequest) returns (AddJobPackageReply) {}
-  rpc GetAllPackages (GetAllJobPackagesRequest) returns (GetAllJobPackagesReply) {}
+  rpc GetAllPackages (Void) returns (GetAllJobPackagesReply) {}
   rpc GetPackages (GetJobPackagesRequest) returns (GetJobPackagesReply) {}
-  rpc UpdatePackage (UpdateJobPackageRequest) returns (UpdateJobPackageReply) {}
-  rpc DeletePackage (DeleteJobPackageRequest) returns (DeleteJobPackageReply) {}
+  rpc UpdatePackage (UpdateJobPackageRequest) returns (Void) {}
+  rpc DeletePackage (DeleteJobPackageRequest) returns (Void) {}
   rpc UpdateToPackagesStr (UpdateToPackagesStrRequest) returns (stream UpdateToPackagesStrReply) {}
-  rpc GetEnvironment(GetEnvironmentRequest) returns (GetEnvironmentReply){}
-  rpc UpdateToEnvironmentStr(UpdateToEnvironmentStrRequest) returns (stream UpdateToEnvironmentStrReply){}
+  rpc GetEnvironment(Void) returns (GetEnvironmentReply){}
+  rpc UpdateToEnvironmentStr(Void) returns (stream UpdateToEnvironmentStrReply){}
   rpc AddEnvironment(AddEnvironmentRequest) returns (AddEnvironmentReply){}
-  rpc UpdateEnvironment(UpdateEnvironmentRequest) returns (UpdateEnvironmentReply){}
+  rpc UpdateEnvironment(UpdateEnvironmentRequest) returns (Void){}
 }
 
 
-
-message UpdateToEnvironmentStrRequest {}
 
 message UpdateToEnvironmentStrReply {
   UpdateType type=1;
@@ -43,8 +41,6 @@ message AddJobPackageRequest{
 message AddJobPackageReply{
   JobPackage package = 1;
 }
-message GetAllJobPackagesRequest{
-}
 message GetAllJobPackagesReply{
   repeated JobPackage packages = 1;
 }
@@ -58,15 +54,8 @@ message GetJobPackagesReply{
 message UpdateJobPackageRequest{
   JobPackage package = 1;
 }
-message UpdateJobPackageReply{
-}
 message DeleteJobPackageRequest{
   JobPackage package = 1;
-}
-message DeleteJobPackageReply{
-}
-
-message GetEnvironmentRequest {
 }
 
 message GetEnvironmentReply {
@@ -75,9 +64,6 @@ message GetEnvironmentReply {
 
 message AddEnvironmentRequest {
   Environment environment = 1;
-}
-
-message UpdateEnvironmentReply {
 }
 
 message UpdateEnvironmentRequest {

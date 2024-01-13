@@ -20,7 +20,7 @@ func New(ctx context.Context) (*Controller, error) {
 	}, nil
 }
 
-func (s *Controller) Queue(_ context.Context, in *pb.QueueRequest) (*pb.QueueReply, error) {
+func (s *Controller) Queue(_ context.Context, in *pb.QueueRequest) (*pb.Void, error) {
 	myqueue, err := s.store.GetQueue(in.Tenant, in.Queue)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (s *Controller) Queue(_ context.Context, in *pb.QueueRequest) (*pb.QueueRep
 			return nil, err
 		}
 	}
-	ret := pb.QueueReply{}
+	ret := pb.Void{}
 	return &ret, nil
 }
 

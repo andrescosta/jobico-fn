@@ -15,7 +15,7 @@ func main() {
 		grpc.WithName("ctl"),
 		grpc.WithContext(context.Background()),
 		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
-		grpc.WithInitHandler(func(ctx context.Context) (any, error) {
+		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			dbFileName := env.String("ctl.dbname", "db.db")
 			return server.New(ctx, dbFileName)
 		}),

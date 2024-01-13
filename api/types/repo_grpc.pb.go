@@ -32,7 +32,7 @@ type RepoClient interface {
 	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileReply, error)
 	AddFile(ctx context.Context, in *AddFileRequest, opts ...grpc.CallOption) (*AddFileReply, error)
 	UpdateToFileStr(ctx context.Context, in *UpdateToFileStrRequest, opts ...grpc.CallOption) (Repo_UpdateToFileStrClient, error)
-	GetAllFileNames(ctx context.Context, in *GetAllFileNamesRequest, opts ...grpc.CallOption) (*GetAllFileNamesReply, error)
+	GetAllFileNames(ctx context.Context, in *Void, opts ...grpc.CallOption) (*GetAllFileNamesReply, error)
 }
 
 type repoClient struct {
@@ -93,7 +93,7 @@ func (x *repoUpdateToFileStrClient) Recv() (*UpdateToFileStrReply, error) {
 	return m, nil
 }
 
-func (c *repoClient) GetAllFileNames(ctx context.Context, in *GetAllFileNamesRequest, opts ...grpc.CallOption) (*GetAllFileNamesReply, error) {
+func (c *repoClient) GetAllFileNames(ctx context.Context, in *Void, opts ...grpc.CallOption) (*GetAllFileNamesReply, error) {
 	out := new(GetAllFileNamesReply)
 	err := c.cc.Invoke(ctx, Repo_GetAllFileNames_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -109,7 +109,7 @@ type RepoServer interface {
 	GetFile(context.Context, *GetFileRequest) (*GetFileReply, error)
 	AddFile(context.Context, *AddFileRequest) (*AddFileReply, error)
 	UpdateToFileStr(*UpdateToFileStrRequest, Repo_UpdateToFileStrServer) error
-	GetAllFileNames(context.Context, *GetAllFileNamesRequest) (*GetAllFileNamesReply, error)
+	GetAllFileNames(context.Context, *Void) (*GetAllFileNamesReply, error)
 	mustEmbedUnimplementedRepoServer()
 }
 
@@ -126,7 +126,7 @@ func (UnimplementedRepoServer) AddFile(context.Context, *AddFileRequest) (*AddFi
 func (UnimplementedRepoServer) UpdateToFileStr(*UpdateToFileStrRequest, Repo_UpdateToFileStrServer) error {
 	return status.Errorf(codes.Unimplemented, "method UpdateToFileStr not implemented")
 }
-func (UnimplementedRepoServer) GetAllFileNames(context.Context, *GetAllFileNamesRequest) (*GetAllFileNamesReply, error) {
+func (UnimplementedRepoServer) GetAllFileNames(context.Context, *Void) (*GetAllFileNamesReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllFileNames not implemented")
 }
 func (UnimplementedRepoServer) mustEmbedUnimplementedRepoServer() {}
@@ -200,7 +200,7 @@ func (x *repoUpdateToFileStrServer) Send(m *UpdateToFileStrReply) error {
 }
 
 func _Repo_GetAllFileNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAllFileNamesRequest)
+	in := new(Void)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -212,7 +212,7 @@ func _Repo_GetAllFileNames_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: Repo_GetAllFileNames_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RepoServer).GetAllFileNames(ctx, req.(*GetAllFileNamesRequest))
+		return srv.(RepoServer).GetAllFileNames(ctx, req.(*Void))
 	}
 	return interceptor(ctx, in, info, handler)
 }

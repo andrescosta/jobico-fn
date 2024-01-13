@@ -48,7 +48,7 @@ func (c *EnvironmentController) AddEnvironment(in *pb.AddEnvironmentRequest) (*p
 	return &pb.AddEnvironmentReply{Environment: in.Environment}, nil
 }
 
-func (c *EnvironmentController) UpdateEnvironment(in *pb.UpdateEnvironmentRequest) (*pb.UpdateEnvironmentReply, error) {
+func (c *EnvironmentController) UpdateEnvironment(in *pb.UpdateEnvironmentRequest) (*pb.Void, error) {
 	in.Environment.ID = environmentID
 	mydao, err := c.daoCache.GetGeneric(tblEnvironment, &pb.Environment{})
 	if err != nil {
@@ -60,7 +60,7 @@ func (c *EnvironmentController) UpdateEnvironment(in *pb.UpdateEnvironmentReques
 		return nil, err
 	}
 	c.broadcastUpdate(in.Environment)
-	return &pb.UpdateEnvironmentReply{}, nil
+	return &pb.Void{}, nil
 }
 
 func (c *EnvironmentController) GetEnvironment() (*pb.GetEnvironmentReply, error) {
@@ -79,7 +79,7 @@ func (c *EnvironmentController) GetEnvironment() (*pb.GetEnvironmentReply, error
 	return &pb.GetEnvironmentReply{Environment: environment}, nil
 }
 
-func (c *EnvironmentController) UpdateToEnvironmentStr(_ *pb.UpdateToEnvironmentStrRequest, r pb.Control_UpdateToEnvironmentStrServer) error {
+func (c *EnvironmentController) UpdateToEnvironmentStr(_ *pb.Void, r pb.Control_UpdateToEnvironmentStrServer) error {
 	return c.bEnvironment.RcvAndDispatchUpdates(c.ctx, r)
 }
 

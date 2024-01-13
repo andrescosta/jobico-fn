@@ -28,11 +28,11 @@ func New(fullpath string) (*Recorder, error) {
 	}, nil
 }
 
-func (s *Recorder) AddJobExecution(_ context.Context, r *pb.AddJobExecutionRequest) (*pb.AddJobExecutionReply, error) {
+func (s *Recorder) AddJobExecution(_ context.Context, r *pb.AddJobExecutionRequest) (*pb.Void, error) {
 	if err := s.recorder.AddExecution(r.Execution); err != nil {
 		return nil, err
 	}
-	return &pb.AddJobExecutionReply{}, nil
+	return &pb.Void{}, nil
 }
 
 func (s *Recorder) GetJobExecutions(ctx context.Context, g *pb.GetJobExecutionsRequest, r pb.Recorder_GetJobExecutionsServer) error {

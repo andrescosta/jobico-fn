@@ -2,8 +2,10 @@ syntax = "proto3";
 
 option go_package = "/types";
 
+import "common.proto";
+
 service Queue {
-	rpc Queue (QueueRequest) returns (QueueReply) {}
+	rpc Queue (QueueRequest) returns (Void) {}
   rpc Dequeue (DequeueRequest) returns (DequeueReply) {}
 }
 
@@ -12,9 +14,6 @@ message QueueRequest {
   string tenant=1;
   string queue = 2;
   repeated QueueItem items = 3;
-}
-
-message QueueReply {
 }
 
 message DequeueRequest {
