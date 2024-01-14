@@ -18,7 +18,7 @@ type Server struct {
 }
 
 func New(ctx context.Context, dbFileName string) (*Server, error) {
-	dbPath := env.ElemInWorkDir(dbFileName)
+	dbPath := env.WorkdirPlus(dbFileName)
 	db, err := database.Open(dbPath)
 	if err != nil {
 		return nil, err

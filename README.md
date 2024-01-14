@@ -499,7 +499,7 @@ The Prometheus console is reachable at: http://localhost:9090/, while the Jaeger
    - Use the following command to compile the greet.go example using TinyGo:
 
      ```bash
-     tinygo build -target wasi greet.go
+     tinygo build -scheduler=none --no-debug -target=wasi greet.go
      ```
 
    This command instructs TinyGo to build the Go program (`greet.go`) for the WebAssembly System Interface (WASI) target.

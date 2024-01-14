@@ -10,7 +10,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/wasm/wazero"
+	"github.com/andrescosta/goico/pkg/execs/wasm"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
@@ -34,7 +34,7 @@ type VM struct {
 }
 type module struct {
 	id         uint32
-	wasmModule *wazero.WasmModuleString
+	wasmModule *wasm.Module
 	tenant     string
 	event      string
 	vm         *VM
@@ -43,7 +43,7 @@ type jobPackage struct {
 	PackageID string
 	tenant    string
 	Executors []*Executor
-	Runtime   *wazero.WasmRuntime
+	Runtime   *wasm.Runtime
 	Modules   map[string]module
 	NextStep  map[string]*pb.ResultDef
 }
@@ -133,7 +133,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	jobPackage.PackageID = pkg.ID
 	modulesForEvents := make(map[string]module)
 	nextStepForEvents := make(map[string]*pb.ResultDef)
-	r, err := wazero.NewWasmRuntime(ctx, env.ElemInWorkDir(cacheDir))
+	r, err := wasm.NewRuntime(env.WorkdirPlus(cacheDir))
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 					vm:     e,
 				}
 				id = id + 1
-				wasmModule, err := wazero.NewWasmModuleString(ctx, jobPackage.Runtime, wasmfile, funcName, module.sendLogToRecorder)
+				wasmModule, err := wasm.NewModule(ctx, jobPackage.Runtime, wasmfile, funcName, module.sendLogToRecorder)
 				if err != nil {
 					return err
 				}
@@ -421,10 +421,12 @@ func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem,
 	return client.Dequeue(ctx, tenant, queue)
 }
 
-func executeWasm(ctx context.Context, module *wazero.WasmModuleString, id uint32, data []byte) (uint64, string, error) {
+func executeWasm(ctx context.Context, module *wasm.Module, id uint32, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
-	code, result, err := module.ExecuteMainFunc(ctx, id, string(data))
+	ctx, cancel := context.WithTimeout(ctx, *env.Duration("wasm.exec.timeout", 2*time.Minute))
+	defer cancel()
+	code, result, err := module.Execute(ctx, id, string(data))
 	if err != nil {
 		return 0, "", errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}
