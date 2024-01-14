@@ -96,5 +96,5 @@ func (f *FileBasedQueue[T]) writeData(data T) error {
 }
 
 func queueDirectory(directory string, id string) string {
-	return env.ElemInWorkDir(directory, id)
+	return env.WorkdirPlus(directory, id)
 }
