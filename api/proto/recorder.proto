@@ -3,10 +3,12 @@ syntax = "proto3";
 option go_package = "/types";
 
 import "google/protobuf/timestamp.proto";
+import "common.proto";
+
 
 service Recorder {
     rpc GetJobExecutions (GetJobExecutionsRequest) returns (stream GetJobExecutionsReply);
-    rpc AddJobExecution (AddJobExecutionRequest) returns (AddJobExecutionReply);
+    rpc AddJobExecution (AddJobExecutionRequest) returns (Void);
 }
 
 message GetJobExecutionsRequest{
@@ -20,9 +22,6 @@ message GetJobExecutionsReply{
 
 message AddJobExecutionRequest{
     JobExecution execution = 1;
-}
-
-message AddJobExecutionReply{
 }
 
 message JobExecution{

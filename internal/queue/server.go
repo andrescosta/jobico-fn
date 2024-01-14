@@ -22,7 +22,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.QueueReply, error) {
+func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.Void, error) {
 	return s.controller.Queue(ctx, in)
 }
 

@@ -8,7 +8,7 @@ service Repo {
   rpc GetFile (GetFileRequest) returns (GetFileReply);
   rpc AddFile (AddFileRequest) returns (AddFileReply);
   rpc UpdateToFileStr (UpdateToFileStrRequest) returns (stream UpdateToFileStrReply) {}
-  rpc GetAllFileNames (GetAllFileNamesRequest) returns (GetAllFileNamesReply);
+  rpc GetAllFileNames (Void) returns (GetAllFileNamesReply);
 }
 
 
@@ -20,9 +20,6 @@ message UpdateToFileStrRequest{
 message UpdateToFileStrReply{
     UpdateType type = 1;
     TenantFile object = 2;
-}
-
-message GetAllFileNamesRequest{
 }
 
 message GetAllFileNamesReply {

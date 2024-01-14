@@ -38,50 +38,50 @@ func (c *Server) Close() error {
 	return c.db.Close()
 }
 
-func (c *Server) GetPackages(ctx context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
-	return c.pkgCont.GetPackages(ctx, in)
+func (c *Server) GetPackages(_ context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
+	return c.pkgCont.GetPackages(in)
 }
 
-func (c *Server) GetAllPackages(ctx context.Context, in *pb.GetAllJobPackagesRequest) (*pb.GetAllJobPackagesReply, error) {
-	return c.pkgCont.GetAllPackages(ctx, in)
+func (c *Server) GetAllPackages(_ context.Context, _ *pb.Void) (*pb.GetAllJobPackagesReply, error) {
+	return c.pkgCont.GetAllPackages()
 }
 
 func (c *Server) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (*pb.AddJobPackageReply, error) {
 	return c.pkgCont.AddPackage(ctx, in)
 }
 
-func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.UpdateJobPackageReply, error) {
+func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.Void, error) {
 	return c.pkgCont.UpdatePackage(ctx, in)
 }
 
-func (c *Server) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.DeleteJobPackageReply, error) {
+func (c *Server) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.Void, error) {
 	return c.pkgCont.DeletePackage(ctx, in)
 }
 
-func (c *Server) GetTenants(ctx context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
-	return c.tenantCont.GetTenants(ctx, in)
+func (c *Server) GetTenants(_ context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
+	return c.tenantCont.GetTenants(in)
 }
 
-func (c *Server) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
-	return c.tenantCont.AddTenant(ctx, in)
+func (c *Server) AddTenant(_ context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
+	return c.tenantCont.AddTenant(in)
 }
 
-func (c *Server) AddEnvironment(ctx context.Context, in *pb.AddEnvironmentRequest) (*pb.AddEnvironmentReply, error) {
-	return c.envCont.AddEnvironment(ctx, in)
+func (c *Server) AddEnvironment(_ context.Context, in *pb.AddEnvironmentRequest) (*pb.AddEnvironmentReply, error) {
+	return c.envCont.AddEnvironment(in)
 }
 
-func (c *Server) UpdateEnvironment(ctx context.Context, in *pb.UpdateEnvironmentRequest) (*pb.UpdateEnvironmentReply, error) {
-	return c.envCont.UpdateEnvironment(ctx, in)
+func (c *Server) UpdateEnvironment(_ context.Context, in *pb.UpdateEnvironmentRequest) (*pb.Void, error) {
+	return c.envCont.UpdateEnvironment(in)
 }
 
-func (c *Server) GetEnvironment(ctx context.Context, in *pb.GetEnvironmentRequest) (*pb.GetEnvironmentReply, error) {
-	return c.envCont.GetEnvironment(ctx, in)
+func (c *Server) GetEnvironment(_ context.Context, _ *pb.Void) (*pb.GetEnvironmentReply, error) {
+	return c.envCont.GetEnvironment()
 }
 
 func (c *Server) UpdateToPackagesStr(req *pb.UpdateToPackagesStrRequest, ctl pb.Control_UpdateToPackagesStrServer) error {
 	return c.pkgCont.UpdateToPackagesStr(req, ctl)
 }
 
-func (c *Server) UpdateToEnvironmentStr(req *pb.UpdateToEnvironmentStrRequest, ctl pb.Control_UpdateToEnvironmentStrServer) error {
+func (c *Server) UpdateToEnvironmentStr(req *pb.Void, ctl pb.Control_UpdateToEnvironmentStrServer) error {
 	return c.envCont.UpdateToEnvironmentStr(req, ctl)
 }

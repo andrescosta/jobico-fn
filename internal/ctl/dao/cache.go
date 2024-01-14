@@ -1,8 +1,6 @@
 package dao
 
 import (
-	"context"
-
 	"github.com/andrescosta/goico/pkg/database"
 	"google.golang.org/protobuf/proto"
 )
@@ -19,11 +17,11 @@ func NewCache(db *database.Database) *Cache {
 	}
 }
 
-func (c *Cache) GetGeneric(ctx context.Context, entity string, message proto.Message) (*DAO[proto.Message], error) {
-	return c.GetForTenant(ctx, entity, entity, message)
+func (c *Cache) GetGeneric(entity string, message proto.Message) (*DAO[proto.Message], error) {
+	return c.GetForTenant(entity, entity, message)
 }
 
-func (c *Cache) GetForTenant(ctx context.Context, tenant string, entity string, message proto.Message) (*DAO[proto.Message], error) {
+func (c *Cache) GetForTenant(tenant string, entity string, message proto.Message) (*DAO[proto.Message], error) {
 	mydao, ok := c.daos[tenant]
 	if !ok {
 		var err error

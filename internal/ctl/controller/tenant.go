@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"context"
-
 	"github.com/andrescosta/goico/pkg/database"
 	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
 	pb "github.com/andrescosta/jobico/api/types"
@@ -27,9 +25,9 @@ func NewTenantController(db *database.Database) *TenantController {
 func (c *TenantController) Close() {
 }
 
-func (c *TenantController) GetTenants(ctx context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
+func (c *TenantController) GetTenants(in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
 	if in.ID != nil {
-		t, err := c.getTenant(ctx, *in.ID)
+		t, err := c.getTenant(*in.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -38,15 +36,15 @@ func (c *TenantController) GetTenants(ctx context.Context, in *pb.GetTenantsRequ
 		}
 		return &pb.GetTenantsReply{}, nil
 	}
-	ts, err := c.getTenants(ctx)
+	ts, err := c.getTenants()
 	if err != nil {
 		return nil, err
 	}
 	return &pb.GetTenantsReply{Tenants: ts}, nil
 }
 
-func (c *TenantController) AddTenant(ctx context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
-	mydao, err := c.daoCache.GetGeneric(ctx, tblTenant, &pb.Tenant{})
+func (c *TenantController) AddTenant(in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
+	mydao, err := c.daoCache.GetGeneric(tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -57,12 +55,12 @@ func (c *TenantController) AddTenant(ctx context.Context, in *pb.AddTenantReques
 	return &pb.AddTenantReply{Tenant: in.Tenant}, nil
 }
 
-func (c *TenantController) getTenants(ctx context.Context) ([]*pb.Tenant, error) {
-	mydao, err := c.daoCache.GetGeneric(ctx, tblTenant, &pb.Tenant{})
+func (c *TenantController) getTenants() ([]*pb.Tenant, error) {
+	mydao, err := c.daoCache.GetGeneric(tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
-	ms, err := mydao.All(ctx)
+	ms, err := mydao.All()
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +68,8 @@ func (c *TenantController) getTenants(ctx context.Context) ([]*pb.Tenant, error)
 	return tenants, nil
 }
 
-func (c *TenantController) getTenant(ctx context.Context, id string) (*pb.Tenant, error) {
-	mydao, err := c.daoCache.GetGeneric(ctx, tblTenant, &pb.Tenant{})
+func (c *TenantController) getTenant(id string) (*pb.Tenant, error) {
+	mydao, err := c.daoCache.GetGeneric(tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}

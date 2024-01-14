@@ -24,7 +24,7 @@ func New(ctx context.Context, fullpath string) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) AddJobExecution(_ context.Context, in *pb.AddJobExecutionRequest) (*pb.AddJobExecutionReply, error) {
+func (s *Server) AddJobExecution(_ context.Context, in *pb.AddJobExecutionRequest) (*pb.Void, error) {
 	return s.controller.AddJobExecution(s.ctx, in)
 }
 

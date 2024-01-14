@@ -48,7 +48,7 @@ func (s *Controller) GetFile(_ context.Context, r *pb.GetFileRequest) (*pb.GetFi
 	}, nil
 }
 
-func (s *Controller) GetAllFileNames(_ context.Context, _ *pb.GetAllFileNamesRequest) (*pb.GetAllFileNamesReply, error) {
+func (s *Controller) GetAllFileNames(_ context.Context, _ *pb.Void) (*pb.GetAllFileNamesReply, error) {
 	f, err := s.repo.Files()
 	if err != nil {
 		return nil, err

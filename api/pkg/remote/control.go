@@ -44,7 +44,7 @@ func (c *ControlClient) Close() {
 }
 
 func (c *ControlClient) GetEnvironment(ctx context.Context) (*pb.Environment, error) {
-	r, err := c.client.GetEnvironment(ctx, &pb.GetEnvironmentRequest{})
+	r, err := c.client.GetEnvironment(ctx, &pb.Void{})
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (c *ControlClient) getPackages(ctx context.Context, tenant string, id *stri
 }
 
 func (c *ControlClient) GetAllPackages(ctx context.Context) ([]*pb.JobPackage, error) {
-	r, err := c.client.GetAllPackages(ctx, &pb.GetAllJobPackagesRequest{})
+	r, err := c.client.GetAllPackages(ctx, &pb.Void{})
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (c *ControlClient) ListenerForEnvironmentUpdates(ctx context.Context) (*bro
 func (c *ControlClient) startListenEnvironmentUpdates(ctx context.Context) error {
 	cb := broadcaster.Start[*pb.UpdateToEnvironmentStrReply](ctx)
 	c.broadcasterEnvUpdates = cb
-	s, err := c.client.UpdateToEnvironmentStr(ctx, &pb.UpdateToEnvironmentStrRequest{})
+	s, err := c.client.UpdateToEnvironmentStr(ctx, &pb.Void{})
 	if err != nil {
 		return err
 	}

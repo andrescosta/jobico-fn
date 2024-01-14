@@ -14,6 +14,10 @@ message Host {
     uint32 port=2;
     ServerType type=3; 
 }
+
+message Void {
+}
+
   
 enum UpdateType {
   New = 0;

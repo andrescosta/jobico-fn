@@ -27,7 +27,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueueClient interface {
-	Queue(ctx context.Context, in *QueueRequest, opts ...grpc.CallOption) (*QueueReply, error)
+	Queue(ctx context.Context, in *QueueRequest, opts ...grpc.CallOption) (*Void, error)
 	Dequeue(ctx context.Context, in *DequeueRequest, opts ...grpc.CallOption) (*DequeueReply, error)
 }
 
@@ -39,8 +39,8 @@ func NewQueueClient(cc grpc.ClientConnInterface) QueueClient {
 	return &queueClient{cc}
 }
 
-func (c *queueClient) Queue(ctx context.Context, in *QueueRequest, opts ...grpc.CallOption) (*QueueReply, error) {
-	out := new(QueueReply)
+func (c *queueClient) Queue(ctx context.Context, in *QueueRequest, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
 	err := c.cc.Invoke(ctx, Queue_Queue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (c *queueClient) Dequeue(ctx context.Context, in *DequeueRequest, opts ...g
 // All implementations must embed UnimplementedQueueServer
 // for forward compatibility
 type QueueServer interface {
-	Queue(context.Context, *QueueRequest) (*QueueReply, error)
+	Queue(context.Context, *QueueRequest) (*Void, error)
 	Dequeue(context.Context, *DequeueRequest) (*DequeueReply, error)
 	mustEmbedUnimplementedQueueServer()
 }
@@ -70,7 +70,7 @@ type QueueServer interface {
 type UnimplementedQueueServer struct {
 }
 
-func (UnimplementedQueueServer) Queue(context.Context, *QueueRequest) (*QueueReply, error) {
+func (UnimplementedQueueServer) Queue(context.Context, *QueueRequest) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Queue not implemented")
 }
 func (UnimplementedQueueServer) Dequeue(context.Context, *DequeueRequest) (*DequeueReply, error) {
