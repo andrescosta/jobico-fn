@@ -424,6 +424,8 @@ func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem,
 func executeWasm(ctx context.Context, module *wazero.WasmModuleString, id uint32, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
+	ctx, cancel := context.WithTimeout(ctx, *env.Duration("wasm.exec.timeout", 2*time.Minute))
+	defer cancel()
 	code, result, err := module.ExecuteMainFunc(ctx, id, string(data))
 	if err != nil {
 		return 0, "", errors.Join(err, fmt.Errorf("error in module %s", mod))
