@@ -65,17 +65,28 @@ func NewExecutorMachine(ctx context.Context) (*VM, error) {
 	return e, nil
 }
 
-func (e *VM) StartExecutors(ctx context.Context) error {
+func (e *VM) StartExecutors(ctx context.Context) (err error) {
 	logger := zerolog.Ctx(ctx)
 	defer func() {
+		errs := make([]error, 0)
 		e.packages.Range(func(key, value any) bool {
 			pkg, _ := value.(*jobPackage)
 			for _, m := range pkg.Modules {
-				m.wasmModule.Close(ctx)
+				if errr := m.wasmModule.Close(ctx); errr != nil {
+					errs = append(errs, errr)
+				}
 			}
-			pkg.Runtime.Close(ctx)
+			if errr := pkg.Runtime.Close(ctx); errr != nil {
+				errs = append(errs, errr)
+			}
 			return true
 		})
+		if err != nil {
+			errs = append(errs, err)
+		}
+		if len(errs) > 0 {
+			err = errors.Join(errs...)
+		}
 	}()
 	var w sync.WaitGroup
 	e.w = &w
@@ -84,8 +95,8 @@ func (e *VM) StartExecutors(ctx context.Context) error {
 		e.startPackage(ctx, pkg)
 		return true
 	})
-	if err := e.startListeningUpdates(ctx); err != nil {
-		logger.Warn().AnErr("error", err).Msg("updates are not being listened because an error")
+	if errr := e.startListeningUpdates(ctx); errr != nil {
+		err = errr
 	}
 	logger.Info().Msg("Workers started")
 	w.Wait()
