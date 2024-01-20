@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/brianvoe/gofakeit/v6 v6.27.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect

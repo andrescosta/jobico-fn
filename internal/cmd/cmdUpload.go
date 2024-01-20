@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 )
@@ -26,7 +27,7 @@ func initUpload() {
 	cmdUpload.flag.Usage = func() {}
 }
 
-func runUpload(ctx context.Context, cmd *command, args []string) {
+func runUpload(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {
 	if len(args) < 4 {
 		printHelp(os.Stdout, cmd)
 		return
@@ -40,7 +41,7 @@ func runUpload(ctx context.Context, cmd *command, args []string) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	client, err := remote.NewRepoClient(ctx)
+	client, err := remote.NewRepoClient(ctx, d)
 	if err != nil {
 		return
 	}

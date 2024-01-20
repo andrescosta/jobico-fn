@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"os"
+
+	"github.com/andrescosta/goico/pkg/service"
 )
 
 func initCliCommand() *command {
@@ -32,7 +34,7 @@ var cliCommand = &command{
 	long:      "Cli is the command line admin tool.",
 }
 
-func runCli(ctx context.Context, _ *command, _ []string) {
+func runCli(ctx context.Context, _ *command, d service.GrpcDialer, _ []string) {
 	if len(os.Args) < 2 {
 		printUsage(os.Stdout, cliCommand)
 		return
@@ -45,7 +47,7 @@ func runCli(ctx context.Context, _ *command, _ []string) {
 				printHelp(os.Stdout, c)
 				return
 			}
-			c.run(ctx, c, c.flag.Args())
+			c.run(ctx, c, d, c.flag.Args())
 		}
 	}
 	if !cmdFound {

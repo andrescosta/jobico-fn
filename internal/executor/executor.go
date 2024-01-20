@@ -11,6 +11,7 @@ import (
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/execs/wasm"
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
@@ -31,6 +32,7 @@ type VM struct {
 	packages sync.Map
 	w        *sync.WaitGroup
 	recorder *remote.RecorderClient
+	d        service.GrpcDialer
 }
 type module struct {
 	id         uint32
@@ -48,14 +50,15 @@ type jobPackage struct {
 	NextStep  map[string]*pb.ResultDef
 }
 
-func NewExecutorMachine(ctx context.Context) (*VM, error) {
-	r, err := remote.NewRecorderClient(ctx)
+func NewExecutorMachine(ctx context.Context, d service.GrpcDialer) (*VM, error) {
+	r, err := remote.NewRecorderClient(ctx, d)
 	if err != nil {
 		return nil, err
 	}
 	e := &VM{
 		packages: sync.Map{},
 		recorder: r,
+		d:        d,
 	}
 
 	if err := e.loadJobs(ctx); err != nil {
@@ -114,7 +117,7 @@ func (e *VM) startPackage(ctx context.Context, pkg *jobPackage) {
 }
 
 func (e *VM) loadJobs(ctx context.Context) error {
-	c, err := remote.NewControlClient(ctx)
+	c, err := remote.NewControlClient(ctx, e.d)
 	if err != nil {
 		return err
 	}
@@ -154,7 +157,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 		executors = append(executors, &Executor{queue: q.ID})
 	}
 	jobPackage.Executors = executors
-	repoClient, err := remote.NewRepoClient(ctx)
+	repoClient, err := remote.NewRepoClient(ctx, e.d)
 	if err != nil {
 		return err
 	}
@@ -238,7 +241,7 @@ func getModuleName(supplierQueue string, eventID string) string {
 
 func (e *VM) startListeningUpdates(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
-	controlClient, err := remote.NewControlClient(ctx)
+	controlClient, err := remote.NewControlClient(ctx, e.d)
 	if err != nil {
 		return err
 	}
@@ -323,7 +326,7 @@ func (e *VM) execute(ctx context.Context, tenant string, queue string, modules m
 			logger.Debug().Msgf("Worker for Tenant: %s and queue: %s stopped", tenant, queue)
 			return
 		case <-ticker.C:
-			items, err := dequeue(ctx, tenant, queue)
+			items, err := e.dequeue(ctx, tenant, queue)
 			if err != nil {
 				queueErrors++
 				logger.Err(err).Msg("error dequeuing")
@@ -348,7 +351,7 @@ func (e *VM) execute(ctx context.Context, tenant string, queue string, modules m
 					logger.Err(err).Msg("error reporting to recorder")
 				}
 				if nextSteps, ok := nextSteps[item.Event]; ok {
-					if err := makeDecisions(ctx, item.Event, tenant, code, result, nextSteps); err != nil {
+					if err := e.makeDecisions(ctx, item.Event, tenant, code, result, nextSteps); err != nil {
 						logger.Err(err).Msg("error enqueuing the result")
 					}
 				}
@@ -357,7 +360,7 @@ func (e *VM) execute(ctx context.Context, tenant string, queue string, modules m
 	}
 }
 
-func makeDecisions(ctx context.Context, _ string, tenant string, code uint64, _ string, resultDef *pb.ResultDef) error {
+func (e *VM) makeDecisions(ctx context.Context, _ string, tenant string, code uint64, _ string, resultDef *pb.ResultDef) error {
 	r := pb.JobResult{
 		Code: code,
 	}
@@ -389,7 +392,7 @@ func makeDecisions(ctx context.Context, _ string, tenant string, code uint64, _ 
 			},
 		}
 	}
-	client, err := remote.NewQueueClient(ctx)
+	client, err := remote.NewQueueClient(ctx, e.d)
 	if err != nil {
 		return err
 	}
@@ -424,8 +427,8 @@ func (e *VM) reportResultToRecorder(ctx context.Context, queue string, eventID s
 	return e.recorder.AddJobExecution(ctx, ex)
 }
 
-func dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
-	client, err := remote.NewQueueClient(ctx)
+func (e *VM) dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
+	client, err := remote.NewQueueClient(ctx, e.d)
 	if err != nil {
 		return nil, err
 	}

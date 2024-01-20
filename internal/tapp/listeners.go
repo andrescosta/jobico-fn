@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	"github.com/andrescosta/goico/pkg/service/grpc/svcmeta"
 
@@ -43,12 +44,12 @@ func onFocusServerNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 			infoClient, ok := c.infoClients[addr]
 			if !ok {
 				var err error
-				infoClient, err = svcmeta.NewInfoClient(ctx, addr)
+				infoClient, err = svcmeta.NewInfoClient(ctx, addr, service.DefaultGrpcDialer)
 				if err != nil {
 					return nil, errors.Join(errors.New(`"Server Info" service down`), err)
 				}
 				c.infoClients[addr] = infoClient
-				helthCheckClient, err = grpc.NewHelthCheckClient(ctx, addr)
+				helthCheckClient, err = grpc.NewHelthCheckClient(ctx, addr, service.DefaultGrpcDialer)
 				if err != nil {
 					return nil, errors.Join(errors.New(`"Healcheck" service down`), err)
 				}

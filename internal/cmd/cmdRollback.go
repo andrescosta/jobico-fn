@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/andrescosta/goico/pkg/ioutil"
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/yamlutil"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
@@ -26,7 +27,7 @@ func initRollback() {
 	cmdRollback.flag.Usage = func() {}
 }
 
-func runRollback(ctx context.Context, cmd *command, args []string) {
+func runRollback(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {
 	if len(args) < 1 {
 		printHelp(os.Stdout, cmd)
 		return
@@ -46,7 +47,7 @@ func runRollback(ctx context.Context, cmd *command, args []string) {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	client, err := remote.NewControlClient(ctx)
+	client, err := remote.NewControlClient(ctx, d)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return

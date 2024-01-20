@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/andrescosta/goico/pkg/service"
 )
 
 var cmdHelp = &command{
@@ -20,7 +22,7 @@ func initHelp() {
 	cmdHelp.flag.Usage = func() {}
 }
 
-func runHelp(_ context.Context, _ *command, args []string) {
+func runHelp(_ context.Context, _ *command, _ service.GrpcDialer, args []string) {
 	if len(args) < 1 || args[0] == "help" {
 		printUsage(os.Stdout, cliCommand)
 		return

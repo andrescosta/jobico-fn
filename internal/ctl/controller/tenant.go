@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/andrescosta/goico/pkg/database"
-	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
+	"github.com/andrescosta/goico/pkg/service/grpc/protoutil"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/dao"
 	"google.golang.org/protobuf/proto"
@@ -64,7 +64,7 @@ func (c *TenantController) getTenants() ([]*pb.Tenant, error) {
 	if err != nil {
 		return nil, err
 	}
-	tenants := grpcutil.Slices[*pb.Tenant](ms)
+	tenants := protoutil.Slices[*pb.Tenant](ms)
 	return tenants, nil
 }
 

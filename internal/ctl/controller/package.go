@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/database"
-	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
+	"github.com/andrescosta/goico/pkg/service/grpc/protoutil"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/dao"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
@@ -68,7 +68,7 @@ func (c *PackageController) GetAllPackages() (*pb.GetAllJobPackagesReply, error)
 		if err != nil {
 			return nil, err
 		}
-		ps := grpcutil.Slices[*pb.JobPackage](ms)
+		ps := protoutil.Slices[*pb.JobPackage](ms)
 		packages = append(packages, ps...)
 	}
 	return &pb.GetAllJobPackagesReply{Packages: packages}, nil
@@ -127,7 +127,7 @@ func (c *PackageController) getPackages(tenant string) ([]*pb.JobPackage, error)
 	if err != nil {
 		return nil, err
 	}
-	packages := grpcutil.Slices[*pb.JobPackage](ms)
+	packages := protoutil.Slices[*pb.JobPackage](ms)
 	return packages, nil
 }
 

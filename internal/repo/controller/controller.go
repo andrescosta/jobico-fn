@@ -9,22 +9,37 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+type Option struct {
+	InMemory bool
+}
+
 type Controller struct {
-	repo        *provider.FileRepo
+	repo        Repository
 	bJobPackage *grpchelper.GrpcBroadcaster[*pb.UpdateToFileStrReply, proto.Message]
 	ctx         context.Context
 }
 
-func New(ctx context.Context, dir string) *Controller {
+type Repository interface {
+	Add(tenant string, name string, fileType int32, bytes []byte) error
+	File(tenant string, name string) ([]byte, error)
+	GetMetadataForFile(tenant string, name string) (*provider.Metadata, error)
+	Files() ([]*pb.TenantFiles, error)
+}
+
+func New(ctx context.Context, dir string, o Option) *Controller {
+	r := provider.NewMemRepo()
+	if !o.InMemory {
+		provider.NewFileRepo(dir)
+	}
 	return &Controller{
 		ctx:         ctx,
-		repo:        provider.New(dir),
 		bJobPackage: grpchelper.StartBroadcaster[*pb.UpdateToFileStrReply, proto.Message](ctx),
+		repo:        r,
 	}
 }
 
 func (s *Controller) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.AddFileReply, error) {
-	if err := s.repo.AddFile(r.TenantFile.Tenant, r.TenantFile.File.Name, int32(r.TenantFile.File.Type), r.TenantFile.File.Content); err != nil {
+	if err := s.repo.Add(r.TenantFile.Tenant, r.TenantFile.File.Name, int32(r.TenantFile.File.Type), r.TenantFile.File.Content); err != nil {
 		return nil, err
 	}
 	s.bJobPackage.Broadcast(ctx, &pb.TenantFile{Tenant: r.TenantFile.Tenant, File: &pb.File{Name: r.TenantFile.File.Name, Content: r.TenantFile.File.Content}}, pb.UpdateType_New)

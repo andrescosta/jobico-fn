@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
@@ -15,28 +16,30 @@ import (
 type EventDefCache struct {
 	defs       *sync.Map
 	repoClient *remote.RepoClient
+	d          service.GrpcDialer
 }
 type EventEntry struct {
 	EventDef *pb.EventDef
 	Schema   *jsonschema.Schema
 }
 
-func NewEventDefCache(ctx context.Context) (*EventDefCache, error) {
-	repoClient, err := remote.NewRepoClient(ctx)
+func NewCachePopulated(ctx context.Context, d service.GrpcDialer) (*EventDefCache, error) {
+	repoClient, err := remote.NewRepoClient(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	store := EventDefCache{
+	cache := EventDefCache{
 		defs:       &sync.Map{},
 		repoClient: repoClient,
+		d:          d,
 	}
-	if err := store.fill(ctx); err != nil {
+	if err := cache.populate(ctx); err != nil {
 		return nil, err
 	}
-	if err := store.startListeningUpdates(ctx); err != nil {
+	if err := cache.startListeningUpdates(ctx, d); err != nil {
 		return nil, err
 	}
-	return &store, nil
+	return &cache, nil
 }
 
 func (j *EventDefCache) Get(tenant string, eventID string) (*EventEntry, error) {
@@ -51,8 +54,8 @@ func (j *EventDefCache) Get(tenant string, eventID string) (*EventEntry, error) 
 	return res, nil
 }
 
-func (j *EventDefCache) startListeningUpdates(ctx context.Context) error {
-	controlClient, err := remote.NewControlClient(ctx)
+func (j *EventDefCache) startListeningUpdates(ctx context.Context, d service.GrpcDialer) error {
+	controlClient, err := remote.NewControlClient(ctx, d)
 	if err != nil {
 		return err
 	}
@@ -88,8 +91,8 @@ func (j *EventDefCache) deleteEventsOfPackage(p *pb.JobPackage) {
 	}
 }
 
-func (j *EventDefCache) fill(ctx context.Context) error {
-	controlClient, err := remote.NewControlClient(ctx)
+func (j *EventDefCache) populate(ctx context.Context) error {
+	controlClient, err := remote.NewControlClient(ctx, j.d)
 	if err != nil {
 		return err
 	}

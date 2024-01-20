@@ -6,7 +6,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
+	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	rpc "google.golang.org/grpc"
@@ -22,12 +22,12 @@ type ControlClient struct {
 
 var ErrCtlHostAddr = errors.New("the control service address was not specified in the env file using ctl.host")
 
-func NewControlClient(ctx context.Context) (*ControlClient, error) {
+func NewControlClient(ctx context.Context, d service.GrpcDialer) (*ControlClient, error) {
 	host := env.StringOrNil("ctl.host")
 	if host == nil {
 		return nil, ErrCtlHostAddr
 	}
-	conn, err := grpcutil.Dial(ctx, *host)
+	conn, err := d.Dial(ctx, *host)
 	if err != nil {
 		return nil, err
 	}

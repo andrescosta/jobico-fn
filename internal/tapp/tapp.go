@@ -2,11 +2,13 @@ package tapp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/andrescosta/goico/pkg/collection"
 	"github.com/andrescosta/goico/pkg/env"
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	"github.com/andrescosta/goico/pkg/service/grpc/svcmeta"
 	"github.com/andrescosta/jobico/api/pkg/remote"
@@ -44,22 +46,26 @@ type TApp struct {
 	cancelJobResultsGetter  context.CancelFunc
 	cancelStreamUpdatesFunc context.CancelFunc
 	sync                    bool
+	d                       service.GrpcDialer
 }
 
-func New(ctx context.Context, name string, sync bool) (*TApp, error) {
-	err := env.Load(name)
+func New(ctx context.Context, d service.GrpcDialer, name string, sync bool) (*TApp, error) {
+	loaded, err := env.Load(name)
 	if err != nil {
 		return nil, err
 	}
-	controlClient, err := remote.NewControlClient(ctx)
+	if !loaded {
+		return nil, errors.New(".env files were not loaded")
+	}
+	controlClient, err := remote.NewControlClient(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	repoClient, err := remote.NewRepoClient(ctx)
+	repoClient, err := remote.NewRepoClient(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	recorderClient, err := remote.NewRecorderClient(ctx)
+	recorderClient, err := remote.NewRecorderClient(ctx, d)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +83,7 @@ func New(ctx context.Context, name string, sync bool) (*TApp, error) {
 		helthCheckClients: make(map[string]*grpc.HelthCheckClient),
 		app:               app,
 		sync:              sync,
+		d:                 d,
 	}, nil
 }
 

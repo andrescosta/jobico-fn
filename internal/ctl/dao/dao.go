@@ -9,15 +9,11 @@ type DAO[T proto.Message] struct {
 	table *database.Table[T]
 }
 
-func NewDAO[T proto.Message](db *database.Database, tableName string, m database.Marshaler[T]) (*DAO[T], error) {
-	table, err := database.CreateTableIfNotExist(db, tableName, m)
-	if err != nil {
-		return nil, err
+func NewDAO[T proto.Message](db *database.Database, tableName string, tenant string, m database.Marshaler[T]) *DAO[T] {
+	t := database.NewTable(db, tableName, tenant, m)
+	return &DAO[T]{
+		table: t,
 	}
-	res := DAO[T]{
-		table: table,
-	}
-	return &res, nil
 }
 
 func (q *DAO[T]) All() ([]T, error) {

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
+	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
 	rpc "google.golang.org/grpc"
 )
@@ -15,9 +15,9 @@ type QueueClient struct {
 	client     pb.QueueClient
 }
 
-func NewQueueClient(ctx context.Context) (*QueueClient, error) {
+func NewQueueClient(ctx context.Context, d service.GrpcDialer) (*QueueClient, error) {
 	host := env.String("queue.host")
-	conn, err := grpcutil.Dial(ctx, host)
+	conn, err := d.Dial(ctx, host)
 	if err != nil {
 		return nil, err
 	}

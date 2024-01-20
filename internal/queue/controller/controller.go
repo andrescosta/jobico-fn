@@ -3,15 +3,16 @@ package controller
 import (
 	"context"
 
+	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
 )
 
 type Controller struct {
-	store *QueueCache[*pb.QueueItem]
+	store *Cache[*pb.QueueItem]
 }
 
-func New(ctx context.Context) (*Controller, error) {
-	s, err := NewQueueCache[*pb.QueueItem](ctx)
+func New(ctx context.Context, d service.GrpcDialer, o Option) (*Controller, error) {
+	s, err := NewQueueCache[*pb.QueueItem](ctx, d, o)
 	if err != nil {
 		return nil, err
 	}

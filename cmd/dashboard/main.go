@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/jobico/internal/tapp"
 )
 
@@ -15,7 +16,7 @@ func main() {
 
 	flag.Parse()
 
-	tapp, err := tapp.New(context.Background(), "dashboard", *syncUpdatesFlag)
+	tapp, err := tapp.New(context.Background(), service.DefaultGrpcDialer, "dashboard", *syncUpdatesFlag)
 	if err != nil {
 		log.Panic(err)
 	}

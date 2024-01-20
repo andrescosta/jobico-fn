@@ -1,8 +1,12 @@
 package cmd
 
-import "context"
+import (
+	"context"
+
+	"github.com/andrescosta/goico/pkg/service"
+)
 
 func RunCli(ctx context.Context, args []string) {
 	initCliCommand().
-		run(ctx, nil, args)
+		run(ctx, nil, service.DefaultGrpcDialer, args)
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/andrescosta/goico/pkg/ioutil"
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/yamlutil"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
@@ -28,7 +29,7 @@ func initEnv() {
 	cmdEnv.flag.Usage = func() {}
 }
 
-func runEnv(ctx context.Context, cmd *command, args []string) {
+func runEnv(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {
 	if len(args) < 1 {
 		printHelp(os.Stdout, cmd)
 		return
@@ -43,7 +44,7 @@ func runEnv(ctx context.Context, cmd *command, args []string) {
 		fmt.Printf("file %s does not exist.", file)
 		return
 	}
-	client, err := remote.NewControlClient(ctx)
+	client, err := remote.NewControlClient(ctx, d)
 	if err != nil {
 		printError(os.Stdout, cmd, err)
 		return

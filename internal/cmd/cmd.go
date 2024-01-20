@@ -4,9 +4,11 @@ import (
 	"context"
 	"flag"
 	"strings"
+
+	"github.com/andrescosta/goico/pkg/service"
 )
 
-type runProc func(ctx context.Context, cmd *command, args []string)
+type runProc func(context.Context, *command, service.GrpcDialer, []string)
 
 type command struct {
 	run       runProc

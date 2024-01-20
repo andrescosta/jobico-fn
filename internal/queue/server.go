@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 
+	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/internal/queue/controller"
 )
@@ -12,8 +13,8 @@ type Server struct {
 	controller *controller.Controller
 }
 
-func NewServer(ctx context.Context) (*Server, error) {
-	c, err := controller.New(ctx)
+func NewServer(ctx context.Context, d service.GrpcDialer, o controller.Option) (*Server, error) {
+	c, err := controller.New(ctx, d, o)
 	if err != nil {
 		return nil, err
 	}

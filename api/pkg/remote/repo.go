@@ -6,7 +6,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
+	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	rpc "google.golang.org/grpc"
@@ -19,9 +19,9 @@ type RepoClient struct {
 	broadcasterRepoUpdates *broadcaster.Broadcaster[*pb.UpdateToFileStrReply]
 }
 
-func NewRepoClient(ctx context.Context) (*RepoClient, error) {
+func NewRepoClient(ctx context.Context, d service.GrpcDialer) (*RepoClient, error) {
 	addr := env.String("repo.host")
-	conn, err := grpcutil.Dial(ctx, addr)
+	conn, err := d.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}

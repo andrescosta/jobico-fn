@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 )
 
@@ -28,7 +29,7 @@ func initRecorder() {
 	cmdRecorder.run = runRecorder
 }
 
-func runRecorder(ctx context.Context, cmd *command, _ []string) {
+func runRecorder(ctx context.Context, cmd *command, d service.GrpcDialer, _ []string) {
 	ch := make(chan string)
 	go func(mc <-chan string) {
 		for {
@@ -41,7 +42,7 @@ func runRecorder(ctx context.Context, cmd *command, _ []string) {
 		}
 	}(ch)
 	fmt.Printf("getting results at proc: %d \n", os.Getpid())
-	client, err := remote.NewRecorderClient(ctx)
+	client, err := remote.NewRecorderClient(ctx, d)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return

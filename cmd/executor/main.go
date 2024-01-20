@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/process"
 	"github.com/andrescosta/jobico/internal/executor"
 )
@@ -14,7 +15,7 @@ func main() {
 		process.WithName("executor"),
 		process.WithEnableSidecar(true),
 		process.WithServeHandler(func(ctx context.Context) error {
-			m, err := executor.NewExecutorMachine(ctx)
+			m, err := executor.NewExecutorMachine(ctx, service.DefaultGrpcDialer)
 			if err != nil {
 				return err
 			}

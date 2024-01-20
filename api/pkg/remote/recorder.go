@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
+	"github.com/andrescosta/goico/pkg/service"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
 	rpc "google.golang.org/grpc"
@@ -18,9 +18,9 @@ type RecorderClient struct {
 	client     pb.RecorderClient
 }
 
-func NewRecorderClient(ctx context.Context) (*RecorderClient, error) {
+func NewRecorderClient(ctx context.Context, d service.GrpcDialer) (*RecorderClient, error) {
 	addr := env.String("recorder.host")
-	conn, err := grpcutil.Dial(ctx, addr)
+	conn, err := d.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}

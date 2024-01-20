@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/yamlutil"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 )
@@ -26,26 +27,26 @@ func initShow() {
 	cmdShow.flag.Usage = func() {}
 }
 
-func runShow(ctx context.Context, cmd *command, args []string) {
+func runShow(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {
 	switch args[0] {
 	case "deploy":
-		showDeploy(ctx, args, cmd)
+		showDeploy(ctx, cmd, d, args)
 	case "env":
-		showEnv(ctx, args, cmd)
+		showEnv(ctx, cmd, d)
 	default:
 		printHelp(os.Stdout, cmd)
 		return
 	}
 }
 
-func showDeploy(ctx context.Context, args []string, cmd *command) {
+func showDeploy(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {
 	if len(args) < 3 {
 		printHelp(os.Stdout, cmd)
 		return
 	}
 	tenant := args[1]
 	id := args[2]
-	client, err := remote.NewControlClient(ctx)
+	client, err := remote.NewControlClient(ctx, d)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
@@ -67,8 +68,8 @@ func showDeploy(ctx context.Context, args []string, cmd *command) {
 	fmt.Println(*s)
 }
 
-func showEnv(ctx context.Context, _ []string, cmd *command) {
-	client, err := remote.NewControlClient(ctx)
+func showEnv(ctx context.Context, cmd *command, d service.GrpcDialer) {
+	client, err := remote.NewControlClient(ctx, d)
 	if err != nil {
 		return
 	}
