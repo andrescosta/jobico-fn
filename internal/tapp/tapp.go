@@ -50,7 +50,7 @@ type TApp struct {
 }
 
 func New(ctx context.Context, d service.GrpcDialer, name string, sync bool) (*TApp, error) {
-	loaded, err := env.Load(name)
+	loaded, _, err := env.Load(name)
 	if err != nil {
 		return nil, err
 	}

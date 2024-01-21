@@ -4,34 +4,43 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/service/grpc/cache"
 	"github.com/andrescosta/jobico/api/pkg/remote"
 	pb "github.com/andrescosta/jobico/api/types"
 	"github.com/rs/zerolog"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
+var ErrEventUnknown = fmt.Errorf("event unknown")
+
 type EventDefCache struct {
-	defs       *sync.Map
-	repoClient *remote.RepoClient
-	d          service.GrpcDialer
+	backCache    *cache.Cache[string, *EventEntry]
+	serviceCache *cache.Service
+	repoClient   *remote.RepoClient
+	d            service.GrpcDialer
 }
 type EventEntry struct {
 	EventDef *pb.EventDef
 	Schema   *jsonschema.Schema
 }
 
-func NewCachePopulated(ctx context.Context, d service.GrpcDialer) (*EventDefCache, error) {
+func NewCachePopulated(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (*EventDefCache, error) {
 	repoClient, err := remote.NewRepoClient(ctx, d)
 	if err != nil {
 		return nil, err
 	}
+	b := cache.New[string, *EventEntry](ctx, "listener")
+	svc, err := cache.NewService[string, *EventEntry](ctx, l, b)
+	if err != nil {
+		return nil, err
+	}
 	cache := EventDefCache{
-		defs:       &sync.Map{},
-		repoClient: repoClient,
-		d:          d,
+		backCache:    b,
+		repoClient:   repoClient,
+		d:            d,
+		serviceCache: svc,
 	}
 	if err := cache.populate(ctx); err != nil {
 		return nil, err
@@ -39,19 +48,21 @@ func NewCachePopulated(ctx context.Context, d service.GrpcDialer) (*EventDefCach
 	if err := cache.startListeningUpdates(ctx, d); err != nil {
 		return nil, err
 	}
+	go func() {
+		logger := zerolog.Ctx(ctx)
+		if err := cache.serviceCache.Serve(); err != nil {
+			logger.Warn().Msgf("Error stopping cache: %v", err)
+		}
+	}()
 	return &cache, nil
 }
 
 func (j *EventDefCache) Get(tenant string, eventID string) (*EventEntry, error) {
-	ev, ok := j.defs.Load(getEventName(tenant, eventID))
+	ev, ok := j.backCache.Get(getEventName(tenant, eventID))
 	if !ok {
 		return nil, ErrEventUnknown
 	}
-	res, ok := ev.(*EventEntry)
-	if !ok {
-		return nil, ErrEventUnknown
-	}
-	return res, nil
+	return ev, nil
 }
 
 func (j *EventDefCache) startListeningUpdates(ctx context.Context, d service.GrpcDialer) error {
@@ -79,15 +90,18 @@ func (j *EventDefCache) startListeningUpdates(ctx context.Context, d service.Grp
 func (j *EventDefCache) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrReply) {
 	switch u.Type {
 	case pb.UpdateType_Delete:
-		j.deleteEventsOfPackage(u.Object)
+		j.deleteEventsOfPackage(ctx, u.Object)
 	case pb.UpdateType_New, pb.UpdateType_Update:
 		j.addOrUpdateEventsForPackages(ctx, []*pb.JobPackage{u.Object})
 	}
 }
 
-func (j *EventDefCache) deleteEventsOfPackage(p *pb.JobPackage) {
+func (j *EventDefCache) deleteEventsOfPackage(ctx context.Context, p *pb.JobPackage) {
+	logger := zerolog.Ctx(ctx)
 	for _, d := range p.Jobs {
-		j.defs.Delete(getEventName(p.Tenant, d.Event.ID))
+		if err := j.backCache.Delete(getEventName(p.Tenant, d.Event.ID)); err != nil {
+			logger.Warn().Msgf("cache broken, error: %v", err)
+		}
 	}
 }
 
@@ -117,6 +131,7 @@ func (j *EventDefCache) addOrUpdateEventsForPackages(ctx context.Context, pkgs [
 }
 
 func (j *EventDefCache) addOrUpdateEvent(ctx context.Context, tenant string, job *pb.JobDef) error {
+	logger := zerolog.Ctx(ctx)
 	event := job.Event
 	f, err := j.repoClient.GetFile(ctx, tenant, event.Schema.SchemaRef)
 	if err != nil {
@@ -135,21 +150,11 @@ func (j *EventDefCache) addOrUpdateEvent(ctx context.Context, tenant string, job
 		EventDef: event,
 		Schema:   compiledSchema,
 	}
-	if j.existEvent(eventName) {
-		j.defs.Swap(eventName, ev)
-	} else {
-		j.defs.Store(
-			eventName,
-			ev)
+
+	if err := j.backCache.AddOrUpdate(eventName, ev); err != nil {
+		logger.Warn().Msgf("cache broken, error: %v", err)
 	}
 	return nil
-}
-
-var ErrEventUnknown = fmt.Errorf("event unknown")
-
-func (j *EventDefCache) existEvent(eventName string) bool {
-	_, ok := j.defs.Load(eventName)
-	return ok
 }
 
 func getEventName(tenant string, eventID string) string {

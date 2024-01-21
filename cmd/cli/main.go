@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	loaded, err := env.Load("cli")
+	loaded, _, err := env.Load("cli")
 	if err != nil {
 		log.Fatalf("Error initializing %v\n", err)
 	}

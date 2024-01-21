@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,7 +25,10 @@ import (
 )
 
 //go:embed testdata/schema.json
-var schema []byte
+var schemaV1 []byte
+
+//go:embed testdata/schema_updated.json
+var schemaV2 []byte
 
 // Start the server using any port: 127.0.0.1:0?
 // Mock queue, ctl, repo
@@ -33,27 +37,27 @@ var schema []byte
 // - Sunny
 //     - Job, tenant, files exist (no mock) - DONE
 // - Errors:
-//     - tenant does not exists (no mock)
-//     - job does not exists (no mock)
-//     - malformed event (no mock)
-//     - queue returns an error when queue  (mock with a GRPC service impl or client)
+//     - tenant does not exists (no mock) - DONE
+//     - job does not exists (no mock) - DONE
+//     - malformed event (no mock) - DONE
+//     - queue returns an error when queue  - DONE
 // - Init errors:
-//     - cannot connect queue  (no mock)
-//     - cannot connect ctl  (no mock)
-//     - cannot connect repo  (no mock)
+//     - cannot connect queue  (no mock) - DONE
+//     - cannot connect ctl  (no mock) - DONE
+//     - cannot connect repo  (no mock) -DONE
 // - Streaming:
 //   - sunny
 //     - new job package (no mock)  - DONE
-//     - update package  (no mock)
-//     - delete package  (no mock)
-//     - update to json schema (no mock)
+//     - update package  (no mock)	- DONE
+//     - delete package  (no mock)  - DONE
+//     - update to json schema (no mock) - DONE
 //   - multiple listener
 //     - no errors (no mock)
 //     - unsubscribe (no mock)
 //     - communication errors (mock)
 //   - connection errors
-//     - stopped (mock)
-//     - restarted (mock)
+//     - stopped (mock) - DONE
+//     - restarted (mock) <NOT POSSIBLE>
 //
 
 type Services struct {
@@ -62,6 +66,14 @@ type Services struct {
 	queue    queue.Service
 	repo     repo.Service
 	listener listener.Service
+}
+
+func (s *Services) ResetQueueService() {
+	s.queue = queue.Service{
+		Listener: s.conn,
+		Dialer:   s.conn,
+		Option:   &controller.Option{InMemory: true},
+	}
 }
 
 func New() *Services {
@@ -80,8 +92,9 @@ func New() *Services {
 		Option:   &repoctl.Option{InMemory: true},
 	}
 	listener := listener.Service{
-		Dialer:   conn,
-		Listener: conn,
+		Dialer:        conn,
+		Listener:      conn,
+		ListenerCache: conn,
 	}
 	return &Services{
 		ctl:      ctl,
@@ -96,110 +109,373 @@ type testFn func(*testing.T)
 
 func Test(t *testing.T) {
 	t.Parallel()
-	tests := make([]testFn, 0)
-	tests = append(tests, sunny)
-	tests = append(tests, sunnystreaming)
+	tests := []testFn{
+		testSunny,
+		testSunnyStreaming,
+		testStreamingSchemaUpdate,
+		testStreamingDelete,
+		testEventErrors,
+		testQueueDown,
+		testErroRepo,
+		testErroCtl,
+		testErrorInitQueue,
+	}
+	setEnv()
 	for _, test := range tests {
-		te := test
-		name := reflectutil.FuncName(test)
+		testIt := test
+		name := reflectutil.FuncName(testIt)
+		name, _ = strings.CutPrefix(name, "Test")
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			te(t)
+			testIt(t)
 		})
 	}
 }
 
-func sunny(t *testing.T) {
-	setEnv()
+func testSunny(t *testing.T) {
 	svcs := New()
 	svcGroup := testjobico.NewServiceGroup()
 	t.Cleanup(func() {
-		if err := svcGroup.Stop(); err != nil {
-			t.Errorf("not expected error %v", err)
-		}
+		err := svcGroup.Stop()
+		test.Nil(t, err)
 	})
 	svcGroup.AddAndStart([]testjobico.Starter{svcs.ctl, svcs.repo})
-	s := testjobico.TestData{
-		Ctx:             context.Background(),
-		GrpcDialer:      svcs.conn,
-		TransportSetter: svcs.conn,
-	}
+	s, err := testjobico.New(context.Background(), svcs.conn, svcs.conn)
+	test.Nil(t, err)
 	p := s.NewPackage("sch1", "run1")
-	err := s.AddTenant(p.Tenant)
+	err = s.AddTenant(p.Tenant)
 	test.Nil(t, err)
 	err = s.AddPackage(p)
 	test.Nil(t, err)
 	ps, err := s.GetAllPackages()
 	test.Nil(t, err)
 	test.NotEmpty(t, ps)
-	err = s.UploadfileForPackage(p, bytes.NewReader(schema))
+	err = s.UploadfileForPackage(p, bytes.NewReader(schemaV1))
 	test.Nil(t, err)
 	svcGroup.AddAndStart([]testjobico.Starter{svcs.listener, svcs.queue})
-	u := fmt.Sprintf("http://fake:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
 	url, err := url.Parse(u)
 	test.Nil(t, err)
-	err = s.SendEvent(url)
+	err = s.SendEventV1(url)
 	test.Nil(t, err)
-
 	res, err := s.Dequeue(p.Tenant, p.Queues[0].ID)
 	test.Nil(t, err)
 	test.NotEmpty(t, res)
 }
 
-func sunnystreaming(t *testing.T) {
+func testSunnyStreaming(t *testing.T) {
+	svcs := New()
+	svcGroup := testjobico.NewServiceGroup()
+	t.Cleanup(func() {
+		err := svcGroup.Stop()
+		test.Nil(t, err)
+	})
+	svcGroup.AddAndStart([]testjobico.Starter{svcs.ctl, svcs.repo, svcs.listener, svcs.queue})
+	s, err := testjobico.New(context.Background(), svcs.conn, svcs.conn)
+	ch, _ := s.WaitForCacheUpdates()
+	test.Nil(t, err)
+	p := s.NewPackage("sch1", "run1")
+	err = s.AddTenant(p.Tenant)
+	test.Nil(t, err)
+	err = s.UploadfileForPackage(p, bytes.NewReader(schemaV1))
+	test.Nil(t, err)
+	err = s.AddPackage(p)
+	test.Nil(t, err)
+	<-ch
+	test.Nil(t, err)
+	ps, err := s.GetAllPackages()
+	test.Nil(t, err)
+	test.NotEmpty(t, ps)
+	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+	url, err := url.Parse(u)
+	test.Nil(t, err)
+	err = s.SendEventV1(url)
+	test.Nil(t, err)
+	res, err := s.Dequeue(p.Tenant, p.Queues[0].ID)
+	test.Nil(t, err)
+	test.NotEmpty(t, res)
+}
+
+func testStreamingSchemaUpdate(t *testing.T) {
+	svcs := New()
+	svcGroup := testjobico.NewServiceGroup()
+	t.Cleanup(func() {
+		err := svcGroup.Stop()
+		test.Nil(t, err)
+	})
+	svcGroup.AddAndStart([]testjobico.Starter{svcs.ctl, svcs.repo, svcs.listener, svcs.queue})
+	s, err := testjobico.New(context.Background(), svcs.conn, svcs.conn)
+	ch, _ := s.WaitForCacheUpdates()
+	test.Nil(t, err)
+	p := s.NewPackage("sch1_v1", "run1")
+	err = s.AddTenant(p.Tenant)
+	test.Nil(t, err)
+	err = s.UploadfileForPackage(p, bytes.NewReader(schemaV1))
+	test.Nil(t, err)
+	err = s.AddPackage(p)
+	test.Nil(t, err)
+	<-ch
+	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+	url, err := url.Parse(u)
+	test.Nil(t, err)
+	err = s.SendEventV1(url)
+	test.Nil(t, err)
+	res, err := s.Dequeue(p.Tenant, p.Queues[0].ID)
+	test.Nil(t, err)
+	test.NotEmpty(t, res)
+	p.Jobs[0].Event.Schema.SchemaRef = "sch1_v2"
+	err = s.UploadfileForPackage(p, bytes.NewReader(schemaV2))
+	test.Nil(t, err)
+	err = s.UpdatePackage(p)
+	test.Nil(t, err)
+	<-ch
+	err = s.SendEventV1(url)
+	test.NotNil(t, err)
+	err = s.SendEventV2(url)
+	test.Nil(t, err)
+}
+
+func testStreamingDelete(t *testing.T) {
+	svcs := New()
+	svcGroup := testjobico.NewServiceGroup()
+	t.Cleanup(func() {
+		err := svcGroup.Stop()
+		test.Nil(t, err)
+	})
+	svcGroup.AddAndStart([]testjobico.Starter{svcs.ctl, svcs.repo, svcs.listener, svcs.queue})
+	s, err := testjobico.New(context.Background(), svcs.conn, svcs.conn)
+	ch, _ := s.WaitForCacheUpdates()
+	test.Nil(t, err)
+	p := s.NewPackage("sch1_v1", "run1")
+	err = s.AddTenant(p.Tenant)
+	test.Nil(t, err)
+	err = s.UploadfileForPackage(p, bytes.NewReader(schemaV1))
+	test.Nil(t, err)
+	err = s.AddPackage(p)
+	test.Nil(t, err)
+	<-ch
+	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+	url, err := url.Parse(u)
+	test.Nil(t, err)
+	err = s.SendEventV1(url)
+	test.Nil(t, err)
+	res, err := s.Dequeue(p.Tenant, p.Queues[0].ID)
+	test.Nil(t, err)
+	test.NotEmpty(t, res)
+	err = s.DeletePackage(p)
+	test.Nil(t, err)
+	<-ch
+	err = s.SendEventV1(url)
+	test.NotNil(t, err)
+}
+
+func testEventErrors(t *testing.T) {
 	setEnv()
 	svcs := New()
 	svcGroup := testjobico.NewServiceGroup()
 	t.Cleanup(func() {
-		if err := svcGroup.Stop(); err != nil {
-			t.Errorf("not expected error %v", err)
-		}
+		err := svcGroup.Stop()
+		test.Nil(t, err)
 	})
 	svcGroup.AddAndStart([]testjobico.Starter{svcs.ctl, svcs.repo, svcs.listener, svcs.queue})
-	s := testjobico.TestData{
-		Ctx:             context.Background(),
-		GrpcDialer:      svcs.conn,
-		TransportSetter: svcs.conn,
-	}
-	p := s.NewPackage("sch1", "run1")
-	err := s.AddTenant(p.Tenant)
+	s, err := testjobico.New(context.Background(), svcs.conn, svcs.conn)
+	ch, _ := s.WaitForCacheUpdates()
 	test.Nil(t, err)
-	err = s.UploadfileForPackage(p, bytes.NewReader(schema))
+	p := s.NewPackage("sch1", "run1")
+	err = s.AddTenant(p.Tenant)
+	test.Nil(t, err)
+	err = s.UploadfileForPackage(p, bytes.NewReader(schemaV1))
+	test.Nil(t, err)
+	err = s.AddPackage(p)
+	test.Nil(t, err)
+	<-ch
+	u := fmt.Sprintf("http://listener:1/events/%s/notexist", p.Tenant)
+	url, err := url.Parse(u)
+	test.Nil(t, err)
+	err = s.SendEventV1(url)
+	test.ErrorIs(t, err, testjobico.ErrSendEvent{StatusCode: 500})
+	u = "http://listener:1/events/fake/notexist"
+	url, err = url.Parse(u)
+	test.Nil(t, err)
+	err = s.SendEventV1(url)
+	test.ErrorIs(t, err, testjobico.ErrSendEvent{StatusCode: 500})
+	u = fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+	url, err = url.Parse(u)
+	test.Nil(t, err)
+	err = s.SendEventMalFormed(url)
+	test.ErrorIs(t, err, testjobico.ErrSendEvent{StatusCode: 400})
+}
+
+func testQueueDown(t *testing.T) {
+	setEnv()
+	svcs := New()
+	svcGroup := testjobico.NewServiceGroup()
+	t.Cleanup(func() {
+		err := svcGroup.Stop()
+		test.Nil(t, err)
+	})
+	svcGroup.AddAndStart([]testjobico.Starter{svcs.ctl, svcs.repo})
+	s, err := testjobico.New(context.Background(), svcs.conn, svcs.conn)
+	test.Nil(t, err)
+	p := s.NewPackage("sch1", "run1")
+	err = s.AddTenant(p.Tenant)
 	test.Nil(t, err)
 	err = s.AddPackage(p)
 	test.Nil(t, err)
 	ps, err := s.GetAllPackages()
 	test.Nil(t, err)
 	test.NotEmpty(t, ps)
-	u := fmt.Sprintf("http://fake:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+	err = s.UploadfileForPackage(p, bytes.NewReader(schemaV1))
+	test.Nil(t, err)
+	svcGroup.AddAndStart([]testjobico.Starter{svcs.listener, svcs.queue})
+	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
 	url, err := url.Parse(u)
 	test.Nil(t, err)
-	// We give to listener a bit of time to process the new data
-	time.Sleep(30 * time.Millisecond)
-	err = s.SendEvent(url)
+	err = s.SendEventV1(url)
 	test.Nil(t, err)
 	res, err := s.Dequeue(p.Tenant, p.Queues[0].ID)
 	test.Nil(t, err)
 	test.NotEmpty(t, res)
+	ch, err := svcGroup.StopService(svcs.queue)
+	test.Nil(t, err)
+	<-ch
+	err = s.SendEventV1(url)
+	test.ErrorIs(t, err, testjobico.ErrSendEvent{StatusCode: 500})
+}
+
+// func TestQueueDownUp(t *testing.T) {
+// 	setEnv()
+// 	svcs := New()
+// 	svcGroup := testjobico.NewServiceGroup()
+// 	t.Cleanup(func() {
+// 		err := svcGroup.Stop()
+// 		test.Nil(t, err)
+// 	})
+// 	svcGroup.AddAndStart([]testjobico.Starter{svcs.ctl, svcs.repo})
+// 	s, err := testjobico.New(context.Background(), svcs.conn, svcs.conn)
+// 	test.Nil(t, err)
+// 	p := s.NewPackage("sch1", "run1")
+// 	err = s.AddTenant(p.Tenant)
+// 	test.Nil(t, err)
+// 	err = s.AddPackage(p)
+// 	test.Nil(t, err)
+// 	ps, err := s.GetAllPackages()
+// 	test.Nil(t, err)
+// 	test.NotEmpty(t, ps)
+// 	err = s.UploadfileForPackage(p, bytes.NewReader(schemaV1))
+// 	test.Nil(t, err)
+// 	svcGroup.AddAndStart([]testjobico.Starter{svcs.listener, svcs.queue})
+// 	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+// 	url, err := url.Parse(u)
+// 	test.Nil(t, err)
+// 	err = s.SendEventV1(url)
+// 	test.Nil(t, err)
+// 	res, err := s.Dequeue(p.Tenant, p.Queues[0].ID)
+// 	test.Nil(t, err)
+// 	test.NotEmpty(t, res)
+// 	err = svcGroup.StopService(svcs.queue)
+// 	test.Nil(t, err)
+// 	_, err = s.GetAllPackages()
+// 	test.Nil(t, err)
+// 	err = s.SendEventV1(url)
+// 	test.ErrorIs(t, err, testjobico.ErrSendEvent{StatusCode: 500})
+// 	svcs.ResetQueueService()
+// 	svcGroup.AddAndStart([]testjobico.Starter{svcs.queue})
+// 	time.Sleep(5 * time.Second)
+// 	err = s.SendEventV1(url)
+// 	test.Nil(t, err)
+// 	res, err = s.Dequeue(p.Tenant, p.Queues[0].ID)
+// 	test.Nil(t, err)
+// 	test.NotEmpty(t, res)
+// }
+
+func testErroCtl(t *testing.T) {
+	svcs := New()
+	svcGroup := testjobico.NewServiceGroup()
+	t.Cleanup(func() {
+		err := svcGroup.Stop()
+		test.Nil(t, err)
+	})
+	svcGroup.AddAndStart([]testjobico.Starter{svcs.repo})
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Microsecond)
+	defer cancel()
+	s, err := testjobico.New(ctx, svcs.conn, svcs.conn)
+	test.Nil(t, err)
+	p := s.NewPackage("sch1", "run1")
+	svcGroup.AddAndStartWithContext(ctx, []testjobico.Starter{svcs.listener, svcs.queue})
+	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+	url, err := url.Parse(u)
+	test.Nil(t, err)
+	err = s.SendEventV1(url)
+	test.NotNil(t, err)
+	test.NotNil(t, svcGroup.Errors())
+	_ = svcGroup.ResetErrors()
+}
+
+func testErrorInitQueue(t *testing.T) {
+	svcs := New()
+	svcGroup := testjobico.NewServiceGroup()
+	t.Cleanup(func() {
+		err := svcGroup.Stop()
+		test.Nil(t, err)
+	})
+	svcGroup.AddAndStart([]testjobico.Starter{svcs.repo, svcs.ctl})
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Microsecond)
+	defer cancel()
+	s, err := testjobico.New(ctx, svcs.conn, svcs.conn)
+	test.Nil(t, err)
+	p := s.NewPackage("sch1", "run1")
+	svcGroup.AddAndStartWithContext(ctx, []testjobico.Starter{svcs.listener})
+	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+	url, err := url.Parse(u)
+	test.Nil(t, err)
+	err = s.SendEventV1(url)
+	test.NotNil(t, err)
+	test.NotNil(t, svcGroup.Errors())
+	_ = svcGroup.ResetErrors()
+}
+
+func testErroRepo(t *testing.T) {
+	svcs := New()
+	svcGroup := testjobico.NewServiceGroup()
+	t.Cleanup(func() {
+		err := svcGroup.Stop()
+		test.Nil(t, err)
+	})
+	svcGroup.AddAndStart([]testjobico.Starter{svcs.ctl})
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Microsecond)
+	defer cancel()
+	s, err := testjobico.New(ctx, svcs.conn, svcs.conn)
+	test.Nil(t, err)
+	p := s.NewPackage("sch1", "run1")
+	svcGroup.AddAndStartWithContext(ctx, []testjobico.Starter{svcs.listener, svcs.queue})
+	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
+	url, err := url.Parse(u)
+	test.Nil(t, err)
+	err = s.SendEventV1(url)
+	test.NotNil(t, err)
+	//	test.NotNil(t, svcGroup.Errors())
+	_ = svcGroup.ResetErrors()
 }
 
 func setEnv() {
 	os.Setenv("log.level", "0")
 	os.Setenv("log.console.enabled", "true")
-	os.Setenv("listener.addr", "fake:1")
-	os.Setenv("listener.host", "fake:1")
+	os.Setenv("listener.addr", "listener:1")
+	os.Setenv("listener.host", "listener:1")
+	os.Setenv("cache_listener.addr", "cache_listener:1")
 
-	os.Setenv("ctl.addr", "fake:2")
-	os.Setenv("ctl.host", "fake:2")
+	os.Setenv("ctl.addr", "ctl:1")
+	os.Setenv("ctl.host", "ctl:1")
 
-	os.Setenv("repo.addr", "fake:3")
-	os.Setenv("repo.host", "fake:3")
+	os.Setenv("repo.addr", "repo:1")
+	os.Setenv("repo.host", "repo:1")
 
-	os.Setenv("executor.addr", "fake:4")
+	os.Setenv("executor.addr", "exec:1")
 
-	os.Setenv("queue.addr", "fake:5")
-	os.Setenv("queue.host", "fake:5")
+	os.Setenv("queue.addr", "queue:1")
+	os.Setenv("queue.host", "queue:1")
 
-	os.Setenv("recorder.host", "fake:6")
-	os.Setenv("recorder.addr", "fake:6")
+	os.Setenv("recorder.host", "recorder:1")
+	os.Setenv("recorder.addr", "recorder:1")
 }

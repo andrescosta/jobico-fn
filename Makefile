@@ -18,6 +18,14 @@ lint:
 
 hadolint:
 	@cat ./compose/Dockerfile | docker run --rm -i hadolint/hadolint
+test:
+	go test -count=1 -race ./...
+
+test_coverage: init
+	go test ./... -coverprofile=./reports/coverage.out
+
+test_html: test_coverage
+	go tool cover -html=./reports/coverage.out
 
 vuln:
 	@govulncheck ./...
@@ -33,7 +41,7 @@ format: $(FORMAT_FILES)
 $(FORMAT_FILES):
 	@gofumpt -w $@
 
-release: checks build env
+release: checks env test build 
 
 checks: format lint vuln gosec 
 

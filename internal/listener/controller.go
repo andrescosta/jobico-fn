@@ -17,13 +17,13 @@ type Controller struct {
 	eventsCache *EventDefCache
 }
 
-func New(ctx context.Context, d service.GrpcDialer) (Controller, error) {
+func New(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (Controller, error) {
 	queueClient, err := remote.NewQueueClient(ctx, d)
 	var empty Controller
 	if err != nil {
 		return empty, err
 	}
-	eventsCache, err := NewCachePopulated(ctx, d)
+	eventsCache, err := NewCachePopulated(ctx, d, l)
 	if err != nil {
 		return empty, err
 	}

@@ -9,8 +9,9 @@ import (
 )
 
 type Service struct {
-	Dialer   service.GrpcDialer
-	Listener service.HTTPListener
+	Dialer        service.GrpcDialer
+	Listener      service.HTTPListener
+	ListenerCache service.HTTPListener
 }
 
 func (s Service) Start(ctx context.Context) error {
@@ -22,7 +23,12 @@ func (s Service) Start(ctx context.Context) error {
 	if l == nil {
 		l = service.DefaultHTTPListener
 	}
-	c, err := listener.New(ctx, d)
+	lc := s.ListenerCache
+	if lc == nil {
+		lc = service.DefaultGrpcListener
+	}
+
+	c, err := listener.New(ctx, d, lc)
 	if err != nil {
 		return err
 	}
