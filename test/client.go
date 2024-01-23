@@ -1,4 +1,4 @@
-package testjobico
+package test
 
 import (
 	"bytes"
@@ -26,6 +26,10 @@ type event struct {
 	Data []interface{} `json:"data"`
 }
 
+type ErrSendEvent struct {
+	StatusCode int
+}
+
 type TestData struct {
 	Ctx            context.Context
 	ctlClient      *remote.ControlClient
@@ -36,7 +40,7 @@ type TestData struct {
 	listenerClient *http.Client
 }
 
-func New(ctx context.Context, dialer service.GrpcDialer, transport service.HTTPTranporter) (*TestData, error) {
+func NewClient(ctx context.Context, dialer service.GrpcDialer, transport service.HTTPTranporter) (*TestData, error) {
 	ctl, err := remote.NewControlClient(ctx, dialer)
 	if err != nil {
 		return nil, err
@@ -230,10 +234,6 @@ func (s *TestData) SendEventMalFormed(url *url.URL) error {
 		return err
 	}
 	return s.sendEvent(url, b)
-}
-
-type ErrSendEvent struct {
-	StatusCode int
 }
 
 func (e ErrSendEvent) Error() string {
