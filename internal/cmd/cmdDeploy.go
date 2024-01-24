@@ -9,8 +9,8 @@ import (
 	"github.com/andrescosta/goico/pkg/ioutil"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/yamlutil"
-	"github.com/andrescosta/jobico/api/pkg/remote"
-	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/internal/api/remote"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
 var cmdDeploy = &command{

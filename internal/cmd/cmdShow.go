@@ -8,7 +8,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/yamlutil"
-	"github.com/andrescosta/jobico/api/pkg/remote"
+	"github.com/andrescosta/jobico/internal/api/remote"
 )
 
 var cmdShow = &command{

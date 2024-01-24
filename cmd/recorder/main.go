@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/andrescosta/goico/pkg/service/grpc"
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/recorder/server"
 )
 

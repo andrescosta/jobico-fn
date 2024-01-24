@@ -3,7 +3,7 @@ package controller
 import (
 	"context"
 
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/repo/provider"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	"google.golang.org/protobuf/proto"

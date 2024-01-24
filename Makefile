@@ -1,6 +1,6 @@
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 
-.PHONY: go-build checks hadolint init gosec obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
+.PHONY: go-build test test_coverage test_html checks hadolint init gosec obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
 
 APP?=application
 REGISTRY?=gcr.io/images

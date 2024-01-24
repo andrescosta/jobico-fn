@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )

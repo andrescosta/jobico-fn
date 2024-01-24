@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
 type MemRepo struct {

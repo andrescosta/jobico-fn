@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/jobico/api/pkg/remote"
+	"github.com/andrescosta/jobico/internal/api/remote"
 )
 
 var cmdRecorder = &command{

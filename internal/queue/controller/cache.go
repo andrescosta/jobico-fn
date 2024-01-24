@@ -6,8 +6,8 @@ import (
 
 	"github.com/andrescosta/goico/pkg/collection"
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/jobico/api/pkg/remote"
-	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/internal/api/remote"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/queue/provider"
 	"github.com/rs/zerolog"
 )

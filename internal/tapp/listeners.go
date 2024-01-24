@@ -10,7 +10,7 @@ import (
 	"github.com/andrescosta/goico/pkg/service/grpc/svcmeta"
 
 	"github.com/andrescosta/goico/pkg/yamlutil"
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/rivo/tview"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )

@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/recorder/controller"
 )
 

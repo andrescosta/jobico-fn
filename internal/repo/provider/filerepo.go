@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/andrescosta/goico/pkg/ioutil"
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
 var ErrFileExists = errors.New("file exists")

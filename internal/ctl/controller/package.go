@@ -5,7 +5,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/database"
 	"github.com/andrescosta/goico/pkg/service/grpc/protoutil"
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/dao"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	"google.golang.org/protobuf/proto"

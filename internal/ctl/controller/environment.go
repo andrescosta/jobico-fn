@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/database"
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/dao"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	"google.golang.org/protobuf/proto"

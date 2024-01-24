@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/service"
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/queue/controller"
 )
 

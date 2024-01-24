@@ -7,8 +7,8 @@ import (
 
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc/cache"
-	"github.com/andrescosta/jobico/api/pkg/remote"
-	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/internal/api/remote"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/rs/zerolog"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )

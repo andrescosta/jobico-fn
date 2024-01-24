@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/jobico/api/pkg/remote"
-	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/jobico/internal/api/remote"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 )
