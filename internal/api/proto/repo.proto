@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+option go_package = "/types";
+
+import "common.proto";
+
+service Repo {
+  rpc GetFile (GetFileRequest) returns (GetFileReply);
+  rpc AddFile (AddFileRequest) returns (AddFileReply);
+  rpc UpdateToFileStr (UpdateToFileStrRequest) returns (stream UpdateToFileStrReply) {}
+  rpc GetAllFileNames (Void) returns (GetAllFileNamesReply);
+}
+
+
+message UpdateToFileStrRequest{
+    string tenant = 1; //not used
+}
+
+
+message UpdateToFileStrReply{
+    UpdateType type = 1;
+    TenantFile object = 2;
+}
+
+message GetAllFileNamesReply {
+    repeated TenantFiles tenantFiles = 1;
+}
+
+
+message AddFileRequest{
+    TenantFile tenantFile = 1;
+}
+
+message AddFileReply {
+    bytes content = 1; 
+}
+
+message GetFileRequest{
+    TenantFile tenantFile = 1;
+}
+
+message GetFileReply {
+    File file = 1; 
+}
+
+message TenantFiles {
+	string tenant=1; 
+	repeated File files=2; 
+}
+
+message TenantFile {
+	string tenant=1; 
+	File file=2; 
+}
+
+message File {
+    enum FileType {
+        NoType = 0;
+        JsonSchema = 1;
+        Wasm = 2;
+    }
+    FileType type = 1;
+    string name = 2;
+    bytes content = 3;
+}
