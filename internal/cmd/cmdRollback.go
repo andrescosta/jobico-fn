@@ -47,7 +47,7 @@ func runRollback(ctx context.Context, cmd *command, d service.GrpcDialer, args [
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	client, err := remote.NewControlClient(ctx, d)
+	client, err := remote.NewCtlClient(ctx, d)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return

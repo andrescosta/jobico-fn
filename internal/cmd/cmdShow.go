@@ -46,7 +46,7 @@ func showDeploy(ctx context.Context, cmd *command, d service.GrpcDialer, args []
 	}
 	tenant := args[1]
 	id := args[2]
-	client, err := remote.NewControlClient(ctx, d)
+	client, err := remote.NewCtlClient(ctx, d)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
@@ -69,7 +69,7 @@ func showDeploy(ctx context.Context, cmd *command, d service.GrpcDialer, args []
 }
 
 func showEnv(ctx context.Context, cmd *command, d service.GrpcDialer) {
-	client, err := remote.NewControlClient(ctx, d)
+	client, err := remote.NewCtlClient(ctx, d)
 	if err != nil {
 		return
 	}

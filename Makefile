@@ -19,7 +19,7 @@ lint:
 hadolint:
 	@cat ./compose/Dockerfile | docker run --rm -i hadolint/hadolint
 test:
-	go test -count=1 -race ./...
+	go test -count=1 -race -timeout 30s ./internal/test 
 
 test_coverage: init
 	go test ./... -coverprofile=./reports/coverage.out

@@ -18,27 +18,27 @@ var (
 )
 
 type GrpcBroadcaster[T, S proto.Message] struct {
-	b *broadcaster.Broadcaster[T]
+	broadcaster *broadcaster.Broadcaster[T]
 }
 
 func StartBroadcaster[T, S proto.Message](ctx context.Context) *GrpcBroadcaster[T, S] {
 	return &GrpcBroadcaster[T, S]{
-		b: broadcaster.Start[T](ctx),
+		broadcaster: broadcaster.Start[T](ctx),
 	}
 }
 
-func (b *GrpcBroadcaster[T, S]) Stop() {
-	_ = b.b.Stop()
+func (b *GrpcBroadcaster[T, S]) Stop() error {
+	return b.broadcaster.Stop()
 }
 
-func (b *GrpcBroadcaster[T, S]) Broadcast(_ context.Context, value S, utype pb.UpdateType) {
+func (b *GrpcBroadcaster[T, S]) Broadcast(_ context.Context, value S, utype pb.UpdateType) error {
 	var prototype T
 	n := b.new(prototype, value, utype)
-	_ = b.b.Write(n)
+	return b.broadcaster.Write(n)
 }
 
 func (b *GrpcBroadcaster[T, S]) RcvAndDispatchUpdates(ctx context.Context, s grpc.ServerStream) error {
-	l, err := b.b.Subscribe()
+	l, err := b.broadcaster.Subscribe()
 	if err != nil {
 		return err
 	}
@@ -46,10 +46,10 @@ func (b *GrpcBroadcaster[T, S]) RcvAndDispatchUpdates(ctx context.Context, s grp
 	for {
 		select {
 		case <-ctx.Done():
-			_ = b.b.Unsubscribe(l)
+			_ = b.broadcaster.Unsubscribe(l)
 			return ctx.Err()
 		case <-s.Context().Done():
-			_ = b.b.Unsubscribe(l)
+			_ = b.broadcaster.Unsubscribe(l)
 			return s.Context().Err()
 		case d, ok := <-l.C:
 			if !ok {

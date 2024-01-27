@@ -23,6 +23,10 @@ func NewServer(ctx context.Context, d service.GrpcDialer, o controller.Option) (
 	}, nil
 }
 
+func (s *Server) Close() error {
+	return s.controller.Close()
+}
+
 func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.Void, error) {
 	return s.controller.Queue(ctx, in)
 }

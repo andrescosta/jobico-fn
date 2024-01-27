@@ -31,8 +31,8 @@ func NewPackageController(ctx context.Context, db *database.Database) *PackageCo
 	}
 }
 
-func (c *PackageController) Close() {
-	c.bJobPackage.Stop()
+func (c *PackageController) Close() error {
+	return c.bJobPackage.Stop()
 }
 
 func (c *PackageController) GetPackages(in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {

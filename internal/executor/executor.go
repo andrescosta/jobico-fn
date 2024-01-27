@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/execs/wasm"
 	"github.com/andrescosta/goico/pkg/service"
@@ -24,15 +24,32 @@ const (
 	NoError  = 0
 )
 
+type statusExecutor int
+
+const (
+	Stopped statusExecutor = iota + 1
+	Starting
+	Started
+)
+
 type Executor struct {
-	queue  string
-	cancel context.CancelFunc
+	mux        sync.RWMutex
+	status     statusExecutor
+	queue      string
+	jobPackage *jobPackage
+	tick       ticker
+	cancel     context.CancelFunc
+	vm         *VM
 }
 type VM struct {
-	packages sync.Map
-	w        *sync.WaitGroup
-	recorder *remote.RecorderClient
-	d        service.GrpcDialer
+	packages     sync.Map
+	w            *sync.WaitGroup
+	recorder     *remote.RecorderClient
+	ctlClient    *remote.CtlClient
+	queueClient  *remote.QueueClient
+	repoClient   *remote.RepoClient
+	grpcDialer   service.GrpcDialer
+	manualWakeup bool
 }
 type module struct {
 	id         uint32
@@ -50,15 +67,36 @@ type jobPackage struct {
 	NextStep  map[string]*pb.ResultDef
 }
 
-func NewExecutorMachine(ctx context.Context, d service.GrpcDialer) (*VM, error) {
-	r, err := remote.NewRecorderClient(ctx, d)
+type Option struct {
+	ManualWakeup bool
+}
+
+func NewVM(ctx context.Context, d service.GrpcDialer, o Option) (*VM, error) {
+	recorder, err := remote.NewRecorderClient(ctx, d)
+	if err != nil {
+		return nil, err
+	}
+	ctlClient, err := remote.NewCtlClient(ctx, d)
+	if err != nil {
+		return nil, err
+	}
+	queueClient, err := remote.NewQueueClient(ctx, d)
+	if err != nil {
+		return nil, err
+	}
+	repoClient, err := remote.NewRepoClient(ctx, d)
 	if err != nil {
 		return nil, err
 	}
 	e := &VM{
-		packages: sync.Map{},
-		recorder: r,
-		d:        d,
+		packages:     sync.Map{},
+		recorder:     recorder,
+		grpcDialer:   d,
+		manualWakeup: o.ManualWakeup,
+		w:            &sync.WaitGroup{},
+		ctlClient:    ctlClient,
+		queueClient:  queueClient,
+		repoClient:   repoClient,
 	}
 
 	if err := e.loadJobs(ctx); err != nil {
@@ -68,67 +106,82 @@ func NewExecutorMachine(ctx context.Context, d service.GrpcDialer) (*VM, error) 
 	return e, nil
 }
 
-func (e *VM) StartExecutors(ctx context.Context) (err error) {
+func (e *VM) Close(ctx context.Context) error {
+	var err error
+	e.packages.Range(func(key, value any) bool {
+		pkg, _ := value.(*jobPackage)
+		for _, m := range pkg.Modules {
+			err = errors.Join(err, m.wasmModule.Close(ctx))
+		}
+		err = errors.Join(err, pkg.Runtime.Close(ctx))
+		return true
+	})
+	err = errors.Join(err, e.recorder.Close())
+	err = errors.Join(err, e.ctlClient.Close())
+	err = errors.Join(err, e.queueClient.Close())
+	err = errors.Join(err, e.repoClient.Close())
+	return err
+}
+
+func (e *VM) StartExecutors(ctx context.Context) {
 	logger := zerolog.Ctx(ctx)
-	defer func() {
-		errs := make([]error, 0)
-		e.packages.Range(func(key, value any) bool {
-			pkg, _ := value.(*jobPackage)
-			for _, m := range pkg.Modules {
-				if errr := m.wasmModule.Close(ctx); errr != nil {
-					errs = append(errs, errr)
-				}
-			}
-			if errr := pkg.Runtime.Close(ctx); errr != nil {
-				errs = append(errs, errr)
-			}
-			return true
-		})
-		if err != nil {
-			errs = append(errs, err)
-		}
-		if len(errs) > 0 {
-			err = errors.Join(errs...)
-		}
-	}()
-	var w sync.WaitGroup
-	e.w = &w
 	e.packages.Range(func(key, value any) bool {
 		pkg := value.(*jobPackage)
 		e.startPackage(ctx, pkg)
 		return true
 	})
-	if errr := e.startListeningUpdates(ctx); errr != nil {
-		err = errr
-	}
 	logger.Info().Msg("Workers started")
-	w.Wait()
-	logger.Info().Msg("Workers stoped")
-	return nil
+	e.w.Wait()
+	logger.Info().Msg("Workers stopped")
+}
+
+func (e *VM) IsUp() bool {
+	ok := true
+	e.packages.Range(func(_, value any) bool {
+		v := value.(*jobPackage)
+		for _, p := range v.Executors {
+			if p.getStatus() == Stopped {
+				ok = false
+				return false
+			}
+		}
+		return true
+	})
+	return ok
+}
+
+func (ex *Executor) getStatus() statusExecutor {
+	ex.mux.RLock()
+	defer ex.mux.RUnlock()
+	return ex.status
+}
+
+func (ex *Executor) setStatus(status statusExecutor) {
+	ex.mux.Lock()
+	defer ex.mux.Unlock()
+	ex.status = status
 }
 
 func (e *VM) startPackage(ctx context.Context, pkg *jobPackage) {
-	e.w.Add(1)
+	e.w.Add(len(pkg.Executors))
 	for _, ex := range pkg.Executors {
 		ctxE, cancel := context.WithCancel(ctx)
 		ex.cancel = cancel
-		go e.execute(ctxE, pkg.tenant, ex.queue, pkg.Modules, pkg.NextStep)
+		ex.setStatus(Starting)
+		go ex.execute(ctxE, e.w)
 	}
 }
 
 func (e *VM) loadJobs(ctx context.Context) error {
-	c, err := remote.NewControlClient(ctx, e.d)
-	if err != nil {
-		return err
-	}
-	ps, err := c.GetAllPackages(ctx)
+	ps, err := e.ctlClient.GetAllPackages(ctx)
 	if err != nil {
 		return err
 	}
 	if err := e.addOrUpdatePackages(ctx, ps); err != nil {
 		return err
 	}
-	return nil
+	err = e.startListeningUpdates(ctx)
+	return err
 }
 
 func (e *VM) addOrUpdatePackages(ctx context.Context, pkgs []*pb.JobPackage) error {
@@ -153,14 +206,33 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	}
 	jobPackage.Runtime = r
 	executors := make([]*Executor, 0)
+
 	for _, q := range pkg.Queues {
-		executors = append(executors, &Executor{queue: q.ID})
+		if strings.HasSuffix(q.ID, "_ok") || strings.HasSuffix(q.ID, "_error") {
+			continue
+		}
+		var tick ticker
+		if e.manualWakeup {
+			tick = &channelBasedTicker{
+				c: make(chan time.Time),
+			}
+		} else {
+			dur := *env.Duration("executor.timeout", 5*time.Second)
+			tick = &timeBasedTicker{
+				ticker: time.NewTicker(dur),
+			}
+		}
+		executors = append(executors,
+			&Executor{
+				queue:      q.ID,
+				jobPackage: jobPackage,
+				vm:         e,
+				mux:        sync.RWMutex{},
+				status:     Stopped,
+				tick:       tick,
+			})
 	}
 	jobPackage.Executors = executors
-	repoClient, err := remote.NewRepoClient(ctx, e.d)
-	if err != nil {
-		return err
-	}
 	files := make(map[string][]byte)
 	var id uint32
 	for _, job := range pkg.Jobs {
@@ -169,7 +241,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 			if runtime.ID == event.Runtime {
 				wasmfile, ok := files[runtime.ModuleRef]
 				if !ok {
-					wasmfile, err = repoClient.GetFile(ctx, pkg.Tenant, runtime.ModuleRef)
+					wasmfile, err = e.repoClient.GetFile(ctx, pkg.Tenant, runtime.ModuleRef)
 					if err != nil {
 						return err
 					}
@@ -240,35 +312,23 @@ func getModuleName(supplierQueue string, eventID string) string {
 }
 
 func (e *VM) startListeningUpdates(ctx context.Context) error {
-	logger := zerolog.Ctx(ctx)
-	controlClient, err := remote.NewControlClient(ctx, e.d)
-	if err != nil {
-		return err
-	}
-	l, err := controlClient.ListenerForPackageUpdates(ctx)
+	l, err := e.ctlClient.ListenerForPackageUpdates(ctx)
 	if err != nil {
 		return err
 	}
 	e.w.Add(1)
 	go func() {
-		err := e.listeningUpdates(ctx, l)
-		if err != nil {
-			logger.Info().AnErr("context.error", err).Msg("CTL update listener stopped.")
+		defer e.w.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case u := <-l.C:
+				e.onUpdate(ctx, u)
+			}
 		}
 	}()
 	return nil
-}
-
-func (e *VM) listeningUpdates(ctx context.Context, l *broadcaster.Listener[*pb.UpdateToPackagesStrReply]) error {
-	defer e.w.Done()
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case u := <-l.C:
-			e.onUpdate(ctx, u)
-		}
-	}
 }
 
 func (e *VM) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrReply) {
@@ -291,8 +351,8 @@ func (e *VM) newPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	if err := e.addPackage(ctx, pkg); err != nil {
 		return err
 	}
-	o, _ := e.packages.Load(getFullPackageID(pkg.Tenant, pkg.ID))
-	p := o.(*jobPackage)
+	j, _ := e.packages.Load(getFullPackageID(pkg.Tenant, pkg.ID))
+	p := j.(*jobPackage)
 	e.startPackage(ctx, p)
 	return nil
 }
@@ -312,21 +372,23 @@ func (e *VM) updatePackage(ctx context.Context, p *pb.JobPackage) error {
 	return e.newPackage(ctx, p)
 }
 
-func (e *VM) execute(ctx context.Context, tenant string, queue string, modules map[string]module, nextSteps map[string]*pb.ResultDef) {
-	defer e.w.Done()
+func (e *Executor) execute(ctx context.Context, w *sync.WaitGroup) {
+	defer w.Done()
+	defer e.setStatus(Stopped)
+	defer e.tick.Stop()
 	logger := zerolog.Ctx(ctx)
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-	logger.Debug().Msgf("Worker for Tenant: %s and queue: %s started", tenant, queue)
+	logger.Debug().Msgf("Worker for Tenant: %s and queue: %s started", e.jobPackage.tenant, e.queue)
 	queueErrors := 0
 	maxQueueErrors := env.Int("max.queue.errors", 10)
+	chTick := e.tick.Chan()
+	e.setStatus(Started)
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Debug().Msgf("Worker for Tenant: %s and queue: %s stopped", tenant, queue)
+			logger.Debug().Msgf("Worker for Tenant: %s and queue: %s stopped", e.jobPackage.tenant, e.queue)
 			return
-		case <-ticker.C:
-			items, err := e.dequeue(ctx, tenant, queue)
+		case <-chTick:
+			items, err := e.vm.queueClient.Dequeue(ctx, e.jobPackage.tenant, e.queue)
 			if err != nil {
 				queueErrors++
 				logger.Err(err).Msg("error dequeuing")
@@ -338,7 +400,7 @@ func (e *VM) execute(ctx context.Context, tenant string, queue string, modules m
 			}
 			queueErrors = 0
 			for _, item := range items {
-				module, ok := modules[getModuleName(queue, item.Event)]
+				module, ok := e.jobPackage.Modules[getModuleName(e.queue, item.Event)]
 				if !ok {
 					logger.Warn().Msgf("event %s not supported", item.Event)
 					continue
@@ -347,11 +409,11 @@ func (e *VM) execute(ctx context.Context, tenant string, queue string, modules m
 				if err != nil {
 					logger.Err(err).Msg("error executing")
 				}
-				if err := e.reportResultToRecorder(ctx, queue, item.Event, tenant, code, result); err != nil {
+				if err := e.vm.reportResultToRecorder(ctx, e.queue, item.Event, e.jobPackage.tenant, code, result); err != nil {
 					logger.Err(err).Msg("error reporting to recorder")
 				}
-				if nextSteps, ok := nextSteps[item.Event]; ok {
-					if err := e.makeDecisions(ctx, item.Event, tenant, code, result, nextSteps); err != nil {
+				if nextSteps, ok := e.jobPackage.NextStep[item.Event]; ok {
+					if err := e.vm.makeDecisions(ctx, item.Event, e.jobPackage.tenant, code, result, nextSteps); err != nil {
 						logger.Err(err).Msg("error enqueuing the result")
 					}
 				}
@@ -392,11 +454,7 @@ func (e *VM) makeDecisions(ctx context.Context, _ string, tenant string, code ui
 			},
 		}
 	}
-	client, err := remote.NewQueueClient(ctx, e.d)
-	if err != nil {
-		return err
-	}
-	if err := client.Queue(ctx, q); err != nil {
+	if err := e.queueClient.Queue(ctx, q); err != nil {
 		return err
 	}
 	return nil
@@ -427,14 +485,6 @@ func (e *VM) reportResultToRecorder(ctx context.Context, queue string, eventID s
 	return e.recorder.AddJobExecution(ctx, ex)
 }
 
-func (e *VM) dequeue(ctx context.Context, tenant string, queue string) ([]*pb.QueueItem, error) {
-	client, err := remote.NewQueueClient(ctx, e.d)
-	if err != nil {
-		return nil, err
-	}
-	return client.Dequeue(ctx, tenant, queue)
-}
-
 func executeWasm(ctx context.Context, module *wasm.Module, id uint32, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
@@ -446,4 +496,41 @@ func executeWasm(ctx context.Context, module *wasm.Module, id uint32, data []byt
 	}
 	logger.Debug().Msgf("%d | %s", code, result)
 	return code, result, nil
+}
+
+type ticker interface {
+	Chan() <-chan time.Time
+	Stop()
+	Tick()
+}
+
+type timeBasedTicker struct {
+	ticker *time.Ticker
+}
+
+func (t *timeBasedTicker) Chan() <-chan time.Time {
+	return t.ticker.C
+}
+
+func (t *timeBasedTicker) Stop() {
+	t.ticker.Stop()
+}
+
+func (t *timeBasedTicker) Tick() {
+}
+
+type channelBasedTicker struct {
+	c chan time.Time
+}
+
+func (t *channelBasedTicker) Chan() <-chan time.Time {
+	return t.c
+}
+
+func (t *channelBasedTicker) Stop() {
+	close(t.c)
+}
+
+func (t *channelBasedTicker) Tick() {
+	t.c <- time.Now()
 }

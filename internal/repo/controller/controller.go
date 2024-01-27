@@ -38,6 +38,10 @@ func New(ctx context.Context, dir string, o Option) *Controller {
 	}
 }
 
+func (s *Controller) Close() error {
+	return s.bJobPackage.Stop()
+}
+
 func (s *Controller) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.AddFileReply, error) {
 	if err := s.repo.Add(r.TenantFile.Tenant, r.TenantFile.File.Name, int32(r.TenantFile.File.Type), r.TenantFile.File.Content); err != nil {
 		return nil, err

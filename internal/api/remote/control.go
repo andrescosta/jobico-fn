@@ -12,7 +12,7 @@ import (
 	rpc "google.golang.org/grpc"
 )
 
-type ControlClient struct {
+type CtlClient struct {
 	serverAddr            string
 	conn                  *rpc.ClientConn
 	client                pb.ControlClient
@@ -22,7 +22,7 @@ type ControlClient struct {
 
 var ErrCtlHostAddr = errors.New("the control service address was not specified in the env file using ctl.host")
 
-func NewControlClient(ctx context.Context, d service.GrpcDialer) (*ControlClient, error) {
+func NewCtlClient(ctx context.Context, d service.GrpcDialer) (*CtlClient, error) {
 	host := env.StringOrNil("ctl.host")
 	if host == nil {
 		return nil, ErrCtlHostAddr
@@ -32,18 +32,24 @@ func NewControlClient(ctx context.Context, d service.GrpcDialer) (*ControlClient
 		return nil, err
 	}
 	client := pb.NewControlClient(conn)
-	return &ControlClient{
+	return &CtlClient{
 		serverAddr: *host,
 		conn:       conn,
 		client:     client,
 	}, nil
 }
 
-func (c *ControlClient) Close() error {
+func (c *CtlClient) Close() error {
+	if c.broadcasterEnvUpdates != nil {
+		c.broadcasterEnvUpdates.Stop()
+	}
+	if c.broadcasterJobPackage != nil {
+		c.broadcasterJobPackage.Stop()
+	}
 	return c.conn.Close()
 }
 
-func (c *ControlClient) GetEnvironment(ctx context.Context) (*pb.Environment, error) {
+func (c *CtlClient) GetEnvironment(ctx context.Context) (*pb.Environment, error) {
 	r, err := c.client.GetEnvironment(ctx, &pb.Void{})
 	if err != nil {
 		return nil, err
@@ -51,7 +57,7 @@ func (c *ControlClient) GetEnvironment(ctx context.Context) (*pb.Environment, er
 	return r.Environment, nil
 }
 
-func (c *ControlClient) AddEnvironment(ctx context.Context, environment *pb.Environment) (*pb.Environment, error) {
+func (c *CtlClient) AddEnvironment(ctx context.Context, environment *pb.Environment) (*pb.Environment, error) {
 	r, err := c.client.AddEnvironment(ctx, &pb.AddEnvironmentRequest{Environment: environment})
 	if err != nil {
 		return nil, err
@@ -59,22 +65,22 @@ func (c *ControlClient) AddEnvironment(ctx context.Context, environment *pb.Envi
 	return r.Environment, nil
 }
 
-func (c *ControlClient) UpdateEnvironment(ctx context.Context, environment *pb.Environment) error {
+func (c *CtlClient) UpdateEnvironment(ctx context.Context, environment *pb.Environment) error {
 	if _, err := c.client.UpdateEnvironment(ctx, &pb.UpdateEnvironmentRequest{Environment: environment}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *ControlClient) GetTenants(ctx context.Context) ([]*pb.Tenant, error) {
+func (c *CtlClient) GetTenants(ctx context.Context) ([]*pb.Tenant, error) {
 	return c.getTenants(ctx, nil)
 }
 
-func (c *ControlClient) GetTenant(ctx context.Context, id *string) ([]*pb.Tenant, error) {
+func (c *CtlClient) GetTenant(ctx context.Context, id *string) ([]*pb.Tenant, error) {
 	return c.getTenants(ctx, id)
 }
 
-func (c *ControlClient) getTenants(ctx context.Context, id *string) ([]*pb.Tenant, error) {
+func (c *CtlClient) getTenants(ctx context.Context, id *string) ([]*pb.Tenant, error) {
 	r, err := c.client.GetTenants(ctx, &pb.GetTenantsRequest{ID: id})
 	if err != nil {
 		return nil, err
@@ -82,7 +88,7 @@ func (c *ControlClient) getTenants(ctx context.Context, id *string) ([]*pb.Tenan
 	return r.Tenants, nil
 }
 
-func (c *ControlClient) AddTenant(ctx context.Context, tenant *pb.Tenant) (*pb.Tenant, error) {
+func (c *CtlClient) AddTenant(ctx context.Context, tenant *pb.Tenant) (*pb.Tenant, error) {
 	r, err := c.client.AddTenant(ctx, &pb.AddTenantRequest{Tenant: tenant})
 	if err != nil {
 		return nil, err
@@ -90,15 +96,15 @@ func (c *ControlClient) AddTenant(ctx context.Context, tenant *pb.Tenant) (*pb.T
 	return r.Tenant, nil
 }
 
-func (c *ControlClient) GetPackages(ctx context.Context, tenant string) ([]*pb.JobPackage, error) {
+func (c *CtlClient) GetPackages(ctx context.Context, tenant string) ([]*pb.JobPackage, error) {
 	return c.getPackages(ctx, tenant, nil)
 }
 
-func (c *ControlClient) GetPackage(ctx context.Context, tenant string, id *string) ([]*pb.JobPackage, error) {
+func (c *CtlClient) GetPackage(ctx context.Context, tenant string, id *string) ([]*pb.JobPackage, error) {
 	return c.getPackages(ctx, tenant, id)
 }
 
-func (c *ControlClient) getPackages(ctx context.Context, tenant string, id *string) ([]*pb.JobPackage, error) {
+func (c *CtlClient) getPackages(ctx context.Context, tenant string, id *string) ([]*pb.JobPackage, error) {
 	r, err := c.client.GetPackages(ctx, &pb.GetJobPackagesRequest{
 		ID:     id,
 		Tenant: tenant,
@@ -109,7 +115,7 @@ func (c *ControlClient) getPackages(ctx context.Context, tenant string, id *stri
 	return r.Packages, nil
 }
 
-func (c *ControlClient) GetAllPackages(ctx context.Context) ([]*pb.JobPackage, error) {
+func (c *CtlClient) GetAllPackages(ctx context.Context) ([]*pb.JobPackage, error) {
 	r, err := c.client.GetAllPackages(ctx, &pb.Void{})
 	if err != nil {
 		return nil, err
@@ -117,7 +123,7 @@ func (c *ControlClient) GetAllPackages(ctx context.Context) ([]*pb.JobPackage, e
 	return r.Packages, nil
 }
 
-func (c *ControlClient) AddPackage(ctx context.Context, package1 *pb.JobPackage) (*pb.JobPackage, error) {
+func (c *CtlClient) AddPackage(ctx context.Context, package1 *pb.JobPackage) (*pb.JobPackage, error) {
 	r, err := c.client.AddPackage(ctx, &pb.AddJobPackageRequest{Package: package1})
 	if err != nil {
 		return nil, err
@@ -125,7 +131,7 @@ func (c *ControlClient) AddPackage(ctx context.Context, package1 *pb.JobPackage)
 	return r.Package, nil
 }
 
-func (c *ControlClient) UpdatePackage(ctx context.Context, package1 *pb.JobPackage) error {
+func (c *CtlClient) UpdatePackage(ctx context.Context, package1 *pb.JobPackage) error {
 	_, err := c.client.UpdatePackage(ctx, &pb.UpdateJobPackageRequest{Package: package1})
 	if err != nil {
 		return err
@@ -133,7 +139,7 @@ func (c *ControlClient) UpdatePackage(ctx context.Context, package1 *pb.JobPacka
 	return nil
 }
 
-func (c *ControlClient) DeletePackage(ctx context.Context, package1 *pb.JobPackage) error {
+func (c *CtlClient) DeletePackage(ctx context.Context, package1 *pb.JobPackage) error {
 	_, err := c.client.DeletePackage(ctx, &pb.DeleteJobPackageRequest{Package: package1})
 	if err != nil {
 		return err
@@ -141,7 +147,7 @@ func (c *ControlClient) DeletePackage(ctx context.Context, package1 *pb.JobPacka
 	return nil
 }
 
-func (c *ControlClient) ListenerForEnvironmentUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToEnvironmentStrReply], error) {
+func (c *CtlClient) ListenerForEnvironmentUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToEnvironmentStrReply], error) {
 	if c.broadcasterEnvUpdates == nil {
 		if err := c.startListenEnvironmentUpdates(ctx); err != nil {
 			return nil, err
@@ -150,7 +156,7 @@ func (c *ControlClient) ListenerForEnvironmentUpdates(ctx context.Context) (*bro
 	return c.broadcasterEnvUpdates.Subscribe()
 }
 
-func (c *ControlClient) startListenEnvironmentUpdates(ctx context.Context) error {
+func (c *CtlClient) startListenEnvironmentUpdates(ctx context.Context) error {
 	cb := broadcaster.Start[*pb.UpdateToEnvironmentStrReply](ctx)
 	c.broadcasterEnvUpdates = cb
 	s, err := c.client.UpdateToEnvironmentStr(ctx, &pb.Void{})
@@ -163,7 +169,7 @@ func (c *ControlClient) startListenEnvironmentUpdates(ctx context.Context) error
 	return nil
 }
 
-func (c *ControlClient) ListenerForPackageUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToPackagesStrReply], error) {
+func (c *CtlClient) ListenerForPackageUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToPackagesStrReply], error) {
 	if c.broadcasterJobPackage == nil {
 		if err := c.startListenerForPackageUpdates(ctx); err != nil {
 			return nil, err
@@ -172,7 +178,7 @@ func (c *ControlClient) ListenerForPackageUpdates(ctx context.Context) (*broadca
 	return c.broadcasterJobPackage.Subscribe()
 }
 
-func (c *ControlClient) startListenerForPackageUpdates(ctx context.Context) error {
+func (c *CtlClient) startListenerForPackageUpdates(ctx context.Context) error {
 	cb := broadcaster.Start[*pb.UpdateToPackagesStrReply](ctx)
 	c.broadcasterJobPackage = cb
 	s, err := c.client.UpdateToPackagesStr(ctx, &pb.UpdateToPackagesStrRequest{})

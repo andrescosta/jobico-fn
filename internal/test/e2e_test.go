@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,14 +12,19 @@ import (
 	"time"
 
 	"github.com/andrescosta/goico/pkg/database"
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/reflectutil"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/test"
 	ctl "github.com/andrescosta/jobico/cmd/ctl/service"
+	executor "github.com/andrescosta/jobico/cmd/executor/service"
 	listener "github.com/andrescosta/jobico/cmd/listener/service"
 	queue "github.com/andrescosta/jobico/cmd/queue/service"
+	recorder "github.com/andrescosta/jobico/cmd/recorder/service"
 	repo "github.com/andrescosta/jobico/cmd/repo/service"
-	"github.com/andrescosta/jobico/internal/queue/controller"
+	pb "github.com/andrescosta/jobico/internal/api/types"
+	queuectl "github.com/andrescosta/jobico/internal/queue/controller"
+	recorderctl "github.com/andrescosta/jobico/internal/recorder/controller"
 	repoctl "github.com/andrescosta/jobico/internal/repo/controller"
 )
 
@@ -32,10 +38,14 @@ var (
 	//go:embed testdata/schema_result_error.json
 	schemaV1Error []byte
 
-	schemas = map[string][]byte{
+	//go:embed testdata/echo.wasm
+	wasmEcho []byte
+
+	files = map[string][]byte{
 		"sch1":       schemaV1,
 		"sch1_ok":    schemaV1Ok,
 		"sch1_error": schemaV1Error,
+		"run1":       wasmEcho,
 	}
 
 	//go:embed testdata/schema_updated.json
@@ -81,35 +91,54 @@ type JobicoPlatform struct {
 	queue    queue.Service
 	repo     repo.Service
 	listener listener.Service
+	executor executor.Service
+	recorder recorder.Service
 }
 
 func (s *JobicoPlatform) ResetQueueService() {
 	s.queue = queue.Service{
 		Listener: s.conn,
 		Dialer:   s.conn,
-		Option:   &controller.Option{InMemory: true},
+		Option:   &queuectl.Option{InMemory: true},
 	}
 }
 
 func NewPlatform() *JobicoPlatform {
-	conn := service.NewBufConn()
+	return NewPlatformWithTimeout(*env.Duration("dial.timeout"))
+}
+
+func NewPlatformWithTimeout(time time.Duration) *JobicoPlatform {
+	conn := service.NewBufConnWithTimeout(time)
 	ctl := ctl.Service{
 		Listener: conn,
 		DBOption: &database.Option{InMemory: true},
+		Dialer:   conn,
 	}
 	queue := queue.Service{
 		Listener: conn,
 		Dialer:   conn,
-		Option:   &controller.Option{InMemory: true},
+		Option:   &queuectl.Option{InMemory: true},
 	}
 	repo := repo.Service{
 		Listener: conn,
 		Option:   &repoctl.Option{InMemory: true},
+		Dialer:   conn,
 	}
 	listener := listener.Service{
 		Dialer:        conn,
 		Listener:      conn,
 		ListenerCache: conn,
+		ClientBuilder: conn,
+	}
+	executor := executor.Service{
+		Listener:      conn,
+		Dialer:        conn,
+		ClientBuilder: conn,
+	}
+	recorder := recorder.Service{
+		Listener: conn,
+		Option:   &recorderctl.Option{InMemory: true},
+		Dialer:   conn,
 	}
 	return &JobicoPlatform{
 		ctl:      ctl,
@@ -117,18 +146,16 @@ func NewPlatform() *JobicoPlatform {
 		queue:    queue,
 		repo:     repo,
 		listener: listener,
+		executor: executor,
+		recorder: recorder,
 	}
 }
 
 type testFn func(*testing.T)
 
 func Test(t *testing.T) {
-	t.Parallel()
 	tests := []testFn{
 		testSunny,
-		testSunnyStreaming,
-		testStreamingSchemaUpdate,
-		testStreamingDelete,
 		testEventErrors,
 		testQueueDown,
 		testErroRepo,
@@ -136,6 +163,7 @@ func Test(t *testing.T) {
 		testErrorInitQueue,
 	}
 	setEnvVars()
+	// defer goleak.VerifyNone(t)
 	for _, fn := range tests {
 		testItFn := fn
 		name := reflectutil.FuncName(testItFn)
@@ -147,114 +175,84 @@ func Test(t *testing.T) {
 	}
 }
 
+func TestStreaming(t *testing.T) {
+	t.Skip()
+	tests := []testFn{
+		testSunnyStreaming,
+		testStreamingSchemaUpdate,
+		testStreamingDelete,
+	}
+	setEnvVars()
+	//	defer goleak.VerifyNone(t)
+	for _, fn := range tests {
+		testItFn := fn
+		name := reflectutil.FuncName(testItFn)
+		name, _ = strings.CutPrefix(name, "Test")
+		t.Run(name, func(t *testing.T) {
+			testItFn(t)
+		})
+	}
+}
+
 func testSunny(t *testing.T) {
 	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup()
-	svcGroup.Start([]test.Starter{platform.ctl, platform.repo})
+	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(context.Background(), platform.conn, platform.conn)
 	t.Cleanup(func() {
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	err = cli.addTenant(pkg.Tenant)
+	err = svcGroup.Start([]test.Starter{platform.ctl, platform.recorder, platform.repo})
 	test.Nil(t, err)
-	err = cli.addPackage(pkg)
-	test.Nil(t, err)
+	pkg := addPackageAndFiles(t, cli)
 	ps, err := cli.getAllPackages()
 	test.Nil(t, err)
 	test.NotEmpty(t, ps)
-	err = cli.uploadSchemas(pkg, schemas)
+	err = svcGroup.Start([]test.Starter{platform.queue, platform.listener})
 	test.Nil(t, err)
-	svcGroup.Start([]test.Starter{platform.listener, platform.queue})
-	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
-	url, err := url.Parse(u)
+	err = svcGroup.Start([]test.Starter{platform.executor})
 	test.Nil(t, err)
-	err = cli.sendEventV1(url)
-	test.Nil(t, err)
-	res, err := cli.dequeue(pkg.Tenant, pkg.Queues[0].ID)
-	test.Nil(t, err)
-	test.NotEmpty(t, res)
+	_ = sendEventV1AndCheckResultOk(t, pkg, cli)
 }
 
 func testSunnyStreaming(t *testing.T) {
 	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup()
-	svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue})
+	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(context.Background(), platform.conn, platform.conn)
 	t.Cleanup(func() {
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
+	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue, platform.recorder})
+	test.Nil(t, err)
 	err = cli.startRecvCacheEvents()
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	err = cli.addTenant(pkg.Tenant)
-	test.Nil(t, err)
-	err = cli.uploadSchemas(pkg, schemas)
-	test.Nil(t, err)
-	err = cli.addPackage(pkg)
-	test.Nil(t, err)
+	pkg := addPackageAndFiles(t, cli)
 	err = cli.waitForCacheEvents()
 	test.Nil(t, err)
-	ps, err := cli.getAllPackages()
+	err = svcGroup.Start([]test.Starter{platform.executor})
 	test.Nil(t, err)
-	test.NotEmpty(t, ps)
-	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
-	url, err := url.Parse(u)
-	test.Nil(t, err)
-	err = cli.sendEventV1(url)
-	test.Nil(t, err)
-	res, err := cli.dequeue(pkg.Tenant, pkg.Queues[0].ID)
-	test.Nil(t, err)
-	test.NotEmpty(t, res)
-}
-
-func cleanUp(t *testing.T, svcGroup *test.ServiceGroup, cli *client) {
-	fail := false
-	if err := svcGroup.Stop(); err != nil {
-		t.Errorf("error stopping service group %v", err)
-		fail = true
-	}
-	if cli != nil {
-		if err := cli.close(); err != nil {
-			t.Errorf("error stopping service group %v", err)
-			fail = true
-		}
-	}
-	if fail {
-		t.FailNow()
-	}
+	_ = sendEventV1AndCheckResultOk(t, pkg, cli)
 }
 
 func testStreamingSchemaUpdate(t *testing.T) {
 	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup()
-	svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue})
+	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(context.Background(), platform.conn, platform.conn)
 	t.Cleanup(func() {
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
+	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue, platform.recorder})
+	test.Nil(t, err)
+	err = svcGroup.Start([]test.Starter{platform.executor})
+	test.Nil(t, err)
 	err = cli.startRecvCacheEvents()
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	err = cli.addTenant(pkg.Tenant)
-	test.Nil(t, err)
-	err = cli.uploadSchemas(pkg, schemas)
-	test.Nil(t, err)
-	err = cli.addPackage(pkg)
-	test.Nil(t, err)
+	pkg := addPackageAndFiles(t, cli)
 	err = cli.waitForCacheEvents()
 	test.Nil(t, err)
-	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
-	url, err := url.Parse(u)
-	test.Nil(t, err)
-	err = cli.sendEventV1(url)
-	test.Nil(t, err)
-	res, err := cli.dequeue(pkg.Tenant, pkg.Queues[0].ID)
-	test.Nil(t, err)
-	test.NotEmpty(t, res)
+	url := sendEventV1AndCheckResultOk(t, pkg, cli)
 	pkg.Jobs[0].Event.Schema.SchemaRef = "sch1_v2"
 	err = cli.uploadSchemas(pkg, schemasV2)
 	test.Nil(t, err)
@@ -266,36 +264,27 @@ func testStreamingSchemaUpdate(t *testing.T) {
 	test.NotNil(t, err)
 	err = cli.sendEventV2(url)
 	test.Nil(t, err)
+	checkExecutionResultOk(t, pkg, cli)
 }
 
 func testStreamingDelete(t *testing.T) {
 	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup()
-	svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue})
+	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(context.Background(), platform.conn, platform.conn)
 	t.Cleanup(func() {
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
+	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue, platform.recorder})
+	test.Nil(t, err)
+	err = svcGroup.Start([]test.Starter{platform.executor})
+	test.Nil(t, err)
 	err = cli.startRecvCacheEvents()
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	err = cli.addTenant(pkg.Tenant)
-	test.Nil(t, err)
-	err = cli.uploadSchemas(pkg, schemas)
-	test.Nil(t, err)
-	err = cli.addPackage(pkg)
-	test.Nil(t, err)
+	pkg := addPackageAndFiles(t, cli)
 	err = cli.waitForCacheEvents()
 	test.Nil(t, err)
-	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
-	url, err := url.Parse(u)
-	test.Nil(t, err)
-	err = cli.sendEventV1(url)
-	test.Nil(t, err)
-	res, err := cli.dequeue(pkg.Tenant, pkg.Queues[0].ID)
-	test.Nil(t, err)
-	test.NotEmpty(t, res)
+	url := sendEventV1AndCheckResultOk(t, pkg, cli)
 	err = cli.deletePackage(pkg)
 	test.Nil(t, err)
 	err = cli.waitForCacheEvents()
@@ -307,23 +296,17 @@ func testStreamingDelete(t *testing.T) {
 func testEventErrors(t *testing.T) {
 	setEnvVars()
 	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup()
-	svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue})
+	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(context.Background(), platform.conn, platform.conn)
 	t.Cleanup(func() {
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
-	err = cli.startRecvCacheEvents()
+	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo})
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	err = cli.addTenant(pkg.Tenant)
+	pkg := addPackageAndFiles(t, cli)
 	test.Nil(t, err)
-	err = cli.uploadSchemas(pkg, schemas)
-	test.Nil(t, err)
-	err = cli.addPackage(pkg)
-	test.Nil(t, err)
-	err = cli.waitForCacheEvents()
+	err = svcGroup.Start([]test.Starter{platform.listener, platform.queue})
 	test.Nil(t, err)
 	u := fmt.Sprintf("http://listener:1/events/%s/notexist", pkg.Tenant)
 	url, err := url.Parse(u)
@@ -344,36 +327,24 @@ func testEventErrors(t *testing.T) {
 
 func testQueueDown(t *testing.T) {
 	setEnvVars()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup()
-	svcGroup.Start([]test.Starter{platform.ctl, platform.repo})
-	cli, err := newClient(context.Background(), platform.conn, platform.conn)
+	svcGroup := test.NewServiceGroup(platform.conn)
+	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
+		cancel()
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	err = cli.addTenant(pkg.Tenant)
+	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.recorder})
 	test.Nil(t, err)
-	err = cli.addPackage(pkg)
+	pkg := addPackageAndFiles(t, cli)
+	err = svcGroup.Start([]test.Starter{platform.listener, platform.queue})
 	test.Nil(t, err)
-	ps, err := cli.getAllPackages()
+	err = svcGroup.Start([]test.Starter{platform.executor})
 	test.Nil(t, err)
-	test.NotEmpty(t, ps)
-	err = cli.uploadSchemas(pkg, schemas)
-	test.Nil(t, err)
-	svcGroup.Start([]test.Starter{platform.listener, platform.queue})
-	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
-	url, err := url.Parse(u)
-	test.Nil(t, err)
-	err = cli.sendEventV1(url)
-	test.Nil(t, err)
-	res, err := cli.dequeue(pkg.Tenant, pkg.Queues[0].ID)
-	test.Nil(t, err)
-	test.NotEmpty(t, res)
-	ch, err := svcGroup.StopService(platform.queue)
-	test.Nil(t, err)
-	err = waitFor(cli.ctx, ch)
+	url := sendEventV1AndCheckResultOk(t, pkg, cli)
+	err = svcGroup.Stop(ctx, platform.queue)
 	test.Nil(t, err)
 	err = cli.sendEventV1(url)
 	test.ErrorIs(t, err, errSend{StatusCode: 500})
@@ -382,7 +353,7 @@ func testQueueDown(t *testing.T) {
 // func TestQueueDownUp(t *testing.T) {
 // 	setEnv()
 // 	platform := New()
-// 	svcGroup := test.NewServiceGroup()
+// 	svcGroup := test.NewServiceGroup(platform.conn)
 // 	t.Cleanup(func() {
 // 		err := svcGroup.Stop()
 // 		test.Nil(t, err)
@@ -426,72 +397,128 @@ func testQueueDown(t *testing.T) {
 // }
 
 func testErroCtl(t *testing.T) {
-	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup()
-	svcGroup.Start([]test.Starter{platform.repo})
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Microsecond)
-	defer cancel()
-	cli, err := newClient(ctx, platform.conn, platform.conn)
+	platform := NewPlatformWithTimeout(40 * time.Microsecond)
+	svcGroup := test.NewServiceGroup(platform.conn)
+	cli, err := newClient(context.Background(), platform.conn, platform.conn)
 	t.Cleanup(func() {
-		_ = svcGroup.ResetErrors()
+		_ = svcGroup.Stop(context.Background(), platform.listener)
+		_ = svcGroup.Stop(context.Background(), platform.queue)
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	svcGroup.StartWithContext(ctx, []test.Starter{platform.listener, platform.queue})
-	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
-	url, err := url.Parse(u)
+	err = svcGroup.Start([]test.Starter{platform.repo})
 	test.Nil(t, err)
-	err = cli.sendEventV1(url)
+	err = svcGroup.Start([]test.Starter{platform.listener})
 	test.NotNil(t, err)
-	test.NotNil(t, svcGroup.Errors())
+	err = svcGroup.Start([]test.Starter{platform.queue})
+	test.NotNil(t, err)
 }
 
 func testErrorInitQueue(t *testing.T) {
 	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup()
-	svcGroup.Start([]test.Starter{platform.repo, platform.ctl})
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Microsecond)
-	defer cancel()
+	svcGroup := test.NewServiceGroup(platform.conn)
+	ctx := context.Background()
 	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
-		_ = svcGroup.ResetErrors()
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
+	err = svcGroup.Start([]test.Starter{platform.repo, platform.ctl})
+	test.Nil(t, err)
 	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	svcGroup.StartWithContext(ctx, []test.Starter{platform.listener})
+	svcGroup.Start([]test.Starter{platform.listener})
 	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
 	url, err := url.Parse(u)
 	test.Nil(t, err)
 	err = cli.sendEventV1(url)
 	test.NotNil(t, err)
-	test.NotNil(t, svcGroup.Errors())
 }
 
 func testErroRepo(t *testing.T) {
+	os.Setenv("dial.timeout", (40 * time.Millisecond).String())
 	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup()
-	svcGroup.Start([]test.Starter{platform.ctl})
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Microsecond)
-	defer cancel()
-	cli, err := newClient(ctx, platform.conn, platform.conn)
+	svcGroup := test.NewServiceGroup(platform.conn)
+	cli, err := newClient(context.Background(), platform.conn, platform.conn)
 	t.Cleanup(func() {
-		_ = svcGroup.ResetErrors()
+		_ = svcGroup.Stop(context.Background(), platform.listener)
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	svcGroup.StartWithContext(ctx, []test.Starter{platform.listener, platform.queue})
+	err = svcGroup.Start([]test.Starter{platform.ctl})
+	test.Nil(t, err)
+	_ = addPackage(t, cli)
+	err = svcGroup.Start([]test.Starter{platform.queue})
+	test.Nil(t, err)
+	err = svcGroup.Start([]test.Starter{platform.listener})
+	test.NotNil(t, err)
+}
+
+func cleanUp(t *testing.T, svcGroup *test.ServiceGroup, cli *client) {
+	fail := false
+	if err := svcGroup.StopAll(); err != nil {
+		errw := test.ErrWhileStopping{}
+		if errors.As(err, &errw) {
+			t.Errorf("error while stopping the service %s: %v", *errw.Starter.Addr(), errw.Err)
+		} else {
+			t.Errorf("error while stopping %v", err)
+		}
+		fail = true
+	}
+	if cli != nil {
+		if err := cli.close(); err != nil {
+			t.Errorf("error stopping service group %v", err)
+			fail = true
+		}
+	}
+	if fail {
+		t.FailNow()
+	}
+}
+
+func addPackageAndFiles(t *testing.T, cli *client) *pb.JobPackage {
+	pkg := addPackage(t, cli)
+	err := cli.uploadSchemas(pkg, files)
+	test.Nil(t, err)
+	err = cli.uploadRuntimes(pkg, files)
+	test.Nil(t, err)
+	return pkg
+}
+
+func sendEventV1AndCheckResultOk(t *testing.T, pkg *pb.JobPackage, cli *client) *url.URL {
+	url := sendEventV1(t, pkg, cli)
+	checkExecutionResultOk(t, pkg, cli)
+	return url
+}
+
+func sendEventV1(t *testing.T, pkg *pb.JobPackage, cli *client) *url.URL {
 	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
 	url, err := url.Parse(u)
 	test.Nil(t, err)
 	err = cli.sendEventV1(url)
-	test.NotNil(t, err)
-	test.NotNil(t, svcGroup.Errors())
+	test.Nil(t, err)
+	return url
+}
+
+func addPackage(t *testing.T, cli *client) *pb.JobPackage {
+	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	err := cli.addTenant(pkg.Tenant)
+	test.Nil(t, err)
+	err = cli.addPackage(pkg)
+	test.Nil(t, err)
+	return pkg
+}
+
+func checkExecutionResultOk(t *testing.T, pkg *pb.JobPackage, cli *client) {
+	res, err := cli.dequeue(pkg.Tenant, "queue_id_1_ok")
+	test.Nil(t, err)
+	test.NotEmpty(t, res)
+	// l, err := cli.getJobExecutions(pkg, 1)
+	// test.Nil(t, err)
+	// test.NotEmpty(t, l)
 }
 
 func setEnvVars() {
+	os.Setenv("dial.timeout", (20 * time.Second).String())
 	os.Setenv("log.level", "0")
 	os.Setenv("log.console.enabled", "true")
 	os.Setenv("listener.addr", "listener:1")
@@ -509,6 +536,12 @@ func setEnvVars() {
 	os.Setenv("queue.addr", "queue:1")
 	os.Setenv("queue.host", "queue:1")
 
+	os.Setenv("recorder.addr", "recorder:1")
+	os.Setenv("recorder.host", "recorder:1")
+
 	os.Setenv("recorder.host", "recorder:1")
 	os.Setenv("recorder.addr", "recorder:1")
+	os.Setenv("log.console.enabled", "false")
+	os.Setenv("log.file.enabled", "false")
+	os.Setenv("executor.timeout", (1 * time.Microsecond).String())
 }

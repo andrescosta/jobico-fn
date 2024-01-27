@@ -18,6 +18,10 @@ func New(ctx context.Context, dir string, o controller.Option) *Server {
 	}
 }
 
+func (s *Server) Close() error {
+	return s.controller.Close()
+}
+
 func (s *Server) AddFile(ctx context.Context, in *pb.AddFileRequest) (*pb.AddFileReply, error) {
 	return s.controller.AddFile(ctx, in)
 }

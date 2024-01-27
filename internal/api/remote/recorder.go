@@ -38,7 +38,7 @@ func (c *RecorderClient) Close() error {
 
 func (c *RecorderClient) StreamJobExecutions(ctx context.Context, lines int32, resChan chan<- string) error {
 	logger := zerolog.Ctx(ctx)
-	rj, err := c.client.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{
+	rj, err := c.client.GetJobExecutionsStr(ctx, &pb.GetJobExecutionsRequest{
 		Lines: &lines,
 	})
 	if err != nil {
@@ -71,4 +71,15 @@ func (c *RecorderClient) AddJobExecution(ctx context.Context, ex *pb.JobExecutio
 		return err
 	}
 	return nil
+}
+
+func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, lines int32) ([]string, error) {
+	res, err := c.client.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{
+		Tenant: &tenant,
+		Lines:  &lines,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.Result, nil
 }

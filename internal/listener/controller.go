@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/andrescosta/goico/pkg/service"
@@ -23,7 +24,7 @@ func New(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (Con
 	if err != nil {
 		return empty, err
 	}
-	eventsCache, err := NewCachePopulated(ctx, d, l)
+	eventsCache, err := newCache(ctx, d, l)
 	if err != nil {
 		return empty, err
 	}
@@ -31,6 +32,13 @@ func New(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (Con
 		queueClient: queueClient,
 		eventsCache: eventsCache,
 	}, nil
+}
+
+func (c Controller) Close() error {
+	var err error
+	err = errors.Join(err, c.queueClient.Close())
+	err = errors.Join(err, c.eventsCache.Close())
+	return err
 }
 
 func (c Controller) ConfigureRoutes(_ context.Context, r *mux.Router) error {

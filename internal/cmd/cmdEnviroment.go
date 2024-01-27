@@ -44,7 +44,7 @@ func runEnv(ctx context.Context, cmd *command, d service.GrpcDialer, args []stri
 		fmt.Printf("file %s does not exist.", file)
 		return
 	}
-	client, err := remote.NewControlClient(ctx, d)
+	client, err := remote.NewCtlClient(ctx, d)
 	if err != nil {
 		printError(os.Stdout, cmd, err)
 		return

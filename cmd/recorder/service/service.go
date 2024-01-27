@@ -7,26 +7,22 @@ import (
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/internal/api/types"
-	"github.com/andrescosta/jobico/internal/queue"
-	"github.com/andrescosta/jobico/internal/queue/controller"
+	"github.com/andrescosta/jobico/internal/recorder/controller"
+	"github.com/andrescosta/jobico/internal/recorder/server"
 )
 
-const name = "queue"
+const name = "recorder"
 
 type Service struct {
 	Listener service.GrpcListener
-	Dialer   service.GrpcDialer
 	Option   *controller.Option
+	Dialer   service.GrpcDialer
 }
 
 func (s Service) Start(ctx context.Context) error {
 	l := s.Listener
 	if l == nil {
 		l = service.DefaultGrpcListener
-	}
-	d := s.Dialer
-	if d == nil {
-		d = service.DefaultGrpcDialer
 	}
 	o := s.Option
 	if o == nil {
@@ -36,16 +32,16 @@ func (s Service) Start(ctx context.Context) error {
 		grpc.WithListener(l),
 		grpc.WithName(name),
 		grpc.WithContext(ctx),
-		grpc.WithServiceDesc(&pb.Queue_ServiceDesc),
+		grpc.WithServiceDesc(&pb.Recorder_ServiceDesc),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			return queue.NewServer(ctx, d, *o)
+			return server.New(ctx, ".\\log.log", *o)
 		}),
 	)
 	if err != nil {
 		return err
 	}
 	defer svc.Dispose()
-	if err := svc.Serve(); err != nil {
+	if err = svc.Serve(); err != nil {
 		return err
 	}
 	return nil
@@ -65,9 +61,11 @@ func (s Service) CheckHealth(ctx context.Context) error {
 		d = service.DefaultGrpcDialer
 	}
 	cli, err := grpc.NewHelthCheckClient(ctx, *s.Addr(), d)
+	defer func() {
+		_ = cli.Close()
+	}()
 	if err != nil {
 		return err
 	}
-	defer cli.Close()
 	return cli.CheckOk(ctx, name)
 }

@@ -30,7 +30,7 @@ const (
 
 type TApp struct {
 	*pb.Environment
-	controlClient           *remote.ControlClient
+	controlClient           *remote.CtlClient
 	repoClient              *remote.RepoClient
 	recorderClient          *remote.RecorderClient
 	metadataClient          *remote.MetadataClient
@@ -57,7 +57,7 @@ func New(ctx context.Context, d service.GrpcDialer, name string, sync bool) (*TA
 	if !loaded {
 		return nil, errors.New(".env files were not loaded")
 	}
-	controlClient, err := remote.NewControlClient(ctx, d)
+	controlClient, err := remote.NewCtlClient(ctx, d)
 	if err != nil {
 		return nil, err
 	}

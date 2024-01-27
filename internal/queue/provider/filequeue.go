@@ -46,7 +46,7 @@ func (f *FileQueue[T]) readAndRemove() (T, error) {
 	}
 	if bdata == nil {
 		var d T
-		return d, nil
+		return d, ErrQueueEmpty
 	}
 	buffer := bytes.NewBuffer(bdata)
 	decoder := gob.NewDecoder(buffer)

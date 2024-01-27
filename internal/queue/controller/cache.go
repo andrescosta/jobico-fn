@@ -18,32 +18,32 @@ type Option struct {
 	InMemory bool
 }
 
-type QueueBuilder[T any] func(string) Queue[T]
+type QueueBuilder[T any] func(string) provider.Queue[T]
 
 // TODO: fix locks!! cal LoadOrSTore or what ?
 
 type Cache[T any] struct {
-	queues   *collection.SyncMap[string, Queue[T]]
-	d        service.GrpcDialer
-	newQueue QueueBuilder[T]
-}
-
-type Queue[T any] interface {
-	Add(data T) error
-	Remove() (T, error)
+	queues        *collection.SyncMap[string, provider.Queue[T]]
+	dialer        service.GrpcDialer
+	newQueue      QueueBuilder[T]
+	controlClient *remote.CtlClient
 }
 
 func NewQueueCache[T any](ctx context.Context, d service.GrpcDialer, o Option) (*Cache[T], error) {
-	q := collection.NewSyncMap[string, Queue[T]]()
-	b := func(id string) Queue[T] { return provider.NewFileQueue[T](id) }
+	q := collection.NewSyncMap[string, provider.Queue[T]]()
+	b := func(id string) provider.Queue[T] { return provider.NewFileQueue[T](id) }
 	if o.InMemory {
-		b = func(_ string) Queue[T] { return provider.NewMemBasedQueue[T]() }
+		b = func(_ string) provider.Queue[T] { return provider.NewMemBasedQueue[T]() }
 	}
-
+	c, err := remote.NewCtlClient(ctx, d)
+	if err != nil {
+		return nil, err
+	}
 	qs := &Cache[T]{
-		queues:   q,
-		d:        d,
-		newQueue: b,
+		queues:        q,
+		dialer:        d,
+		newQueue:      b,
+		controlClient: c,
 	}
 	if err := qs.populate(ctx); err != nil {
 		return nil, err
@@ -54,7 +54,11 @@ func NewQueueCache[T any](ctx context.Context, d service.GrpcDialer, o Option) (
 	return qs, nil
 }
 
-func (q *Cache[T]) GetQueue(tentant string, queueID string) (Queue[T], error) {
+func (q *Cache[T]) Close() error {
+	return q.controlClient.Close()
+}
+
+func (q *Cache[T]) GetQueue(tentant string, queueID string) (provider.Queue[T], error) {
 	queue, ok := q.queues.Load(getQueueName(tentant, queueID))
 	if !ok {
 		return nil, ErrQueueUnknown
@@ -63,11 +67,7 @@ func (q *Cache[T]) GetQueue(tentant string, queueID string) (Queue[T], error) {
 }
 
 func (q *Cache[T]) populate(ctx context.Context) error {
-	controlClient, err := remote.NewControlClient(ctx, q.d)
-	if err != nil {
-		return err
-	}
-	pkgs, err := controlClient.GetAllPackages(ctx)
+	pkgs, err := q.controlClient.GetAllPackages(ctx)
 	if err != nil {
 		return err
 	}
@@ -78,11 +78,7 @@ func (q *Cache[T]) populate(ctx context.Context) error {
 }
 
 func (q *Cache[T]) startListeningUpdates(ctx context.Context) error {
-	controlClient, err := remote.NewControlClient(ctx, q.d)
-	if err != nil {
-		return err
-	}
-	l, err := controlClient.ListenerForPackageUpdates(ctx)
+	l, err := q.controlClient.ListenerForPackageUpdates(ctx)
 	if err != nil {
 		return err
 	}

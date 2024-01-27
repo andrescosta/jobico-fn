@@ -3,6 +3,7 @@ package listener
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/andrescosta/goico/pkg/service"
@@ -16,18 +17,23 @@ import (
 var ErrEventUnknown = fmt.Errorf("event unknown")
 
 type EventDefCache struct {
-	backCache    *cache.Cache[string, *EventEntry]
-	serviceCache *cache.Service
-	repoClient   *remote.RepoClient
-	d            service.GrpcDialer
+	eventCache    *cache.Cache[string, *EventEntry]
+	serviceCache  *cache.Service
+	repoClient    *remote.RepoClient
+	dialer        service.GrpcDialer
+	controlClient *remote.CtlClient
 }
 type EventEntry struct {
 	EventDef *pb.EventDef
 	Schema   *jsonschema.Schema
 }
 
-func NewCachePopulated(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (*EventDefCache, error) {
+func newCache(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (*EventDefCache, error) {
 	repoClient, err := remote.NewRepoClient(ctx, d)
+	if err != nil {
+		return nil, err
+	}
+	controlClient, err := remote.NewCtlClient(ctx, d)
 	if err != nil {
 		return nil, err
 	}
@@ -37,10 +43,11 @@ func NewCachePopulated(ctx context.Context, d service.GrpcDialer, l service.Grpc
 		return nil, err
 	}
 	cache := EventDefCache{
-		backCache:    b,
-		repoClient:   repoClient,
-		d:            d,
-		serviceCache: svc,
+		eventCache:    b,
+		repoClient:    repoClient,
+		controlClient: controlClient,
+		dialer:        d,
+		serviceCache:  svc,
 	}
 	if err := cache.populate(ctx); err != nil {
 		return nil, err
@@ -57,8 +64,16 @@ func NewCachePopulated(ctx context.Context, d service.GrpcDialer, l service.Grpc
 	return &cache, nil
 }
 
+func (j *EventDefCache) Close() error {
+	var err error
+	err = errors.Join(err, j.controlClient.Close())
+	err = errors.Join(err, j.repoClient.Close())
+	err = errors.Join(err, j.eventCache.Close())
+	return err
+}
+
 func (j *EventDefCache) Get(tenant string, eventID string) (*EventEntry, error) {
-	ev, ok := j.backCache.Get(getEventName(tenant, eventID))
+	ev, ok := j.eventCache.Get(getEventName(tenant, eventID))
 	if !ok {
 		return nil, ErrEventUnknown
 	}
@@ -66,11 +81,7 @@ func (j *EventDefCache) Get(tenant string, eventID string) (*EventEntry, error) 
 }
 
 func (j *EventDefCache) startListeningUpdates(ctx context.Context, d service.GrpcDialer) error {
-	controlClient, err := remote.NewControlClient(ctx, d)
-	if err != nil {
-		return err
-	}
-	l, err := controlClient.ListenerForPackageUpdates(ctx)
+	l, err := j.controlClient.ListenerForPackageUpdates(ctx)
 	if err != nil {
 		return err
 	}
@@ -99,35 +110,30 @@ func (j *EventDefCache) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrR
 func (j *EventDefCache) deleteEventsOfPackage(ctx context.Context, p *pb.JobPackage) {
 	logger := zerolog.Ctx(ctx)
 	for _, d := range p.Jobs {
-		if err := j.backCache.Delete(getEventName(p.Tenant, d.Event.ID)); err != nil {
+		if err := j.eventCache.Delete(getEventName(p.Tenant, d.Event.ID)); err != nil {
 			logger.Warn().Msgf("cache broken, error: %v", err)
 		}
 	}
 }
 
 func (j *EventDefCache) populate(ctx context.Context) error {
-	controlClient, err := remote.NewControlClient(ctx, j.d)
+	pkgs, err := j.controlClient.GetAllPackages(ctx)
 	if err != nil {
 		return err
 	}
-	pkgs, err := controlClient.GetAllPackages(ctx)
-	if err != nil {
-		return err
-	}
-	j.addOrUpdateEventsForPackages(ctx, pkgs)
-	return nil
+	return j.addOrUpdateEventsForPackages(ctx, pkgs)
 }
 
-func (j *EventDefCache) addOrUpdateEventsForPackages(ctx context.Context, pkgs []*pb.JobPackage) {
-	logger := zerolog.Ctx(ctx)
+func (j *EventDefCache) addOrUpdateEventsForPackages(ctx context.Context, pkgs []*pb.JobPackage) error {
 	for _, ps := range pkgs {
 		tenant := ps.Tenant
 		for _, job := range ps.Jobs {
 			if err := j.addOrUpdateEvent(ctx, tenant, job); err != nil {
-				logger.Warn().AnErr("error", err).Msg("Error updating package")
+				return err
 			}
 		}
 	}
+	return nil
 }
 
 func (j *EventDefCache) addOrUpdateEvent(ctx context.Context, tenant string, job *pb.JobDef) error {
@@ -151,7 +157,7 @@ func (j *EventDefCache) addOrUpdateEvent(ctx context.Context, tenant string, job
 		Schema:   compiledSchema,
 	}
 
-	if err := j.backCache.AddOrUpdate(eventName, ev); err != nil {
+	if err := j.eventCache.AddOrUpdate(eventName, ev); err != nil {
 		logger.Warn().Msgf("cache broken, error: %v", err)
 	}
 	return nil

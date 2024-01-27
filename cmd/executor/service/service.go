@@ -7,16 +7,17 @@ import (
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/http"
-	"github.com/andrescosta/jobico/internal/listener"
+	"github.com/andrescosta/goico/pkg/service/process"
+	"github.com/andrescosta/jobico/internal/executor"
 )
 
-const name = "listener"
+const name = "executor"
 
 type Service struct {
 	Dialer        service.GrpcDialer
 	Listener      service.HTTPListener
-	ListenerCache service.HTTPListener
 	ClientBuilder service.HTTPClient
+	Option        *executor.Option
 }
 
 func (s Service) Start(ctx context.Context) (err error) {
@@ -28,30 +29,38 @@ func (s Service) Start(ctx context.Context) (err error) {
 	if l == nil {
 		l = service.DefaultHTTPListener
 	}
-	lc := s.ListenerCache
-	if lc == nil {
-		lc = service.DefaultGrpcListener
+	o := s.Option
+	if o == nil {
+		o = &executor.Option{}
 	}
-	c, err := listener.New(ctx, d, lc)
+	m, err := executor.NewVM(ctx, d, *o)
 	if err != nil {
 		return
 	}
 	defer func() {
-		err = errors.Join(err, c.Close())
+		errc := m.Close(ctx)
+		err = errors.Join(err, errc)
 	}()
-	svc, err := http.New(
-		http.WithListener[*http.ServiceOptions](l),
-		http.WithContext(ctx),
-		http.WithName(name),
-		http.WithHealthCheck[*http.ServiceOptions](func(ctx context.Context) (map[string]string, error) {
-			return make(map[string]string), nil
+	e, err := process.New(
+		process.WithSidecarListener(l),
+		process.WithContext(ctx),
+		process.WithName(name),
+		process.WithHealthCheckFN(func(ctx context.Context) (map[string]string, error) {
+			status := make(map[string]string)
+			if !m.IsUp() {
+				return status, errors.New("error in executor")
+			}
+			return status, nil
 		}),
-		http.WithInitRoutesFn(c.ConfigureRoutes),
+		process.WithServeHandler(func(ctx context.Context) error {
+			m.StartExecutors(ctx)
+			return nil
+		}),
 	)
 	if err != nil {
 		return
 	}
-	err = svc.Serve()
+	err = e.Serve()
 	return
 }
 
@@ -60,7 +69,7 @@ func (s Service) Addr() *string {
 }
 
 func (s Service) Kind() service.Kind {
-	return http.Kind
+	return process.Kind
 }
 
 func (s Service) CheckHealth(ctx context.Context) error {

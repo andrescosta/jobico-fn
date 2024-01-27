@@ -22,7 +22,7 @@ func (f *MemBasedQueue[T]) Add(data T) error {
 func (f *MemBasedQueue[T]) Remove() (T, error) {
 	if f.q.Size() == 0 {
 		var t T
-		return t, nil
+		return t, ErrQueueEmpty
 	}
 	return f.q.Dequeue(), nil
 }

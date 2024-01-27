@@ -11,9 +11,12 @@ import (
 	"github.com/andrescosta/jobico/internal/ctl/server"
 )
 
+const name = "ctl"
+
 type Service struct {
 	Listener service.GrpcListener
 	DBOption *database.Option
+	Dialer   service.GrpcDialer
 }
 
 func (s Service) Start(ctx context.Context) error {
@@ -26,7 +29,7 @@ func (s Service) Start(ctx context.Context) error {
 		o = &database.Option{}
 	}
 	svc, err := grpc.New(
-		grpc.WithName("ctl"),
+		grpc.WithName(name),
 		grpc.WithListener(l),
 		grpc.WithContext(ctx),
 		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
@@ -43,4 +46,25 @@ func (s Service) Start(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (s Service) Addr() *string {
+	return env.StringOrNil(name + ".addr")
+}
+
+func (s Service) Kind() service.Kind {
+	return grpc.Kind
+}
+
+func (s Service) CheckHealth(ctx context.Context) error {
+	d := s.Dialer
+	if d == nil {
+		d = service.DefaultGrpcDialer
+	}
+	cli, err := grpc.NewHelthCheckClient(ctx, *s.Addr(), d)
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+	return cli.CheckOk(ctx, name)
 }

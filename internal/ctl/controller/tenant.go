@@ -22,7 +22,8 @@ func NewTenantController(db *database.Database) *TenantController {
 	}
 }
 
-func (c *TenantController) Close() {
+func (c *TenantController) Close() error {
+	return nil
 }
 
 func (c *TenantController) GetTenants(in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {

@@ -45,7 +45,6 @@ func Recv[T proto.Message](ctx context.Context, s grpc.ClientStream, c chan<- T)
 
 func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *broadcaster.Broadcaster[T]) error {
 	logger := zerolog.Ctx(ctx)
-
 	for {
 		select {
 		case <-ctx.Done():

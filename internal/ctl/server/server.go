@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 
 	"github.com/andrescosta/goico/pkg/database"
 	"github.com/andrescosta/goico/pkg/env"
@@ -32,10 +33,12 @@ func New(ctx context.Context, dbFileName string, dbo database.Option) (*Server, 
 }
 
 func (c *Server) Close() error {
-	c.tenantCont.Close()
-	c.pkgCont.Close()
-	c.envCont.Close()
-	return c.db.Close()
+	var err error
+	err = errors.Join(err, c.tenantCont.Close())
+	err = errors.Join(err, c.pkgCont.Close())
+	err = errors.Join(err, c.envCont.Close())
+	err = errors.Join(err, c.db.Close())
+	return err
 }
 
 func (c *Server) GetPackages(_ context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {

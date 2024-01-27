@@ -15,9 +15,9 @@ import (
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc/cache"
 	evcache "github.com/andrescosta/goico/pkg/service/grpc/cache/event"
+	"github.com/andrescosta/goico/pkg/test"
 	"github.com/andrescosta/jobico/internal/api/remote"
 	pb "github.com/andrescosta/jobico/internal/api/types"
-	"github.com/andrescosta/jobico/pkg/grpchelper"
 )
 
 type event struct {
@@ -30,19 +30,18 @@ type errSend struct {
 
 type client struct {
 	ctx          context.Context
-	cacheEventCh chan *evcache.Event
-	ctl          *remote.ControlClient
+	cancel       context.CancelFunc
+	cacheEventCh <-chan *evcache.Event
+	ctl          *remote.CtlClient
 	repo         *remote.RepoClient
 	queue        *remote.QueueClient
 	recorder     *remote.RecorderClient
-	cache        evcache.CacheServiceClient
-	listener     *http.Client
+	cache        *cache.CacheServiceClient
+	httpClient   *http.Client
 }
 
-var errTimeoutWaiting = errors.New("timeout while waiting channel")
-
-func newClient(ctx context.Context, dialer service.GrpcDialer, transport service.HTTPTranporter) (*client, error) {
-	ctl, err := remote.NewControlClient(ctx, dialer)
+func newClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder service.HTTPClient) (*client, error) {
+	ctl, err := remote.NewCtlClient(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
@@ -62,30 +61,20 @@ func newClient(ctx context.Context, dialer service.GrpcDialer, transport service
 	if err != nil {
 		return nil, err
 	}
-	listenerClient, err := newHttpClient(transport)
+	httpClient, err := cliBuilder.NewHTTPClient(env.String("listener.host"))
 	if err != nil {
 		return nil, err
 	}
+	ctxClient, cancel := context.WithCancel(ctx)
 	return &client{
-		ctx:      ctx,
-		ctl:      ctl,
-		queue:    queue,
-		repo:     repo,
-		recorder: recorder,
-		cache:    cacheClient,
-		listener: listenerClient,
-	}, nil
-}
-
-func newHttpClient(t service.HTTPTranporter) (*http.Client, error) {
-	addr := env.String("listener.host")
-	transport, err := t.Tranport(addr)
-	if err != nil {
-		return nil, err
-	}
-	return &http.Client{
-		Timeout:   1 * time.Second,
-		Transport: transport,
+		ctx:        ctxClient,
+		cancel:     cancel,
+		ctl:        ctl,
+		queue:      queue,
+		repo:       repo,
+		recorder:   recorder,
+		cache:      cacheClient,
+		httpClient: httpClient,
 	}, nil
 }
 
@@ -97,9 +86,7 @@ type schemaRefIds struct {
 
 func (s *client) close() error {
 	errs := make([]error, 0)
-	if s.cacheEventCh != nil {
-		close(s.cacheEventCh)
-	}
+	s.cancel()
 	if err := s.ctl.Close(); err != nil {
 		errs = append(errs, err)
 	}
@@ -110,6 +97,9 @@ func (s *client) close() error {
 		errs = append(errs, err)
 	}
 	if err := s.repo.Close(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := s.cache.Close(); err != nil {
 		errs = append(errs, err)
 	}
 	return errors.Join(errs...)
@@ -125,6 +115,14 @@ func (s *client) newTestPackage(schemaRefIds schemaRefIds, runtimeRef string) *p
 				ID:   "queue_id_1",
 				Name: strptr("queue_name_1"),
 			},
+			{
+				ID:   "queue_id_1_ok",
+				Name: strptr("queue_name_1_ok"),
+			},
+			{
+				ID:   "queue_id_1_error",
+				Name: strptr("queue_name_1_error"),
+			},
 		},
 		Jobs: []*pb.JobDef{
 			{
@@ -138,31 +136,19 @@ func (s *client) newTestPackage(schemaRefIds schemaRefIds, runtimeRef string) *p
 				},
 				Result: &pb.ResultDef{
 					Ok: &pb.EventDef{
-						ID: "event_id_1_ok",
+						ID:            "event_id_1_ok",
+						Name:          strptr("event_name_1_ok"),
+						DataType:      pb.DataType_Json,
+						SupplierQueue: "queue_id_1_ok",
+						Runtime:       "runtime_id_1",
 					},
 					Error: &pb.EventDef{
-						ID: "event_id_1_error",
+						ID:            "event_id_1_error",
+						Name:          strptr("event_name_1_error"),
+						DataType:      pb.DataType_Json,
+						SupplierQueue: "queue_id_1_error",
+						Runtime:       "runtime_id_1",
 					},
-				},
-			},
-			{
-				Event: &pb.EventDef{
-					ID:            "event_id_1_ok",
-					Name:          strptr("event_name_1_ok"),
-					DataType:      pb.DataType_Json,
-					SupplierQueue: "queue_id_1",
-					Runtime:       "runtime_id_1",
-					Schema:        &pb.SchemaDef{SchemaRef: schemaRefIds.schemaRefOk},
-				},
-			},
-			{
-				Event: &pb.EventDef{
-					ID:            "event_id_1_error",
-					Name:          strptr("event_name_1_error"),
-					DataType:      pb.DataType_Json,
-					SupplierQueue: "queue_id_1",
-					Runtime:       "runtime_id_1",
-					Schema:        &pb.SchemaDef{SchemaRef: schemaRefIds.schemaRefError},
 				},
 			},
 		},
@@ -245,6 +231,17 @@ func (s *client) uploadSchemas(p *pb.JobPackage, files map[string][]byte) error 
 	return nil
 }
 
+func (s *client) uploadRuntimes(p *pb.JobPackage, files map[string][]byte) error {
+	for _, e := range p.Runtimes {
+		if err := s.uploadFile(p.Tenant,
+			e.ModuleRef,
+			pb.File_Wasm, bytes.NewReader(files[e.ModuleRef])); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *client) sendEventV1(url *url.URL) error {
 	d := struct {
 		FirstName string `json:"firstName"`
@@ -295,7 +292,7 @@ func (s *client) sendEvent(url *url.URL, e []byte) error {
 		URL:    url,
 		Body:   io.NopCloser(bytes.NewReader(e)),
 	}
-	re, err := s.listener.Do(r)
+	re, err := s.httpClient.Do(r)
 	if err != nil {
 		return err
 	}
@@ -330,47 +327,43 @@ func (s *client) getAllPackages() ([]*pb.JobPackage, error) {
 }
 
 func (s *client) dequeue(tenant string, queue string) ([]*pb.QueueItem, error) {
-	res, err := s.queue.Dequeue(s.ctx, tenant, queue)
-	if err != nil {
-		return nil, err
+	ctx, cancel := context.WithTimeout(s.ctx, 50*time.Second)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			res, err := s.queue.Dequeue(s.ctx, tenant, queue)
+			if err != nil {
+				return nil, err
+			}
+			if len(res) != 0 {
+				return res, nil
+			}
+			// waiting a bit to avoid bombarding the queue
+			time.Sleep(1 * time.Millisecond)
+		}
 	}
-
-	return res, nil
 }
 
 func (s *client) startRecvCacheEvents() error {
-	r, err := s.cache.Events(s.ctx, &evcache.Empty{})
+	l, err := s.cache.ListenerForEvents(context.Background())
 	if err != nil {
 		return err
 	}
-	ch := make(chan *evcache.Event)
-	ctx, cancel := context.WithTimeout(s.ctx, 5*time.Second)
-	go func() {
-		defer func() {
-			close(ch)
-			cancel()
-		}()
-		_ = grpchelper.Recv[*evcache.Event](ctx, r, ch)
-	}()
-	s.cacheEventCh = ch
-	time.Sleep(10 * time.Millisecond)
+	s.cacheEventCh = l.C
 	return nil
 }
 
-func (s *client) waitForCacheEvents() error {
-	return waitFor(s.ctx, s.cacheEventCh)
+func (s *client) getJobExecutions(p *pb.JobPackage, lines int32) ([]string, error) {
+	l, err := s.recorder.GetJobExecutions(s.ctx, p.Tenant, lines)
+	if err != nil {
+		return nil, err
+	}
+	return l, nil
 }
 
-func waitFor[T any](ctx context.Context, ch <-chan T) error {
-	if ch == nil {
-		return errors.New("channel is nil")
-	}
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	select {
-	case <-ctx.Done():
-		return errTimeoutWaiting
-	case <-ch:
-		return nil
-	}
+func (s *client) waitForCacheEvents() error {
+	return test.WaitForClosed(context.Background(), s.cacheEventCh)
 }

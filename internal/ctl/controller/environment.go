@@ -29,8 +29,8 @@ func NewEnvironmentController(ctx context.Context, db *database.Database) *Envir
 	}
 }
 
-func (c *EnvironmentController) Close() {
-	c.bEnvironment.Stop()
+func (c *EnvironmentController) Close() error {
+	return c.bEnvironment.Stop()
 }
 
 func (c *EnvironmentController) AddEnvironment(in *pb.AddEnvironmentRequest) (*pb.AddEnvironmentReply, error) {
