@@ -5,10 +5,10 @@ option go_package = "/types";
 import "common.proto";
 
 service Repo {
-  rpc GetFile (GetFileRequest) returns (GetFileReply);
+  rpc File (FileRequest) returns (FileReply);
   rpc AddFile (AddFileRequest) returns (AddFileReply);
   rpc UpdateToFileStr (UpdateToFileStrRequest) returns (stream UpdateToFileStrReply) {}
-  rpc GetAllFileNames (Void) returns (GetAllFileNamesReply);
+  rpc AllFileNames (Void) returns (AllFileNamesReply);
 }
 
 
@@ -22,7 +22,7 @@ message UpdateToFileStrReply{
     TenantFile object = 2;
 }
 
-message GetAllFileNamesReply {
+message AllFileNamesReply {
     repeated TenantFiles tenantFiles = 1;
 }
 
@@ -35,11 +35,11 @@ message AddFileReply {
     bytes content = 1; 
 }
 
-message GetFileRequest{
+message FileRequest{
     TenantFile tenantFile = 1;
 }
 
-message GetFileReply {
+message FileReply {
     File file = 1; 
 }
 

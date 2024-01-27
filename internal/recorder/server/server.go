@@ -32,14 +32,14 @@ func (s *Server) AddJobExecution(_ context.Context, in *pb.AddJobExecutionReques
 	return s.controller.AddJobExecution(s.ctx, in)
 }
 
-func (s *Server) GetJobExecutionsStr(in *pb.GetJobExecutionsRequest, srv pb.Recorder_GetJobExecutionsStrServer) error {
+func (s *Server) GetJobExecutionsStr(in *pb.JobExecutionsRequest, srv pb.Recorder_GetJobExecutionsStrServer) error {
 	return s.controller.GetJobExecutionsStr(s.ctx, in, srv)
 }
 
-func (s *Server) GetJobExecutions(ctx context.Context, in *pb.GetJobExecutionsRequest) (*pb.GetJobExecutionsReply, error) {
+func (s *Server) GetJobExecutions(ctx context.Context, in *pb.JobExecutionsRequest) (*pb.JobExecutionsReply, error) {
 	l, err := s.controller.OldRecords(int(*in.Lines))
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetJobExecutionsReply{Result: l}, nil
+	return &pb.JobExecutionsReply{Result: l}, nil
 }

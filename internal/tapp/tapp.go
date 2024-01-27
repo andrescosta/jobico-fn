@@ -11,7 +11,7 @@ import (
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	"github.com/andrescosta/goico/pkg/service/grpc/svcmeta"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -30,10 +30,10 @@ const (
 
 type TApp struct {
 	*pb.Environment
-	controlClient           *remote.CtlClient
-	repoClient              *remote.RepoClient
-	recorderClient          *remote.RecorderClient
-	metadataClient          *remote.MetadataClient
+	controlCli              *client.Ctl
+	repoCli                 *client.Repo
+	recorderCli             *client.Recorder
+	metadataCli             *client.Metadata
 	infoClients             map[string]*svcmeta.InfoClient
 	helthCheckClients       map[string]*grpc.HelthCheckClient
 	app                     *tview.Application
@@ -46,7 +46,7 @@ type TApp struct {
 	cancelJobResultsGetter  context.CancelFunc
 	cancelStreamUpdatesFunc context.CancelFunc
 	sync                    bool
-	d                       service.GrpcDialer
+	dialer                  service.GrpcDialer
 }
 
 func New(ctx context.Context, d service.GrpcDialer, name string, sync bool) (*TApp, error) {
@@ -57,33 +57,33 @@ func New(ctx context.Context, d service.GrpcDialer, name string, sync bool) (*TA
 	if !loaded {
 		return nil, errors.New(".env files were not loaded")
 	}
-	controlClient, err := remote.NewCtlClient(ctx, d)
+	controlCli, err := client.NewCtl(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	repoClient, err := remote.NewRepoClient(ctx, d)
+	repoCli, err := client.NewRepo(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	recorderClient, err := remote.NewRecorderClient(ctx, d)
+	recorderCli, err := client.NewRecorder(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	metadataClient := remote.NewMetadataClient()
+	metadataCli := client.NewMetadata()
 	if err != nil {
 		return nil, err
 	}
 	app := tview.NewApplication().EnableMouse(true)
 	return &TApp{
-		controlClient:     controlClient,
-		repoClient:        repoClient,
-		recorderClient:    recorderClient,
-		metadataClient:    metadataClient,
+		controlCli:        controlCli,
+		repoCli:           repoCli,
+		recorderCli:       recorderCli,
+		metadataCli:       metadataCli,
 		infoClients:       make(map[string]*svcmeta.InfoClient),
 		helthCheckClients: make(map[string]*grpc.HelthCheckClient),
 		app:               app,
 		sync:              sync,
-		d:                 d,
+		dialer:            d,
 	}, nil
 }
 
@@ -107,8 +107,8 @@ func (c *TApp) Run() error {
 }
 
 func (c *TApp) Dispose() {
-	c.controlClient.Close()
-	c.repoClient.Close()
+	c.controlCli.Close()
+	c.repoCli.Close()
 	for _, v := range c.infoClients {
 		v.Close()
 	}
@@ -124,7 +124,7 @@ func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 	case NoRootNode:
 		return
 	case RootNodePackage:
-		ep, err := c.controlClient.GetAllPackages(ctx)
+		ep, err := c.controlCli.AllPackages(ctx)
 		if err != nil {
 			c.showErrorStr("error refreshing packages data")
 			return
@@ -133,7 +133,7 @@ func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 		original.children = g
 		refreshTreeNode(n)
 	case RootNodeEnv:
-		ep, err := c.controlClient.GetEnvironment(ctx)
+		ep, err := c.controlCli.Environment(ctx)
 		if err != nil {
 			c.showErrorStr("error refreshing environment data")
 			return
@@ -142,7 +142,7 @@ func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 		original.children = g
 		refreshTreeNode(n)
 	case RootNodeFile:
-		fs, err := c.repoClient.GetAllFileNames(ctx)
+		fs, err := c.repoCli.AllFilenames(ctx)
 		if err != nil {
 			c.showErrorStr("error refreshing files data")
 			return
@@ -156,7 +156,7 @@ func (c *TApp) refreshRootNode(ctx context.Context, n *tview.TreeNode) {
 func (c *TApp) startStreamingCtlUpdates(ctx context.Context) error {
 	ctx, done := context.WithCancel(ctx)
 	c.cancelStreamUpdatesFunc = done
-	lp, err := c.controlClient.ListenerForPackageUpdates(ctx)
+	lp, err := c.controlCli.ListenerForPackageUpdates(ctx)
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func (c *TApp) startStreamingCtlUpdates(ctx context.Context) error {
 			}
 		}
 	}()
-	le, err := c.controlClient.ListenerForEnvironmentUpdates(ctx)
+	le, err := c.controlCli.ListenerForEnvironmentUpdates(ctx)
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func (c *TApp) startStreamingCtlUpdates(ctx context.Context) error {
 			}
 		}
 	}()
-	lf, err := c.repoClient.ListenerForRepoUpdates(ctx)
+	lf, err := c.repoCli.ListenerForRepoUpdates(ctx)
 	if err != nil {
 		return err
 	}
@@ -267,7 +267,7 @@ func (c *TApp) startGettingJobResults(n *tview.TreeNode) {
 	}(ch)
 	go func() {
 		defer close(ch)
-		err := c.recorderClient.StreamJobExecutions(ctxJobResultsGetter, lines, ch)
+		err := c.recorderCli.StreamJobExecutions(ctxJobResultsGetter, lines, ch)
 		if err != nil {
 			c.debugErrorFromGoRoutine(err)
 			c.showErrorStr("Error getting results", 3*time.Second)

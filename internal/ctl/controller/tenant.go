@@ -26,22 +26,22 @@ func (c *TenantController) Close() error {
 	return nil
 }
 
-func (c *TenantController) GetTenants(in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
+func (c *TenantController) Tenants(in *pb.TenantsRequest) (*pb.TenantsReply, error) {
 	if in.ID != nil {
 		t, err := c.getTenant(*in.ID)
 		if err != nil {
 			return nil, err
 		}
 		if t != nil {
-			return &pb.GetTenantsReply{Tenants: []*pb.Tenant{t}}, nil
+			return &pb.TenantsReply{Tenants: []*pb.Tenant{t}}, nil
 		}
-		return &pb.GetTenantsReply{}, nil
+		return &pb.TenantsReply{}, nil
 	}
 	ts, err := c.getTenants()
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetTenantsReply{Tenants: ts}, nil
+	return &pb.TenantsReply{Tenants: ts}, nil
 }
 
 func (c *TenantController) AddTenant(in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {

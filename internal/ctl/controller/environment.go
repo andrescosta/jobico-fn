@@ -63,7 +63,7 @@ func (c *EnvironmentController) UpdateEnvironment(in *pb.UpdateEnvironmentReques
 	return &pb.Void{}, nil
 }
 
-func (c *EnvironmentController) GetEnvironment() (*pb.GetEnvironmentReply, error) {
+func (c *EnvironmentController) GetEnvironment() (*pb.EnvironmentReply, error) {
 	mydao, err := c.daoCache.GetGeneric(tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c *EnvironmentController) GetEnvironment() (*pb.GetEnvironmentReply, error
 	if ms != nil {
 		environment = (*ms).(*pb.Environment)
 	}
-	return &pb.GetEnvironmentReply{Environment: environment}, nil
+	return &pb.EnvironmentReply{Environment: environment}, nil
 }
 
 func (c *EnvironmentController) UpdateToEnvironmentStr(_ *pb.Void, r pb.Control_UpdateToEnvironmentStrServer) error {

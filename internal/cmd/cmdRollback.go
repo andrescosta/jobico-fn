@@ -9,7 +9,7 @@ import (
 	"github.com/andrescosta/goico/pkg/ioutil"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/yamlutil"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
@@ -47,12 +47,12 @@ func runRollback(ctx context.Context, cmd *command, d service.GrpcDialer, args [
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	client, err := remote.NewCtlClient(ctx, d)
+	client, err := client.NewCtl(ctx, d)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	p, err := client.GetPackage(ctx, f.Tenant, &f.ID)
+	p, err := client.Package(ctx, f.Tenant, &f.ID)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return

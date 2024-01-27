@@ -453,7 +453,7 @@ func testErroRepo(t *testing.T) {
 	test.NotNil(t, err)
 }
 
-func cleanUp(t *testing.T, svcGroup *test.ServiceGroup, cli *client) {
+func cleanUp(t *testing.T, svcGroup *test.ServiceGroup, cli *testClient) {
 	fail := false
 	if err := svcGroup.StopAll(); err != nil {
 		errw := test.ErrWhileStopping{}
@@ -475,7 +475,7 @@ func cleanUp(t *testing.T, svcGroup *test.ServiceGroup, cli *client) {
 	}
 }
 
-func addPackageAndFiles(t *testing.T, cli *client) *pb.JobPackage {
+func addPackageAndFiles(t *testing.T, cli *testClient) *pb.JobPackage {
 	pkg := addPackage(t, cli)
 	err := cli.uploadSchemas(pkg, files)
 	test.Nil(t, err)
@@ -484,13 +484,13 @@ func addPackageAndFiles(t *testing.T, cli *client) *pb.JobPackage {
 	return pkg
 }
 
-func sendEventV1AndCheckResultOk(t *testing.T, pkg *pb.JobPackage, cli *client) *url.URL {
+func sendEventV1AndCheckResultOk(t *testing.T, pkg *pb.JobPackage, cli *testClient) *url.URL {
 	url := sendEventV1(t, pkg, cli)
 	checkExecutionResultOk(t, pkg, cli)
 	return url
 }
 
-func sendEventV1(t *testing.T, pkg *pb.JobPackage, cli *client) *url.URL {
+func sendEventV1(t *testing.T, pkg *pb.JobPackage, cli *testClient) *url.URL {
 	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
 	url, err := url.Parse(u)
 	test.Nil(t, err)
@@ -499,7 +499,7 @@ func sendEventV1(t *testing.T, pkg *pb.JobPackage, cli *client) *url.URL {
 	return url
 }
 
-func addPackage(t *testing.T, cli *client) *pb.JobPackage {
+func addPackage(t *testing.T, cli *testClient) *pb.JobPackage {
 	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
 	err := cli.addTenant(pkg.Tenant)
 	test.Nil(t, err)
@@ -508,7 +508,7 @@ func addPackage(t *testing.T, cli *client) *pb.JobPackage {
 	return pkg
 }
 
-func checkExecutionResultOk(t *testing.T, pkg *pb.JobPackage, cli *client) {
+func checkExecutionResultOk(t *testing.T, pkg *pb.JobPackage, cli *testClient) {
 	res, err := cli.dequeue(pkg.Tenant, "queue_id_1_ok")
 	test.Nil(t, err)
 	test.NotEmpty(t, res)

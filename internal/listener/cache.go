@@ -8,7 +8,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc/cache"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/rs/zerolog"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -19,9 +19,9 @@ var ErrEventUnknown = fmt.Errorf("event unknown")
 type EventDefCache struct {
 	eventCache    *cache.Cache[string, *EventEntry]
 	serviceCache  *cache.Service
-	repoClient    *remote.RepoClient
+	repoClient    *client.Repo
 	dialer        service.GrpcDialer
-	controlClient *remote.CtlClient
+	controlClient *client.Ctl
 }
 type EventEntry struct {
 	EventDef *pb.EventDef
@@ -29,11 +29,11 @@ type EventEntry struct {
 }
 
 func newCache(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (*EventDefCache, error) {
-	repoClient, err := remote.NewRepoClient(ctx, d)
+	repoClient, err := client.NewRepo(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	controlClient, err := remote.NewCtlClient(ctx, d)
+	controlClient, err := client.NewCtl(ctx, d)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (j *EventDefCache) deleteEventsOfPackage(ctx context.Context, p *pb.JobPack
 }
 
 func (j *EventDefCache) populate(ctx context.Context) error {
-	pkgs, err := j.controlClient.GetAllPackages(ctx)
+	pkgs, err := j.controlClient.AllPackages(ctx)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (j *EventDefCache) addOrUpdateEventsForPackages(ctx context.Context, pkgs [
 func (j *EventDefCache) addOrUpdateEvent(ctx context.Context, tenant string, job *pb.JobDef) error {
 	logger := zerolog.Ctx(ctx)
 	event := job.Event
-	f, err := j.repoClient.GetFile(ctx, tenant, event.Schema.SchemaRef)
+	f, err := j.repoClient.File(ctx, tenant, event.Schema.SchemaRef)
 	if err != nil {
 		return err
 	}

@@ -7,17 +7,17 @@ import "common.proto";
 
 
 service Recorder {
-    rpc GetJobExecutionsStr (GetJobExecutionsRequest) returns (stream GetJobExecutionsReply);
-    rpc GetJobExecutions (GetJobExecutionsRequest) returns (GetJobExecutionsReply);
+    rpc GetJobExecutionsStr (JobExecutionsRequest) returns (stream JobExecutionsReply);
+    rpc JobExecutions (JobExecutionsRequest) returns (JobExecutionsReply);
     rpc AddJobExecution (AddJobExecutionRequest) returns (Void);
 }
 
-message GetJobExecutionsRequest{
+message JobExecutionsRequest{
     optional string tenant =1;
     optional int32 lines = 2;
 }
 
-message GetJobExecutionsReply{
+message JobExecutionsReply{
     repeated string result = 1;
 }
 

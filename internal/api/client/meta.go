@@ -1,4 +1,4 @@
-package remote
+package client
 
 import (
 	"context"
@@ -10,13 +10,13 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type MetadataClient struct{}
+type Metadata struct{}
 
-func NewMetadataClient() *MetadataClient {
-	return &MetadataClient{}
+func NewMetadata() *Metadata {
+	return &Metadata{}
 }
 
-func (c *MetadataClient) GetMetadata(ctx context.Context, name string) (map[string]string, error) {
+func (c *Metadata) Metadata(ctx context.Context, name string) (map[string]string, error) {
 	logger := zerolog.Ctx(ctx)
 	host := env.String(name + ".host")
 	url := fmt.Sprintf("http://%s/%s", host, "meta")

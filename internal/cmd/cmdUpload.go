@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
@@ -41,7 +41,7 @@ func runUpload(ctx context.Context, cmd *command, d service.GrpcDialer, args []s
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	client, err := remote.NewRepoClient(ctx, d)
+	client, err := client.NewRepo(ctx, d)
 	if err != nil {
 		return
 	}

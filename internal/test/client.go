@@ -16,7 +16,7 @@ import (
 	"github.com/andrescosta/goico/pkg/service/grpc/cache"
 	evcache "github.com/andrescosta/goico/pkg/service/grpc/cache/event"
 	"github.com/andrescosta/goico/pkg/test"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
@@ -28,36 +28,36 @@ type errSend struct {
 	StatusCode int
 }
 
-type client struct {
+type testClient struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	cacheEventCh <-chan *evcache.Event
-	ctl          *remote.CtlClient
-	repo         *remote.RepoClient
-	queue        *remote.QueueClient
-	recorder     *remote.RecorderClient
+	ctl          *client.Ctl
+	repo         *client.Repo
+	queue        *client.Queue
+	recorder     *client.Recorder
 	cache        *cache.CacheServiceClient
 	httpClient   *http.Client
 }
 
-func newClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder service.HTTPClient) (*client, error) {
-	ctl, err := remote.NewCtlClient(ctx, dialer)
+func newClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder service.HTTPClient) (*testClient, error) {
+	ctl, err := client.NewCtl(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	queue, err := remote.NewQueueClient(ctx, dialer)
+	queue, err := client.NewQueue(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := remote.NewRepoClient(ctx, dialer)
+	repo, err := client.NewRepo(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	recorder, err := remote.NewRecorderClient(ctx, dialer)
+	recorder, err := client.NewRecorder(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	cacheClient, err := cache.NewCacheServiceClient(ctx, env.String("cache_listener.addr"), dialer)
+	cache, err := cache.NewCacheServiceClient(ctx, env.String("cache_listener.addr"), dialer)
 	if err != nil {
 		return nil, err
 	}
@@ -65,15 +65,15 @@ func newClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder servic
 	if err != nil {
 		return nil, err
 	}
-	ctxClient, cancel := context.WithCancel(ctx)
-	return &client{
-		ctx:        ctxClient,
+	ctxCancel, cancel := context.WithCancel(ctx)
+	return &testClient{
+		ctx:        ctxCancel,
 		cancel:     cancel,
 		ctl:        ctl,
 		queue:      queue,
 		repo:       repo,
 		recorder:   recorder,
-		cache:      cacheClient,
+		cache:      cache,
 		httpClient: httpClient,
 	}, nil
 }
@@ -84,7 +84,7 @@ type schemaRefIds struct {
 	schemaRefError string
 }
 
-func (s *client) close() error {
+func (s *testClient) close() error {
 	errs := make([]error, 0)
 	s.cancel()
 	if err := s.ctl.Close(); err != nil {
@@ -105,7 +105,7 @@ func (s *client) close() error {
 	return errors.Join(errs...)
 }
 
-func (s *client) newTestPackage(schemaRefIds schemaRefIds, runtimeRef string) *pb.JobPackage {
+func (s *testClient) newTestPackage(schemaRefIds schemaRefIds, runtimeRef string) *pb.JobPackage {
 	p := pb.JobPackage{
 		ID:     "job_id_1",
 		Name:   strptr("job_name_1"),
@@ -170,8 +170,8 @@ func strptr(n string) *string {
 	return &n
 }
 
-func (s *client) addPackage(p *pb.JobPackage) error {
-	ps, err := s.ctl.GetPackage(s.ctx, p.Tenant, &p.ID)
+func (s *testClient) addPackage(p *pb.JobPackage) error {
+	ps, err := s.ctl.Package(s.ctx, p.Tenant, &p.ID)
 	if err != nil {
 		return err
 	}
@@ -185,8 +185,8 @@ func (s *client) addPackage(p *pb.JobPackage) error {
 	return nil
 }
 
-func (s *client) updatePackage(p *pb.JobPackage) error {
-	ps, err := s.ctl.GetPackage(s.ctx, p.Tenant, &p.ID)
+func (s *testClient) updatePackage(p *pb.JobPackage) error {
+	ps, err := s.ctl.Package(s.ctx, p.Tenant, &p.ID)
 	if err != nil {
 		return err
 	}
@@ -200,8 +200,8 @@ func (s *client) updatePackage(p *pb.JobPackage) error {
 	return nil
 }
 
-func (s *client) deletePackage(p *pb.JobPackage) error {
-	ps, err := s.ctl.GetPackage(s.ctx, p.Tenant, &p.ID)
+func (s *testClient) deletePackage(p *pb.JobPackage) error {
+	ps, err := s.ctl.Package(s.ctx, p.Tenant, &p.ID)
 	if err != nil {
 		return err
 	}
@@ -215,11 +215,11 @@ func (s *client) deletePackage(p *pb.JobPackage) error {
 	return nil
 }
 
-func (s *client) uploadFile(tenant string, fileID string, fileType pb.File_FileType, f io.Reader) error {
+func (s *testClient) uploadFile(tenant string, fileID string, fileType pb.File_FileType, f io.Reader) error {
 	return s.repo.AddFile(s.ctx, tenant, fileID, fileType, f)
 }
 
-func (s *client) uploadSchemas(p *pb.JobPackage, files map[string][]byte) error {
+func (s *testClient) uploadSchemas(p *pb.JobPackage, files map[string][]byte) error {
 	for _, e := range p.Jobs {
 		schema := e.Event.Schema
 		if err := s.uploadFile(p.Tenant,
@@ -231,7 +231,7 @@ func (s *client) uploadSchemas(p *pb.JobPackage, files map[string][]byte) error 
 	return nil
 }
 
-func (s *client) uploadRuntimes(p *pb.JobPackage, files map[string][]byte) error {
+func (s *testClient) uploadRuntimes(p *pb.JobPackage, files map[string][]byte) error {
 	for _, e := range p.Runtimes {
 		if err := s.uploadFile(p.Tenant,
 			e.ModuleRef,
@@ -242,7 +242,7 @@ func (s *client) uploadRuntimes(p *pb.JobPackage, files map[string][]byte) error
 	return nil
 }
 
-func (s *client) sendEventV1(url *url.URL) error {
+func (s *testClient) sendEventV1(url *url.URL) error {
 	d := struct {
 		FirstName string `json:"firstName"`
 		LastName  string `json:"lastName"`
@@ -256,7 +256,7 @@ func (s *client) sendEventV1(url *url.URL) error {
 	return s.sendEvent(url, b)
 }
 
-func (s *client) sendEventV2(url *url.URL) error {
+func (s *testClient) sendEventV2(url *url.URL) error {
 	d := struct {
 		Name string `json:"name"`
 		Dob  string `json:"dob"`
@@ -269,7 +269,7 @@ func (s *client) sendEventV2(url *url.URL) error {
 	return s.sendEvent(url, b)
 }
 
-func (s *client) sendEventMalFormed(url *url.URL) error {
+func (s *testClient) sendEventMalFormed(url *url.URL) error {
 	d := struct {
 		Name string `json:"stname"`
 		Age  string `json:"stage"`
@@ -286,7 +286,7 @@ func (e errSend) Error() string {
 	return fmt.Sprintf("HTTP Status Code:%d", e.StatusCode)
 }
 
-func (s *client) sendEvent(url *url.URL, e []byte) error {
+func (s *testClient) sendEvent(url *url.URL, e []byte) error {
 	r := &http.Request{
 		Method: "POST",
 		URL:    url,
@@ -303,8 +303,8 @@ func (s *client) sendEvent(url *url.URL, e []byte) error {
 	return nil
 }
 
-func (s *client) addTenant(tenant string) error {
-	t, err := s.ctl.GetTenant(s.ctx, &tenant)
+func (s *testClient) addTenant(tenant string) error {
+	t, err := s.ctl.Tenant(s.ctx, &tenant)
 	if err != nil {
 		return err
 	}
@@ -318,15 +318,15 @@ func (s *client) addTenant(tenant string) error {
 	return nil
 }
 
-func (s *client) getAllPackages() ([]*pb.JobPackage, error) {
-	t, err := s.ctl.GetAllPackages(s.ctx)
+func (s *testClient) getAllPackages() ([]*pb.JobPackage, error) {
+	t, err := s.ctl.AllPackages(s.ctx)
 	if err != nil {
 		return nil, err
 	}
 	return t, nil
 }
 
-func (s *client) dequeue(tenant string, queue string) ([]*pb.QueueItem, error) {
+func (s *testClient) dequeue(tenant string, queue string) ([]*pb.QueueItem, error) {
 	ctx, cancel := context.WithTimeout(s.ctx, 50*time.Second)
 	defer cancel()
 	for {
@@ -347,7 +347,7 @@ func (s *client) dequeue(tenant string, queue string) ([]*pb.QueueItem, error) {
 	}
 }
 
-func (s *client) startRecvCacheEvents() error {
+func (s *testClient) startRecvCacheEvents() error {
 	l, err := s.cache.ListenerForEvents(context.Background())
 	if err != nil {
 		return err
@@ -356,14 +356,6 @@ func (s *client) startRecvCacheEvents() error {
 	return nil
 }
 
-func (s *client) getJobExecutions(p *pb.JobPackage, lines int32) ([]string, error) {
-	l, err := s.recorder.GetJobExecutions(s.ctx, p.Tenant, lines)
-	if err != nil {
-		return nil, err
-	}
-	return l, nil
-}
-
-func (s *client) waitForCacheEvents() error {
+func (s *testClient) waitForCacheEvents() error {
 	return test.WaitForClosed(context.Background(), s.cacheEventCh)
 }

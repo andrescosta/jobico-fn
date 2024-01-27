@@ -7,19 +7,19 @@ import (
 	"net/http"
 
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 )
 
 type Controller struct {
-	queueClient *remote.QueueClient
+	queue       *client.Queue
 	eventsCache *EventDefCache
 }
 
 func New(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (Controller, error) {
-	queueClient, err := remote.NewQueueClient(ctx, d)
+	queue, err := client.NewQueue(ctx, d)
 	var empty Controller
 	if err != nil {
 		return empty, err
@@ -29,14 +29,14 @@ func New(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (Con
 		return empty, err
 	}
 	return Controller{
-		queueClient: queueClient,
+		queue:       queue,
 		eventsCache: eventsCache,
 	}, nil
 }
 
 func (c Controller) Close() error {
 	var err error
-	err = errors.Join(err, c.queueClient.Close())
+	err = errors.Join(err, c.queue.Close())
 	err = errors.Join(err, c.eventsCache.Close())
 	return err
 }
@@ -106,7 +106,7 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 		Tenant: tenant,
 		Items:  items,
 	}
-	err = c.queueClient.Queue(request.Context(), &queueRequest)
+	err = c.queue.Queue(request.Context(), &queueRequest)
 	if err != nil {
 		logger.Error().Msgf("Failed to connect to connect to queue server: %s", err)
 		http.Error(writer, "", http.StatusInternalServerError)

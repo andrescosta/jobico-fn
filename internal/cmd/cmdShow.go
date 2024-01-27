@@ -8,7 +8,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/yamlutil"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 )
 
 var cmdShow = &command{
@@ -46,12 +46,12 @@ func showDeploy(ctx context.Context, cmd *command, d service.GrpcDialer, args []
 	}
 	tenant := args[1]
 	id := args[2]
-	client, err := remote.NewCtlClient(ctx, d)
+	client, err := client.NewCtl(ctx, d)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	p, err := client.GetPackage(ctx, tenant, &id)
+	p, err := client.Package(ctx, tenant, &id)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
@@ -69,11 +69,11 @@ func showDeploy(ctx context.Context, cmd *command, d service.GrpcDialer, args []
 }
 
 func showEnv(ctx context.Context, cmd *command, d service.GrpcDialer) {
-	client, err := remote.NewCtlClient(ctx, d)
+	client, err := client.NewCtl(ctx, d)
 	if err != nil {
 		return
 	}
-	p, err := client.GetEnvironment(ctx)
+	p, err := client.Environment(ctx)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return

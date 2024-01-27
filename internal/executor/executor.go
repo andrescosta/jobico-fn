@@ -12,7 +12,7 @@ import (
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/execs/wasm"
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
@@ -44,10 +44,10 @@ type Executor struct {
 type VM struct {
 	packages     sync.Map
 	w            *sync.WaitGroup
-	recorder     *remote.RecorderClient
-	ctlClient    *remote.CtlClient
-	queueClient  *remote.QueueClient
-	repoClient   *remote.RepoClient
+	recorder     *client.Recorder
+	ctl          *client.Ctl
+	queue        *client.Queue
+	repo         *client.Repo
 	grpcDialer   service.GrpcDialer
 	manualWakeup bool
 }
@@ -72,19 +72,19 @@ type Option struct {
 }
 
 func NewVM(ctx context.Context, d service.GrpcDialer, o Option) (*VM, error) {
-	recorder, err := remote.NewRecorderClient(ctx, d)
+	recorder, err := client.NewRecorder(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	ctlClient, err := remote.NewCtlClient(ctx, d)
+	ctl, err := client.NewCtl(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	queueClient, err := remote.NewQueueClient(ctx, d)
+	queue, err := client.NewQueue(ctx, d)
 	if err != nil {
 		return nil, err
 	}
-	repoClient, err := remote.NewRepoClient(ctx, d)
+	repo, err := client.NewRepo(ctx, d)
 	if err != nil {
 		return nil, err
 	}
@@ -94,9 +94,9 @@ func NewVM(ctx context.Context, d service.GrpcDialer, o Option) (*VM, error) {
 		grpcDialer:   d,
 		manualWakeup: o.ManualWakeup,
 		w:            &sync.WaitGroup{},
-		ctlClient:    ctlClient,
-		queueClient:  queueClient,
-		repoClient:   repoClient,
+		ctl:          ctl,
+		queue:        queue,
+		repo:         repo,
 	}
 
 	if err := e.loadJobs(ctx); err != nil {
@@ -117,9 +117,9 @@ func (e *VM) Close(ctx context.Context) error {
 		return true
 	})
 	err = errors.Join(err, e.recorder.Close())
-	err = errors.Join(err, e.ctlClient.Close())
-	err = errors.Join(err, e.queueClient.Close())
-	err = errors.Join(err, e.repoClient.Close())
+	err = errors.Join(err, e.ctl.Close())
+	err = errors.Join(err, e.queue.Close())
+	err = errors.Join(err, e.repo.Close())
 	return err
 }
 
@@ -173,7 +173,7 @@ func (e *VM) startPackage(ctx context.Context, pkg *jobPackage) {
 }
 
 func (e *VM) loadJobs(ctx context.Context) error {
-	ps, err := e.ctlClient.GetAllPackages(ctx)
+	ps, err := e.ctl.AllPackages(ctx)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 			if runtime.ID == event.Runtime {
 				wasmfile, ok := files[runtime.ModuleRef]
 				if !ok {
-					wasmfile, err = e.repoClient.GetFile(ctx, pkg.Tenant, runtime.ModuleRef)
+					wasmfile, err = e.repo.File(ctx, pkg.Tenant, runtime.ModuleRef)
 					if err != nil {
 						return err
 					}
@@ -312,7 +312,7 @@ func getModuleName(supplierQueue string, eventID string) string {
 }
 
 func (e *VM) startListeningUpdates(ctx context.Context) error {
-	l, err := e.ctlClient.ListenerForPackageUpdates(ctx)
+	l, err := e.ctl.ListenerForPackageUpdates(ctx)
 	if err != nil {
 		return err
 	}
@@ -388,7 +388,7 @@ func (e *Executor) execute(ctx context.Context, w *sync.WaitGroup) {
 			logger.Debug().Msgf("Worker for Tenant: %s and queue: %s stopped", e.jobPackage.tenant, e.queue)
 			return
 		case <-chTick:
-			items, err := e.vm.queueClient.Dequeue(ctx, e.jobPackage.tenant, e.queue)
+			items, err := e.vm.queue.Dequeue(ctx, e.jobPackage.tenant, e.queue)
 			if err != nil {
 				queueErrors++
 				logger.Err(err).Msg("error dequeuing")
@@ -454,7 +454,7 @@ func (e *VM) makeDecisions(ctx context.Context, _ string, tenant string, code ui
 			},
 		}
 	}
-	if err := e.queueClient.Queue(ctx, q); err != nil {
+	if err := e.queue.Queue(ctx, q); err != nil {
 		return err
 	}
 	return nil

@@ -9,7 +9,7 @@ import (
 	"github.com/andrescosta/goico/pkg/ioutil"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/yamlutil"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
@@ -50,12 +50,12 @@ func runDeploy(ctx context.Context, cmd *command, d service.GrpcDialer, args []s
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	client, err := remote.NewCtlClient(ctx, d)
+	client, err := client.NewCtl(ctx, d)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
 	}
-	p, err := client.GetPackage(ctx, f.Tenant, &f.ID)
+	p, err := client.Package(ctx, f.Tenant, &f.ID)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return
@@ -65,7 +65,7 @@ func runDeploy(ctx context.Context, cmd *command, d service.GrpcDialer, args []s
 		fmt.Printf("package %s exists. use -update command to override.\n", f.ID)
 		return
 	}
-	t, err := client.GetTenant(ctx, &f.Tenant)
+	t, err := client.Tenant(ctx, &f.Tenant)
 	if err != nil {
 		printError(os.Stderr, cmd, err)
 		return

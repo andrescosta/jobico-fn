@@ -41,28 +41,28 @@ func (c *Server) Close() error {
 	return err
 }
 
-func (c *Server) GetPackages(_ context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
+func (c *Server) GetPackages(_ context.Context, in *pb.PackagesRequest) (*pb.PackagesReply, error) {
 	return c.pkgCont.GetPackages(in)
 }
 
-func (c *Server) GetAllPackages(_ context.Context, _ *pb.Void) (*pb.GetAllJobPackagesReply, error) {
+func (c *Server) GetAllPackages(_ context.Context, _ *pb.Void) (*pb.AllPackagesReply, error) {
 	return c.pkgCont.GetAllPackages()
 }
 
-func (c *Server) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (*pb.AddJobPackageReply, error) {
+func (c *Server) AddPackage(ctx context.Context, in *pb.AddPackageRequest) (*pb.AddPackageReply, error) {
 	return c.pkgCont.AddPackage(ctx, in)
 }
 
-func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.Void, error) {
+func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdatePackageRequest) (*pb.Void, error) {
 	return c.pkgCont.UpdatePackage(ctx, in)
 }
 
-func (c *Server) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.Void, error) {
+func (c *Server) DeletePackage(ctx context.Context, in *pb.DeletePackageRequest) (*pb.Void, error) {
 	return c.pkgCont.DeletePackage(ctx, in)
 }
 
-func (c *Server) GetTenants(_ context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
-	return c.tenantCont.GetTenants(in)
+func (c *Server) GetTenants(_ context.Context, in *pb.TenantsRequest) (*pb.TenantsReply, error) {
+	return c.tenantCont.Tenants(in)
 }
 
 func (c *Server) AddTenant(_ context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
@@ -77,7 +77,7 @@ func (c *Server) UpdateEnvironment(_ context.Context, in *pb.UpdateEnvironmentRe
 	return c.envCont.UpdateEnvironment(in)
 }
 
-func (c *Server) GetEnvironment(_ context.Context, _ *pb.Void) (*pb.GetEnvironmentReply, error) {
+func (c *Server) GetEnvironment(_ context.Context, _ *pb.Void) (*pb.EnvironmentReply, error) {
 	return c.envCont.GetEnvironment()
 }
 

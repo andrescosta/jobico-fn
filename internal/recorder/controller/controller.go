@@ -48,7 +48,7 @@ func (s *Recorder) OldRecords(lines int) ([]string, error) {
 	return s.recorder.OldRecords(lines)
 }
 
-func (s *Recorder) GetJobExecutionsStr(ctx context.Context, g *pb.GetJobExecutionsRequest, r pb.Recorder_GetJobExecutionsStrServer) error {
+func (s *Recorder) GetJobExecutionsStr(ctx context.Context, g *pb.JobExecutionsRequest, r pb.Recorder_GetJobExecutionsStrServer) error {
 	logger := zerolog.Ctx(ctx)
 	if g.Lines != nil && *g.Lines > 0 {
 		lines, err := s.recorder.OldRecords(int(*g.Lines))
@@ -56,7 +56,7 @@ func (s *Recorder) GetJobExecutionsStr(ctx context.Context, g *pb.GetJobExecutio
 			logger.Warn().Msgf("error getting old records %s", err)
 		} else {
 			if len(lines) > 0 {
-				if err := r.Send(&pb.GetJobExecutionsReply{
+				if err := r.Send(&pb.JobExecutionsReply{
 					Result: lines,
 				}); err != nil {
 					logger.Warn().Msgf("error sending tail lines %s", err)
@@ -84,7 +84,7 @@ loop:
 				break loop
 			}
 			if strings.TrimSpace(line) != "" {
-				err := r.Send(&pb.GetJobExecutionsReply{
+				err := r.Send(&pb.JobExecutionsReply{
 					Result: []string{line},
 				})
 				if err != nil {

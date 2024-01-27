@@ -110,15 +110,15 @@ func (c *TApp) renderUI(ctx context.Context) *tview.Pages {
 }
 
 func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
-	e, err := c.controlClient.GetEnvironment(ctx)
+	e, err := c.controlCli.Environment(ctx)
 	if err != nil {
 		panic(err)
 	}
-	ep, err := c.controlClient.GetAllPackages(ctx)
+	ep, err := c.controlCli.AllPackages(ctx)
 	if err != nil {
 		panic(err)
 	}
-	fs, err := c.repoClient.GetAllFileNames(ctx)
+	fs, err := c.repoCli.AllFilenames(ctx)
 	if err != nil {
 		panic(err)
 	}

@@ -375,7 +375,7 @@ google.golang.org/grpc.(*ClientConn).Invoke(0xc0017a2000, {0x1416a8150, 0xc001cc
         C:/Users/Andres/go/pkg/mod/google.golang.org/grpc@v1.60.1/call.go:35 +0x25e
 github.com/andrescosta/jobico/internal/api/types.(*queueClient).Dequeue(0xc00070d9d0, {0x1416a8150, 0xc001cc8b40}, 0x1412a23e0?, {0x0, 0x0, 0x0})
         C:/Users/Andres/projects/go/jobico/internal/api/types/queue_grpc.pb.go:53 +0xee
-github.com/andrescosta/jobico/internal/api/remote.(*QueueClient).Dequeue(0xc000ae9dd0, {0x1416a8150, 0xc001cc8b40}, {0xc00174f1b8, 0x8}, {0xc00174f1c6, 0xa})
+github.com/andrescosta/jobico/internal/api/client.(*QueueClient).Dequeue(0xc000ae9dd0, {0x1416a8150, 0xc001cc8b40}, {0xc00174f1b8, 0x8}, {0xc00174f1c6, 0xa})
         C:/Users/Andres/projects/go/jobico/internal/api/remote/queue.go:41 +0x165
 github.com/andrescosta/jobico/internal/executor.(*Executor).execute(0xc00044fb60, {0x1416a8150, 0xc001cc8b40}, 0xc00000bfa0)
         C:/Users/Andres/projects/go/jobico/internal/executor/executor.go:391 +0x5a5
@@ -677,9 +677,9 @@ google.golang.org/grpc.(*clientStream).RecvMsg(0xc000515c20, {0x1413c4720?, 0xc0
         C:/Users/Andres/go/pkg/mod/google.golang.org/grpc@v1.60.1/stream.go:926 +0x1f6
 github.com/andrescosta/jobico/pkg/grpchelper.Listen[...]({0x1416a8150, 0xc0007fe730}, {0x47c6fa98, 0xc00100d220}, 0xc0003c8d90)
         C:/Users/Andres/projects/go/jobico/pkg/grpchelper/recv.go:65 +0x1aa
-github.com/andrescosta/jobico/internal/api/remote.(*CtlClient).startListenerForPackageUpdates.func1()
+github.com/andrescosta/jobico/internal/api/client.(*CtlClient).startListenerForPackageUpdates.func1()
         C:/Users/Andres/projects/go/jobico/internal/api/remote/control.go:189 +0x79
-created by github.com/andrescosta/jobico/internal/api/remote.(*CtlClient).startListenerForPackageUpdates in goroutine 688
+created by github.com/andrescosta/jobico/internal/api/client.(*CtlClient).startListenerForPackageUpdates in goroutine 688
         C:/Users/Andres/projects/go/jobico/internal/api/remote/control.go:188 +0x249
 
 goroutine 1067 [select, 9 minutes]:
@@ -1873,9 +1873,9 @@ google.golang.org/grpc.(*clientStream).RecvMsg(0xc000365560, {0x1413c4720?, 0xc0
         C:/Users/Andres/go/pkg/mod/google.golang.org/grpc@v1.60.1/stream.go:926 +0x1f6
 github.com/andrescosta/jobico/pkg/grpchelper.Listen[...]({0x1416a8118, 0xc000222870}, {0x47c6fa98, 0xc000df4e10}, 0x1416acb18)
         C:/Users/Andres/projects/go/jobico/pkg/grpchelper/recv.go:65 +0x1aa
-github.com/andrescosta/jobico/internal/api/remote.(*CtlClient).startListenerForPackageUpdates.func1()
+github.com/andrescosta/jobico/internal/api/client.(*CtlClient).startListenerForPackageUpdates.func1()
         C:/Users/Andres/projects/go/jobico/internal/api/remote/control.go:189 +0x79
-created by github.com/andrescosta/jobico/internal/api/remote.(*CtlClient).startListenerForPackageUpdates in goroutine 689
+created by github.com/andrescosta/jobico/internal/api/client.(*CtlClient).startListenerForPackageUpdates in goroutine 689
         C:/Users/Andres/projects/go/jobico/internal/api/remote/control.go:188 +0x249
 
 goroutine 1009 [chan receive, 10 minutes]:
@@ -2499,9 +2499,9 @@ google.golang.org/grpc.(*clientStream).RecvMsg(0xc0013e0ea0, {0x1413c4720?, 0xc0
         C:/Users/Andres/go/pkg/mod/google.golang.org/grpc@v1.60.1/stream.go:926 +0x1f6
 github.com/andrescosta/jobico/pkg/grpchelper.Listen[...]({0x1416a8150, 0xc001380e10}, {0x47c6fa98, 0xc00170cc00}, 0x1416acb18)
         C:/Users/Andres/projects/go/jobico/pkg/grpchelper/recv.go:65 +0x1aa
-github.com/andrescosta/jobico/internal/api/remote.(*CtlClient).startListenerForPackageUpdates.func1()
+github.com/andrescosta/jobico/internal/api/client.(*CtlClient).startListenerForPackageUpdates.func1()
         C:/Users/Andres/projects/go/jobico/internal/api/remote/control.go:189 +0x79
-created by github.com/andrescosta/jobico/internal/api/remote.(*CtlClient).startListenerForPackageUpdates in goroutine 1249
+created by github.com/andrescosta/jobico/internal/api/client.(*CtlClient).startListenerForPackageUpdates in goroutine 1249
         C:/Users/Andres/projects/go/jobico/internal/api/remote/control.go:188 +0x249
 
 goroutine 1456 [select, 9 minutes]:

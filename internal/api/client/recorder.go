@@ -1,4 +1,4 @@
-package remote
+package client
 
 import (
 	"context"
@@ -12,33 +12,33 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type RecorderClient struct {
-	serverAddr string
-	conn       *rpc.ClientConn
-	client     pb.RecorderClient
+type Recorder struct {
+	addr string
+	conn *rpc.ClientConn
+	cli  pb.RecorderClient
 }
 
-func NewRecorderClient(ctx context.Context, d service.GrpcDialer) (*RecorderClient, error) {
+func NewRecorder(ctx context.Context, d service.GrpcDialer) (*Recorder, error) {
 	addr := env.String("recorder.host")
 	conn, err := d.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
-	client := pb.NewRecorderClient(conn)
-	return &RecorderClient{
-		serverAddr: addr,
-		conn:       conn,
-		client:     client,
+	cli := pb.NewRecorderClient(conn)
+	return &Recorder{
+		addr: addr,
+		conn: conn,
+		cli:  cli,
 	}, nil
 }
 
-func (c *RecorderClient) Close() error {
+func (c *Recorder) Close() error {
 	return c.conn.Close()
 }
 
-func (c *RecorderClient) StreamJobExecutions(ctx context.Context, lines int32, resChan chan<- string) error {
+func (c *Recorder) StreamJobExecutions(ctx context.Context, lines int32, resChan chan<- string) error {
 	logger := zerolog.Ctx(ctx)
-	rj, err := c.client.GetJobExecutionsStr(ctx, &pb.GetJobExecutionsRequest{
+	rj, err := c.cli.GetJobExecutionsStr(ctx, &pb.JobExecutionsRequest{
 		Lines: &lines,
 	})
 	if err != nil {
@@ -66,15 +66,15 @@ func (c *RecorderClient) StreamJobExecutions(ctx context.Context, lines int32, r
 	}
 }
 
-func (c *RecorderClient) AddJobExecution(ctx context.Context, ex *pb.JobExecution) error {
-	if _, err := c.client.AddJobExecution(ctx, &pb.AddJobExecutionRequest{Execution: ex}); err != nil {
+func (c *Recorder) AddJobExecution(ctx context.Context, ex *pb.JobExecution) error {
+	if _, err := c.cli.AddJobExecution(ctx, &pb.AddJobExecutionRequest{Execution: ex}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *RecorderClient) GetJobExecutions(ctx context.Context, tenant string, lines int32) ([]string, error) {
-	res, err := c.client.GetJobExecutions(ctx, &pb.GetJobExecutionsRequest{
+func (c *Recorder) JobExecutions(ctx context.Context, tenant string, lines int32) ([]string, error) {
+	res, err := c.cli.JobExecutions(ctx, &pb.JobExecutionsRequest{
 		Tenant: &tenant,
 		Lines:  &lines,
 	})

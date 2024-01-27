@@ -5,15 +5,15 @@ option go_package = "/types";
 import "common.proto";
 
 service Control {
-  rpc GetTenants (GetTenantsRequest) returns (GetTenantsReply) {}
+  rpc Tenants (TenantsRequest) returns (TenantsReply) {}
   rpc AddTenant (AddTenantRequest) returns (AddTenantReply) {}
-  rpc AddPackage (AddJobPackageRequest) returns (AddJobPackageReply) {}
-  rpc GetAllPackages (Void) returns (GetAllJobPackagesReply) {}
-  rpc GetPackages (GetJobPackagesRequest) returns (GetJobPackagesReply) {}
-  rpc UpdatePackage (UpdateJobPackageRequest) returns (Void) {}
-  rpc DeletePackage (DeleteJobPackageRequest) returns (Void) {}
+  rpc AddPackage (AddPackageRequest) returns (AddPackageReply) {}
+  rpc AllPackages (Void) returns (AllPackagesReply) {}
+  rpc Packages (PackagesRequest) returns (PackagesReply) {}
+  rpc UpdatePackage (UpdatePackageRequest) returns (Void) {}
+  rpc DeletePackage (DeletePackageRequest) returns (Void) {}
   rpc UpdateToPackagesStr (UpdateToPackagesStrRequest) returns (stream UpdateToPackagesStrReply) {}
-  rpc GetEnvironment(Void) returns (GetEnvironmentReply){}
+  rpc Environment(Void) returns (EnvironmentReply){}
   rpc UpdateToEnvironmentStr(Void) returns (stream UpdateToEnvironmentStrReply){}
   rpc AddEnvironment(AddEnvironmentRequest) returns (AddEnvironmentReply){}
   rpc UpdateEnvironment(UpdateEnvironmentRequest) returns (Void){}
@@ -35,30 +35,30 @@ message UpdateToPackagesStrReply{
   JobPackage object = 2;
 }
 
-message AddJobPackageRequest{
+message AddPackageRequest{
   JobPackage package = 1;
 }
-message AddJobPackageReply{
+message AddPackageReply{
   JobPackage package = 1;
 }
-message GetAllJobPackagesReply{
+message AllPackagesReply{
   repeated JobPackage packages = 1;
 }
-message GetJobPackagesRequest{
+message PackagesRequest{
   string tenant = 1;  
   optional string ID = 2; 
 }
-message GetJobPackagesReply{
+message PackagesReply{
   repeated JobPackage packages = 1;
 }
-message UpdateJobPackageRequest{
+message UpdatePackageRequest{
   JobPackage package = 1;
 }
-message DeleteJobPackageRequest{
+message DeletePackageRequest{
   JobPackage package = 1;
 }
 
-message GetEnvironmentReply {
+message EnvironmentReply {
   optional Environment environment = 1;
 }
 
@@ -75,12 +75,12 @@ message AddEnvironmentReply {
 }
 
 
-message GetTenantsRequest {
+message TenantsRequest {
   optional string ID = 1;
   optional string tenant=2;
 }
 
-message GetTenantsReply {
+message TenantsReply {
   repeated Tenant Tenants=1;
 }
 

@@ -1,4 +1,4 @@
-package remote
+package client
 
 import (
 	"context"
@@ -12,37 +12,37 @@ import (
 	rpc "google.golang.org/grpc"
 )
 
-type RepoClient struct {
-	serverAddr             string
+type Repo struct {
+	addr                   string
 	conn                   *rpc.ClientConn
-	client                 pb.RepoClient
+	cli                    pb.RepoClient
 	broadcasterRepoUpdates *broadcaster.Broadcaster[*pb.UpdateToFileStrReply]
 }
 
-func NewRepoClient(ctx context.Context, d service.GrpcDialer) (*RepoClient, error) {
+func NewRepo(ctx context.Context, d service.GrpcDialer) (*Repo, error) {
 	addr := env.String("repo.host")
 	conn, err := d.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
 	client := pb.NewRepoClient(conn)
-	return &RepoClient{
-		serverAddr: addr,
-		conn:       conn,
-		client:     client,
+	return &Repo{
+		addr: addr,
+		conn: conn,
+		cli:  client,
 	}, nil
 }
 
-func (c *RepoClient) Close() error {
+func (c *Repo) Close() error {
 	return c.conn.Close()
 }
 
-func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, fileType pb.File_FileType, reader io.Reader) error {
+func (c *Repo) AddFile(ctx context.Context, tenant string, name string, fileType pb.File_FileType, reader io.Reader) error {
 	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
-	_, err = c.client.AddFile(ctx, &pb.AddFileRequest{
+	_, err = c.cli.AddFile(ctx, &pb.AddFileRequest{
 		TenantFile: &pb.TenantFile{
 			Tenant: tenant,
 			File: &pb.File{
@@ -58,8 +58,8 @@ func (c *RepoClient) AddFile(ctx context.Context, tenant string, name string, fi
 	return nil
 }
 
-func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([]byte, error) {
-	r, err := c.client.GetFile(ctx, &pb.GetFileRequest{
+func (c *Repo) File(ctx context.Context, tenant string, name string) ([]byte, error) {
+	r, err := c.cli.File(ctx, &pb.FileRequest{
 		TenantFile: &pb.TenantFile{
 			Tenant: tenant,
 			File: &pb.File{
@@ -73,8 +73,8 @@ func (c *RepoClient) GetFile(ctx context.Context, tenant string, name string) ([
 	return r.File.Content, nil
 }
 
-func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, error) {
-	reply, err := c.client.GetAllFileNames(ctx, &pb.Void{})
+func (c *Repo) AllFilenames(ctx context.Context) ([]*pb.TenantFiles, error) {
+	reply, err := c.cli.AllFileNames(ctx, &pb.Void{})
 	if err != nil {
 		return nil, err
 	}
@@ -83,15 +83,15 @@ func (c *RepoClient) GetAllFileNames(ctx context.Context) ([]*pb.TenantFiles, er
 	return ret, nil
 }
 
-func (c *RepoClient) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.UpdateToFileStrReply) error {
-	s, err := c.client.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
+func (c *Repo) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.UpdateToFileStrReply) error {
+	s, err := c.cli.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
 	if err != nil {
 		return err
 	}
 	return grpchelper.Recv(ctx, s, resChan)
 }
 
-func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToFileStrReply], error) {
+func (c *Repo) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToFileStrReply], error) {
 	if c.broadcasterRepoUpdates == nil {
 		if err := c.startListenRepoUpdates(ctx); err != nil {
 			return nil, err
@@ -100,10 +100,10 @@ func (c *RepoClient) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.L
 	return c.broadcasterRepoUpdates.Subscribe()
 }
 
-func (c *RepoClient) startListenRepoUpdates(ctx context.Context) error {
+func (c *Repo) startListenRepoUpdates(ctx context.Context) error {
 	cb := broadcaster.Start[*pb.UpdateToFileStrReply](ctx)
 	c.broadcasterRepoUpdates = cb
-	s, err := c.client.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
+	s, err := c.cli.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
 	if err != nil {
 		return err
 	}

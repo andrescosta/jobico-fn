@@ -6,7 +6,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/collection"
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/jobico/internal/api/remote"
+	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/queue/provider"
 	"github.com/rs/zerolog"
@@ -23,39 +23,39 @@ type QueueBuilder[T any] func(string) provider.Queue[T]
 // TODO: fix locks!! cal LoadOrSTore or what ?
 
 type Cache[T any] struct {
-	queues        *collection.SyncMap[string, provider.Queue[T]]
-	dialer        service.GrpcDialer
-	newQueue      QueueBuilder[T]
-	controlClient *remote.CtlClient
+	queues     *collection.SyncMap[string, provider.Queue[T]]
+	dialer     service.GrpcDialer
+	newQueueFn QueueBuilder[T]
+	ctl        *client.Ctl
 }
 
-func NewQueueCache[T any](ctx context.Context, d service.GrpcDialer, o Option) (*Cache[T], error) {
-	q := collection.NewSyncMap[string, provider.Queue[T]]()
-	b := func(id string) provider.Queue[T] { return provider.NewFileQueue[T](id) }
+func NewQueueCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (*Cache[T], error) {
+	syncmap := collection.NewSyncMap[string, provider.Queue[T]]()
+	newQueueFn := func(id string) provider.Queue[T] { return provider.NewFileQueue[T](id) }
 	if o.InMemory {
-		b = func(_ string) provider.Queue[T] { return provider.NewMemBasedQueue[T]() }
+		newQueueFn = func(_ string) provider.Queue[T] { return provider.NewMemBasedQueue[T]() }
 	}
-	c, err := remote.NewCtlClient(ctx, d)
+	ctl, err := client.NewCtl(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	qs := &Cache[T]{
-		queues:        q,
-		dialer:        d,
-		newQueue:      b,
-		controlClient: c,
+	cache := &Cache[T]{
+		queues:     syncmap,
+		dialer:     dialer,
+		newQueueFn: newQueueFn,
+		ctl:        ctl,
 	}
-	if err := qs.populate(ctx); err != nil {
+	if err := cache.populate(ctx); err != nil {
 		return nil, err
 	}
-	if err := qs.startListeningUpdates(ctx); err != nil {
+	if err := cache.startListeningUpdates(ctx); err != nil {
 		return nil, err
 	}
-	return qs, nil
+	return cache, nil
 }
 
 func (q *Cache[T]) Close() error {
-	return q.controlClient.Close()
+	return q.ctl.Close()
 }
 
 func (q *Cache[T]) GetQueue(tentant string, queueID string) (provider.Queue[T], error) {
@@ -67,7 +67,7 @@ func (q *Cache[T]) GetQueue(tentant string, queueID string) (provider.Queue[T], 
 }
 
 func (q *Cache[T]) populate(ctx context.Context) error {
-	pkgs, err := q.controlClient.GetAllPackages(ctx)
+	pkgs, err := q.ctl.AllPackages(ctx)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (q *Cache[T]) populate(ctx context.Context) error {
 }
 
 func (q *Cache[T]) startListeningUpdates(ctx context.Context) error {
-	l, err := q.controlClient.ListenerForPackageUpdates(ctx)
+	l, err := q.ctl.ListenerForPackageUpdates(ctx)
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (q *Cache[T]) addQueues(ctx context.Context, pkgs []*pb.JobPackage) error {
 
 func (q *Cache[T]) addQueue(_ context.Context, tenant string, def *pb.QueueDef) {
 	name := getQueueName(tenant, def.ID)
-	queue := q.newQueue(name)
+	queue := q.newQueueFn(name)
 	_ = q.queues.LoadOrStore(name, queue)
 }
 

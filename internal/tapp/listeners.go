@@ -20,7 +20,7 @@ func onFocusFileNode(_ context.Context, c *TApp, n *tview.TreeNode) {
 	if f.file.Type == pb.File_JsonSchema {
 		pageName := f.tenant + "/" + f.file.Name
 		trySwitchToPage(pageName, c.mainView, c, func() (tview.Primitive, error) {
-			f, err := c.repoClient.GetFile(context.Background(), f.tenant, f.file.Name)
+			f, err := c.repoCli.File(context.Background(), f.tenant, f.file.Name)
 			if err != nil {
 				return nil, errors.Join(errors.New(`"Repo" service down`), err)
 			}
@@ -66,7 +66,7 @@ func onFocusServerNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 			view := renderGrpcTableServer(info, s)
 			return view, nil
 		case pb.Host_Http, pb.Host_Headless:
-			metadata, err := c.metadataClient.GetMetadata(ctx, h.name)
+			metadata, err := c.metadataCli.Metadata(ctx, h.name)
 			if err != nil {
 				return nil, err
 			}
@@ -97,7 +97,7 @@ func onFocusJobPackageNode(_ context.Context, c *TApp, n *tview.TreeNode) {
 	p := (n.GetReference().(*node)).entity.(*pb.JobPackage)
 	pn := "package/" + p.Tenant + "/" + p.ID
 	trySwitchToPage(pn, c.mainView, c, func() (tview.Primitive, error) {
-		pkg, err := c.controlClient.GetPackage(context.Background(), p.Tenant, &p.ID)
+		pkg, err := c.controlCli.Package(context.Background(), p.Tenant, &p.ID)
 		if err != nil {
 			return nil, errors.Join(errors.New(`"Ctl" service down`), err)
 		}

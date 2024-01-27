@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Recorder_GetJobExecutionsStr_FullMethodName = "/Recorder/GetJobExecutionsStr"
-	Recorder_GetJobExecutions_FullMethodName    = "/Recorder/GetJobExecutions"
+	Recorder_JobExecutions_FullMethodName       = "/Recorder/JobExecutions"
 	Recorder_AddJobExecution_FullMethodName     = "/Recorder/AddJobExecution"
 )
 
@@ -28,8 +28,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RecorderClient interface {
-	GetJobExecutionsStr(ctx context.Context, in *GetJobExecutionsRequest, opts ...grpc.CallOption) (Recorder_GetJobExecutionsStrClient, error)
-	GetJobExecutions(ctx context.Context, in *GetJobExecutionsRequest, opts ...grpc.CallOption) (*GetJobExecutionsReply, error)
+	GetJobExecutionsStr(ctx context.Context, in *JobExecutionsRequest, opts ...grpc.CallOption) (Recorder_GetJobExecutionsStrClient, error)
+	JobExecutions(ctx context.Context, in *JobExecutionsRequest, opts ...grpc.CallOption) (*JobExecutionsReply, error)
 	AddJobExecution(ctx context.Context, in *AddJobExecutionRequest, opts ...grpc.CallOption) (*Void, error)
 }
 
@@ -41,7 +41,7 @@ func NewRecorderClient(cc grpc.ClientConnInterface) RecorderClient {
 	return &recorderClient{cc}
 }
 
-func (c *recorderClient) GetJobExecutionsStr(ctx context.Context, in *GetJobExecutionsRequest, opts ...grpc.CallOption) (Recorder_GetJobExecutionsStrClient, error) {
+func (c *recorderClient) GetJobExecutionsStr(ctx context.Context, in *JobExecutionsRequest, opts ...grpc.CallOption) (Recorder_GetJobExecutionsStrClient, error) {
 	stream, err := c.cc.NewStream(ctx, &Recorder_ServiceDesc.Streams[0], Recorder_GetJobExecutionsStr_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (c *recorderClient) GetJobExecutionsStr(ctx context.Context, in *GetJobExec
 }
 
 type Recorder_GetJobExecutionsStrClient interface {
-	Recv() (*GetJobExecutionsReply, error)
+	Recv() (*JobExecutionsReply, error)
 	grpc.ClientStream
 }
 
@@ -65,17 +65,17 @@ type recorderGetJobExecutionsStrClient struct {
 	grpc.ClientStream
 }
 
-func (x *recorderGetJobExecutionsStrClient) Recv() (*GetJobExecutionsReply, error) {
-	m := new(GetJobExecutionsReply)
+func (x *recorderGetJobExecutionsStrClient) Recv() (*JobExecutionsReply, error) {
+	m := new(JobExecutionsReply)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *recorderClient) GetJobExecutions(ctx context.Context, in *GetJobExecutionsRequest, opts ...grpc.CallOption) (*GetJobExecutionsReply, error) {
-	out := new(GetJobExecutionsReply)
-	err := c.cc.Invoke(ctx, Recorder_GetJobExecutions_FullMethodName, in, out, opts...)
+func (c *recorderClient) JobExecutions(ctx context.Context, in *JobExecutionsRequest, opts ...grpc.CallOption) (*JobExecutionsReply, error) {
+	out := new(JobExecutionsReply)
+	err := c.cc.Invoke(ctx, Recorder_JobExecutions_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +95,8 @@ func (c *recorderClient) AddJobExecution(ctx context.Context, in *AddJobExecutio
 // All implementations must embed UnimplementedRecorderServer
 // for forward compatibility
 type RecorderServer interface {
-	GetJobExecutionsStr(*GetJobExecutionsRequest, Recorder_GetJobExecutionsStrServer) error
-	GetJobExecutions(context.Context, *GetJobExecutionsRequest) (*GetJobExecutionsReply, error)
+	GetJobExecutionsStr(*JobExecutionsRequest, Recorder_GetJobExecutionsStrServer) error
+	JobExecutions(context.Context, *JobExecutionsRequest) (*JobExecutionsReply, error)
 	AddJobExecution(context.Context, *AddJobExecutionRequest) (*Void, error)
 	mustEmbedUnimplementedRecorderServer()
 }
@@ -105,11 +105,11 @@ type RecorderServer interface {
 type UnimplementedRecorderServer struct {
 }
 
-func (UnimplementedRecorderServer) GetJobExecutionsStr(*GetJobExecutionsRequest, Recorder_GetJobExecutionsStrServer) error {
+func (UnimplementedRecorderServer) GetJobExecutionsStr(*JobExecutionsRequest, Recorder_GetJobExecutionsStrServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetJobExecutionsStr not implemented")
 }
-func (UnimplementedRecorderServer) GetJobExecutions(context.Context, *GetJobExecutionsRequest) (*GetJobExecutionsReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetJobExecutions not implemented")
+func (UnimplementedRecorderServer) JobExecutions(context.Context, *JobExecutionsRequest) (*JobExecutionsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method JobExecutions not implemented")
 }
 func (UnimplementedRecorderServer) AddJobExecution(context.Context, *AddJobExecutionRequest) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddJobExecution not implemented")
@@ -128,7 +128,7 @@ func RegisterRecorderServer(s grpc.ServiceRegistrar, srv RecorderServer) {
 }
 
 func _Recorder_GetJobExecutionsStr_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(GetJobExecutionsRequest)
+	m := new(JobExecutionsRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func _Recorder_GetJobExecutionsStr_Handler(srv interface{}, stream grpc.ServerSt
 }
 
 type Recorder_GetJobExecutionsStrServer interface {
-	Send(*GetJobExecutionsReply) error
+	Send(*JobExecutionsReply) error
 	grpc.ServerStream
 }
 
@@ -144,24 +144,24 @@ type recorderGetJobExecutionsStrServer struct {
 	grpc.ServerStream
 }
 
-func (x *recorderGetJobExecutionsStrServer) Send(m *GetJobExecutionsReply) error {
+func (x *recorderGetJobExecutionsStrServer) Send(m *JobExecutionsReply) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Recorder_GetJobExecutions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetJobExecutionsRequest)
+func _Recorder_JobExecutions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JobExecutionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RecorderServer).GetJobExecutions(ctx, in)
+		return srv.(RecorderServer).JobExecutions(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Recorder_GetJobExecutions_FullMethodName,
+		FullMethod: Recorder_JobExecutions_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RecorderServer).GetJobExecutions(ctx, req.(*GetJobExecutionsRequest))
+		return srv.(RecorderServer).JobExecutions(ctx, req.(*JobExecutionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -192,8 +192,8 @@ var Recorder_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*RecorderServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetJobExecutions",
-			Handler:    _Recorder_GetJobExecutions_Handler,
+			MethodName: "JobExecutions",
+			Handler:    _Recorder_JobExecutions_Handler,
 		},
 		{
 			MethodName: "AddJobExecution",

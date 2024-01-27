@@ -38,3 +38,5 @@ go.work.sum
 **/notes/
 reports/
 **/export/
+**/tests/
+**/work/
