@@ -7,11 +7,13 @@ import (
 	"github.com/andrescosta/jobico/cmd/queue/service"
 )
 
-const Name = "Queue"
-
 func main() {
-	err := service.Service{}.Start(context.Background())
+	svc, err := service.New(context.Background())
 	if err != nil {
-		log.Fatalf("error starting queue service: %v", err)
+		log.Panicf("error creating queue service: %s", err)
+	}
+	defer svc.Dispose()
+	if err := svc.Start(); err != nil {
+		log.Panicf("error starting ctl service: %s", err)
 	}
 }

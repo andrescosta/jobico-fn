@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/jobico/internal/tapp"
+	"github.com/andrescosta/jobico/internal/dashboard"
 )
 
 func main() {
@@ -16,18 +16,15 @@ func main() {
 
 	flag.Parse()
 
-	tapp, err := tapp.New(context.Background(), service.DefaultGrpcDialer, "dashboard", *syncUpdatesFlag)
+	d, err := dashboard.New(context.Background(), service.DefaultGrpcDialer, "dashboard", *syncUpdatesFlag)
 	if err != nil {
 		log.Panic(err)
 	}
-
+	defer d.Dispose()
 	if *debugFlag {
-		tapp.DebugOn()
+		d.DebugOn()
 	}
-
-	defer tapp.Dispose()
-
-	if err := tapp.Run(); err != nil {
+	if err := d.Run(); err != nil {
 		panic(err)
 	}
 }

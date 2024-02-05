@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 
-	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/internal/api/types"
@@ -13,59 +12,62 @@ import (
 
 const name = "recorder"
 
+type Setter func(*Service)
+
 type Service struct {
-	Listener service.GrpcListener
-	Option   *controller.Option
-	Dialer   service.GrpcDialer
+	grpc.Container
+	option controller.Option
 }
 
-func (s Service) Start(ctx context.Context) error {
-	l := s.Listener
-	if l == nil {
-		l = service.DefaultGrpcListener
+func New(ctx context.Context, ops ...Setter) (*Service, error) {
+	s := &Service{
+		option: controller.Option{},
+		Container: grpc.Container{
+			Name: name,
+			GrpcConn: service.GrpcConn{
+				Dialer:   service.DefaultGrpcDialer,
+				Listener: service.DefaultGrpcListener,
+			},
+		},
 	}
-	o := s.Option
-	if o == nil {
-		o = &controller.Option{}
+	for _, op := range ops {
+		op(s)
 	}
 	svc, err := grpc.New(
-		grpc.WithListener(l),
-		grpc.WithName(name),
+		grpc.WithListener(s.Listener),
+		grpc.WithAddr(s.AddrOrPanic()),
+		grpc.WithName(s.Name),
 		grpc.WithContext(ctx),
 		grpc.WithServiceDesc(&pb.Recorder_ServiceDesc),
+		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			return server.New(ctx, ".\\log.log", *o)
+			return server.New(ctx, ".\\log.log", s.option)
 		}),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer svc.Dispose()
-	if err = svc.Serve(); err != nil {
-		return err
-	}
-	return nil
+	s.Svc = svc
+	return s, nil
 }
 
-func (s Service) Addr() *string {
-	return env.StringOrNil(name + ".addr")
+func (s *Service) Start() error {
+	defer s.Dispose()
+	return s.Svc.Serve()
 }
 
-func (s Service) Kind() service.Kind {
-	return grpc.Kind
+func (s *Service) Dispose() {
+	s.Svc.Dispose()
 }
 
-func (s Service) CheckHealth(ctx context.Context) error {
-	d := s.Dialer
-	if d == nil {
-		d = service.DefaultGrpcDialer
+func WithOption(o controller.Option) Setter {
+	return func(s *Service) {
+		s.option = o
 	}
-	cli, err := grpc.NewHelthCheckClient(ctx, *s.Addr(), d)
-	defer func() {
-		_ = cli.Close()
-	}()
-	if err != nil {
-		return err
+}
+
+func WithGrpcConn(g service.GrpcConn) Setter {
+	return func(s *Service) {
+		s.Container.GrpcConn = g
 	}
-	return cli.CheckOk(ctx, name)
 }

@@ -4,82 +4,83 @@ import (
 	"context"
 	"errors"
 
-	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/goico/pkg/service/http"
 	"github.com/andrescosta/goico/pkg/service/process"
 	"github.com/andrescosta/jobico/internal/executor"
 )
 
 const name = "executor"
 
+type Setter func(*Service)
+
 type Service struct {
-	Dialer        service.GrpcDialer
-	Listener      service.HTTPListener
-	ClientBuilder service.HTTPClient
-	Option        *executor.Option
+	process.Container
+	vm     *executor.VM
+	dialer service.GrpcDialer
+	option executor.Option
 }
 
-func (s Service) Start(ctx context.Context) (err error) {
-	d := s.Dialer
-	if d == nil {
-		d = service.DefaultGrpcDialer
+func New(ctx context.Context, ops ...Setter) (*Service, error) {
+	s := &Service{
+		option: executor.Option{},
+		Container: process.Container{
+			Name: name,
+		},
 	}
-	l := s.Listener
-	if l == nil {
-		l = service.DefaultHTTPListener
+	for _, op := range ops {
+		op(s)
 	}
-	o := s.Option
-	if o == nil {
-		o = &executor.Option{}
-	}
-	m, err := executor.NewVM(ctx, d, *o)
+	vm, err := executor.NewVM(ctx, s.dialer, s.option)
 	if err != nil {
-		return
+		return nil, err
 	}
-	defer func() {
-		errc := m.Close(ctx)
-		err = errors.Join(err, errc)
-	}()
-	e, err := process.New(
-		process.WithSidecarListener(l),
+	s.vm = vm
+	svc, err := process.New(
+		process.WithSidecarListener(s.ListenerOrDefault()),
 		process.WithContext(ctx),
 		process.WithName(name),
+		process.WithAddr(s.AddrOrPanic()),
 		process.WithHealthCheckFN(func(ctx context.Context) (map[string]string, error) {
 			status := make(map[string]string)
-			if !m.IsUp() {
+			if !vm.IsUp() {
 				return status, errors.New("error in executor")
 			}
 			return status, nil
 		}),
-		process.WithServeHandler(func(ctx context.Context) error {
-			m.StartExecutors(ctx)
-			return nil
+		process.WithStarter(func(ctx context.Context) error {
+			return vm.StartExecutors(ctx)
 		}),
 	)
 	if err != nil {
-		return
+		return nil, err
 	}
-	err = e.Serve()
-	return
+	s.Svc = svc
+	return s, nil
 }
 
-func (s Service) Addr() *string {
-	return env.StringOrNil(name + ".addr")
+func (s *Service) Start() error {
+	defer s.Dispose()
+	return s.Svc.Serve()
 }
 
-func (s Service) Kind() service.Kind {
-	return process.Kind
+func (s *Service) Dispose() {
+	s.vm.Close(s.Svc.Base.Ctx)
 }
 
-func (s Service) CheckHealth(ctx context.Context) error {
-	b := s.ClientBuilder
-	if b == nil {
-		b = service.DefaultHTTPClient
+func WithGrpcDialer(d service.GrpcDialer) Setter {
+	return func(s *Service) {
+		s.dialer = d
 	}
-	cli, err := b.NewHTTPClient(*s.Addr())
-	if err != nil {
-		return err
+}
+
+func WithHttpConn(h service.HttpConn) Setter {
+	return func(s *Service) {
+		s.Container.HttpConn = h
 	}
-	return http.CheckServiceHealth(ctx, cli, *s.Addr())
+}
+
+func WithOption(o executor.Option) Setter {
+	return func(s *Service) {
+		s.option = o
+	}
 }

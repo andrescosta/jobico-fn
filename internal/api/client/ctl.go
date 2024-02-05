@@ -13,11 +13,11 @@ import (
 )
 
 type Ctl struct {
-	addr                  string
-	conn                  *rpc.ClientConn
-	cli                   pb.ControlClient
-	broadcasterJobPackage *broadcaster.Broadcaster[*pb.UpdateToPackagesStrReply]
-	broadcasterEnvUpdates *broadcaster.Broadcaster[*pb.UpdateToEnvironmentStrReply]
+	addr         string
+	conn         *rpc.ClientConn
+	cli          pb.ControlClient
+	bcJobPackage *broadcaster.Broadcaster[*pb.UpdateToPackagesStrReply]
+	bcEnvUpdates *broadcaster.Broadcaster[*pb.UpdateToEnvironmentStrReply]
 }
 
 var ErrCtlHostAddr = errors.New("the control service address was not specified in the env file using ctl.host")
@@ -40,11 +40,11 @@ func NewCtl(ctx context.Context, d service.GrpcDialer) (*Ctl, error) {
 }
 
 func (c *Ctl) Close() error {
-	if c.broadcasterEnvUpdates != nil {
-		c.broadcasterEnvUpdates.Stop()
+	if c.bcEnvUpdates != nil {
+		c.bcEnvUpdates.Stop()
 	}
-	if c.broadcasterJobPackage != nil {
-		c.broadcasterJobPackage.Stop()
+	if c.bcJobPackage != nil {
+		c.bcJobPackage.Stop()
 	}
 	return c.conn.Close()
 }
@@ -148,17 +148,17 @@ func (c *Ctl) DeletePackage(ctx context.Context, pkg *pb.JobPackage) error {
 }
 
 func (c *Ctl) ListenerForEnvironmentUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToEnvironmentStrReply], error) {
-	if c.broadcasterEnvUpdates == nil {
+	if c.bcEnvUpdates == nil {
 		if err := c.startListenEnvironmentUpdates(ctx); err != nil {
 			return nil, err
 		}
 	}
-	return c.broadcasterEnvUpdates.Subscribe()
+	return c.bcEnvUpdates.Subscribe()
 }
 
 func (c *Ctl) startListenEnvironmentUpdates(ctx context.Context) error {
 	cb := broadcaster.Start[*pb.UpdateToEnvironmentStrReply](ctx)
-	c.broadcasterEnvUpdates = cb
+	c.bcEnvUpdates = cb
 	s, err := c.cli.UpdateToEnvironmentStr(ctx, &pb.Void{})
 	if err != nil {
 		return err
@@ -170,17 +170,17 @@ func (c *Ctl) startListenEnvironmentUpdates(ctx context.Context) error {
 }
 
 func (c *Ctl) ListenerForPackageUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToPackagesStrReply], error) {
-	if c.broadcasterJobPackage == nil {
+	if c.bcJobPackage == nil {
 		if err := c.startListenerForPackageUpdates(ctx); err != nil {
 			return nil, err
 		}
 	}
-	return c.broadcasterJobPackage.Subscribe()
+	return c.bcJobPackage.Subscribe()
 }
 
 func (c *Ctl) startListenerForPackageUpdates(ctx context.Context) error {
 	cb := broadcaster.Start[*pb.UpdateToPackagesStrReply](ctx)
-	c.broadcasterJobPackage = cb
+	c.bcJobPackage = cb
 	s, err := c.cli.UpdateToPackagesStr(ctx, &pb.UpdateToPackagesStrRequest{})
 	if err != nil {
 		return err

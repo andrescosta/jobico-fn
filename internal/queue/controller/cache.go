@@ -20,45 +20,56 @@ type Option struct {
 
 type QueueBuilder[T any] func(string) provider.Queue[T]
 
-// TODO: fix locks!! cal LoadOrSTore or what ?
-
 type Cache[T any] struct {
-	queues     *collection.SyncMap[string, provider.Queue[T]]
-	dialer     service.GrpcDialer
-	newQueueFn QueueBuilder[T]
-	ctl        *client.Ctl
+	queues       *collection.SyncMap[string, provider.Queue[T]]
+	queueBuilder QueueBuilder[T]
+	ctl          *client.Ctl
+	populated    bool
 }
 
-func NewQueueCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (*Cache[T], error) {
+func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (*Cache[T], error) {
 	syncmap := collection.NewSyncMap[string, provider.Queue[T]]()
-	newQueueFn := func(id string) provider.Queue[T] { return provider.NewFileQueue[T](id) }
+	queueBuilder := func(id string) provider.Queue[T] { return provider.NewFileQueue[T](id) }
 	if o.InMemory {
-		newQueueFn = func(_ string) provider.Queue[T] { return provider.NewMemBasedQueue[T]() }
+		queueBuilder = func(_ string) provider.Queue[T] { return provider.NewMemBasedQueue[T]() }
 	}
 	ctl, err := client.NewCtl(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
 	cache := &Cache[T]{
-		queues:     syncmap,
-		dialer:     dialer,
-		newQueueFn: newQueueFn,
-		ctl:        ctl,
-	}
-	if err := cache.populate(ctx); err != nil {
-		return nil, err
-	}
-	if err := cache.startListeningUpdates(ctx); err != nil {
-		return nil, err
+		queues:       syncmap,
+		ctl:          ctl,
+		queueBuilder: queueBuilder,
 	}
 	return cache, nil
 }
 
-func (q *Cache[T]) Close() error {
-	return q.ctl.Close()
+func (q *Cache[T]) populate(ctx context.Context) error {
+	if err := q.addPackages(ctx); err != nil {
+		return err
+	}
+	if err := q.startListeningUpdates(ctx); err != nil {
+		return err
+	}
+	q.populated = true
+	return nil
 }
 
-func (q *Cache[T]) GetQueue(tentant string, queueID string) (provider.Queue[T], error) {
+func (q *Cache[T]) Close() error {
+	if q.ctl != nil {
+		return q.ctl.Close()
+	}
+	return nil
+}
+
+func (q *Cache[T]) GetQueue(ctx context.Context, tentant string, queueID string) (provider.Queue[T], error) {
+	if !q.populated {
+		err := q.populate(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	queue, ok := q.queues.Load(getQueueName(tentant, queueID))
 	if !ok {
 		return nil, ErrQueueUnknown
@@ -66,12 +77,12 @@ func (q *Cache[T]) GetQueue(tentant string, queueID string) (provider.Queue[T], 
 	return queue, nil
 }
 
-func (q *Cache[T]) populate(ctx context.Context) error {
+func (q *Cache[T]) addPackages(ctx context.Context) error {
 	pkgs, err := q.ctl.AllPackages(ctx)
 	if err != nil {
 		return err
 	}
-	if err := q.addQueues(ctx, pkgs); err != nil {
+	if err := q.addOrUpdate(ctx, pkgs); err != nil {
 		return err
 	}
 	return nil
@@ -99,33 +110,33 @@ func (q *Cache[T]) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrReply)
 	logger := zerolog.Ctx(ctx)
 	switch u.Type {
 	case pb.UpdateType_Delete:
-		q.deleteQueues(u.Object.Tenant, u.Object.Queues)
+		q.delete(u.Object.Tenant, u.Object.Queues)
 	case pb.UpdateType_New, pb.UpdateType_Update:
-		if err := q.addQueues(ctx, []*pb.JobPackage{u.Object}); err != nil {
+		if err := q.addOrUpdate(ctx, []*pb.JobPackage{u.Object}); err != nil {
 			logger.Warn().AnErr("error", err).Msg("onUpdate: error updating queue")
 		}
 	}
 }
 
-func (q *Cache[T]) deleteQueues(tenant string, qs []*pb.QueueDef) {
+func (q *Cache[T]) delete(tenant string, qs []*pb.QueueDef) {
 	for _, queue := range qs {
 		q.queues.Delete(getQueueName(tenant, queue.ID))
 	}
 }
 
-func (q *Cache[T]) addQueues(ctx context.Context, pkgs []*pb.JobPackage) error {
+func (q *Cache[T]) addOrUpdate(ctx context.Context, pkgs []*pb.JobPackage) error {
 	for _, ps := range pkgs {
 		tenant := ps.Tenant
 		for _, queue := range ps.Queues {
-			q.addQueue(ctx, tenant, queue)
+			q.addOrUpdateQueue(ctx, tenant, queue)
 		}
 	}
 	return nil
 }
 
-func (q *Cache[T]) addQueue(_ context.Context, tenant string, def *pb.QueueDef) {
+func (q *Cache[T]) addOrUpdateQueue(_ context.Context, tenant string, def *pb.QueueDef) {
 	name := getQueueName(tenant, def.ID)
-	queue := q.newQueueFn(name)
+	queue := q.queueBuilder(name)
 	_ = q.queues.LoadOrStore(name, queue)
 }
 

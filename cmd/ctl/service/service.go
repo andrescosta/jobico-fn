@@ -13,58 +13,63 @@ import (
 
 const name = "ctl"
 
+type Setter func(*Service)
+
 type Service struct {
-	Listener service.GrpcListener
-	DBOption *database.Option
-	Dialer   service.GrpcDialer
+	grpc.Container
+	dbOption database.Option
 }
 
-func (s Service) Start(ctx context.Context) error {
-	l := s.Listener
-	if l == nil {
-		l = service.DefaultGrpcListener
+func New(ctx context.Context, ops ...Setter) (*Service, error) {
+	s := &Service{
+		dbOption: database.Option{},
+		Container: grpc.Container{
+			Name: name,
+			GrpcConn: service.GrpcConn{
+				Dialer:   service.DefaultGrpcDialer,
+				Listener: service.DefaultGrpcListener,
+			},
+		},
 	}
-	o := s.DBOption
-	if o == nil {
-		o = &database.Option{}
+	for _, op := range ops {
+		op(s)
 	}
 	svc, err := grpc.New(
-		grpc.WithName(name),
-		grpc.WithListener(l),
+		grpc.WithName(s.Name),
+		grpc.WithAddr(s.AddrOrPanic()),
+		grpc.WithListener(s.Listener),
 		grpc.WithContext(ctx),
+		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
 		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			dbFileName := env.String("ctl.dbname", "db.db")
-			return server.New(ctx, dbFileName, *o)
+			return server.New(ctx, dbFileName, s.dbOption)
 		}),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer svc.Dispose()
-	if err = svc.Serve(); err != nil {
-		return err
-	}
-	return nil
+	s.Svc = svc
+	return s, nil
 }
 
-func (s Service) Addr() *string {
-	return env.StringOrNil(name + ".addr")
+func (s *Service) Start() error {
+	defer s.Dispose()
+	return s.Svc.Serve()
 }
 
-func (s Service) Kind() service.Kind {
-	return grpc.Kind
+func (s *Service) Dispose() {
+	s.Svc.Dispose()
 }
 
-func (s Service) CheckHealth(ctx context.Context) error {
-	d := s.Dialer
-	if d == nil {
-		d = service.DefaultGrpcDialer
+func WithDBOption(d database.Option) Setter {
+	return func(s *Service) {
+		s.dbOption = d
 	}
-	cli, err := grpc.NewHelthCheckClient(ctx, *s.Addr(), d)
-	if err != nil {
-		return err
+}
+
+func WithGrpcConn(g service.GrpcConn) Setter {
+	return func(s *Service) {
+		s.Container.GrpcConn = g
 	}
-	defer cli.Close()
-	return cli.CheckOk(ctx, name)
 }

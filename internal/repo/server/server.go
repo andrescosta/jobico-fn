@@ -26,12 +26,12 @@ func (s *Server) AddFile(ctx context.Context, in *pb.AddFileRequest) (*pb.AddFil
 	return s.controller.AddFile(ctx, in)
 }
 
-func (s *Server) GetFile(ctx context.Context, in *pb.FileRequest) (*pb.FileReply, error) {
-	return s.controller.GetFile(ctx, in)
+func (s *Server) File(ctx context.Context, in *pb.FileRequest) (*pb.FileReply, error) {
+	return s.controller.File(ctx, in)
 }
 
-func (s *Server) GetAllFileNames(ctx context.Context, in *pb.Void) (*pb.AllFileNamesReply, error) {
-	return s.controller.GetAllFileNames(ctx, in)
+func (s *Server) AllFileNames(ctx context.Context, in *pb.Void) (*pb.AllFileNamesReply, error) {
+	return s.controller.AllFileNames(ctx, in)
 }
 
 func (s *Server) UpdateToFileStr(in *pb.UpdateToFileStrRequest, ctl pb.Repo_UpdateToFileStrServer) error {

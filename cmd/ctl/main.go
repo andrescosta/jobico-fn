@@ -8,8 +8,12 @@ import (
 )
 
 func main() {
-	err := service.Service{}.Start(context.Background())
+	svc, err := service.New(context.Background())
 	if err != nil {
+		log.Panicf("error creating ctl service: %s", err)
+	}
+	defer svc.Dispose()
+	if err := svc.Start(); err != nil {
 		log.Panicf("error starting ctl service: %s", err)
 	}
 }

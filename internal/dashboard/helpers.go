@@ -1,4 +1,4 @@
-package tapp
+package dashboard
 
 import (
 	"context"

@@ -20,8 +20,8 @@ type EventDefCache struct {
 	eventCache    *cache.Cache[string, *EventEntry]
 	serviceCache  *cache.Service
 	repoClient    *client.Repo
-	dialer        service.GrpcDialer
 	controlClient *client.Ctl
+	populated     bool
 }
 type EventEntry struct {
 	EventDef *pb.EventDef
@@ -37,34 +37,21 @@ func newCache(ctx context.Context, d service.GrpcDialer, l service.GrpcListener)
 	if err != nil {
 		return nil, err
 	}
-	b := cache.New[string, *EventEntry](ctx, "listener")
-	svc, err := cache.NewService[string, *EventEntry](ctx, l, b)
+	c := cache.New[string, *EventEntry](ctx, "listener")
+	svc, err := cache.NewService[string, *EventEntry](ctx, c, cache.WithGrpcConn(service.GrpcConn{Dialer: d, Listener: l}))
 	if err != nil {
 		return nil, err
 	}
 	cache := EventDefCache{
-		eventCache:    b,
+		eventCache:    c,
 		repoClient:    repoClient,
 		controlClient: controlClient,
-		dialer:        d,
 		serviceCache:  svc,
 	}
-	if err := cache.populate(ctx); err != nil {
-		return nil, err
-	}
-	if err := cache.startListeningUpdates(ctx, d); err != nil {
-		return nil, err
-	}
-	go func() {
-		logger := zerolog.Ctx(ctx)
-		if err := cache.serviceCache.Serve(); err != nil {
-			logger.Warn().Msgf("Error stopping cache: %v", err)
-		}
-	}()
 	return &cache, nil
 }
 
-func (j *EventDefCache) Close() error {
+func (j *EventDefCache) close() error {
 	var err error
 	err = errors.Join(err, j.controlClient.Close())
 	err = errors.Join(err, j.repoClient.Close())
@@ -72,7 +59,35 @@ func (j *EventDefCache) Close() error {
 	return err
 }
 
-func (j *EventDefCache) Get(tenant string, eventID string) (*EventEntry, error) {
+func (j *EventDefCache) Serve(ctx context.Context) error {
+	return j.serviceCache.Serve()
+}
+
+func (j *EventDefCache) populate(ctx context.Context) error {
+	go func() { _ = j.Serve(ctx) }()
+	if err := j.addPackages(ctx); err != nil {
+		return err
+	}
+	if err := j.startListeningUpdates(ctx); err != nil {
+		return err
+	}
+	go func() {
+		logger := zerolog.Ctx(ctx)
+		if err := j.serviceCache.Serve(); err != nil {
+			logger.Warn().Msgf("Error stopping cache: %v", err)
+		}
+	}()
+	j.populated = true
+	return nil
+}
+
+func (j *EventDefCache) Get(ctx context.Context, tenant string, eventID string) (*EventEntry, error) {
+	if !j.populated {
+		err := j.populate(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	ev, ok := j.eventCache.Get(getEventName(tenant, eventID))
 	if !ok {
 		return nil, ErrEventUnknown
@@ -80,7 +95,7 @@ func (j *EventDefCache) Get(tenant string, eventID string) (*EventEntry, error) 
 	return ev, nil
 }
 
-func (j *EventDefCache) startListeningUpdates(ctx context.Context, d service.GrpcDialer) error {
+func (j *EventDefCache) startListeningUpdates(ctx context.Context) error {
 	l, err := j.controlClient.ListenerForPackageUpdates(ctx)
 	if err != nil {
 		return err
@@ -116,7 +131,7 @@ func (j *EventDefCache) deleteEventsOfPackage(ctx context.Context, p *pb.JobPack
 	}
 }
 
-func (j *EventDefCache) populate(ctx context.Context) error {
+func (j *EventDefCache) addPackages(ctx context.Context) error {
 	pkgs, err := j.controlClient.AllPackages(ctx)
 	if err != nil {
 		return err

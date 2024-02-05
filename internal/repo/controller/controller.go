@@ -50,7 +50,7 @@ func (s *Controller) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.Add
 	return &pb.AddFileReply{}, nil
 }
 
-func (s *Controller) GetFile(_ context.Context, r *pb.FileRequest) (*pb.FileReply, error) {
+func (s *Controller) File(_ context.Context, r *pb.FileRequest) (*pb.FileReply, error) {
 	f, err := s.repo.File(r.TenantFile.Tenant, r.TenantFile.File.Name)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (s *Controller) GetFile(_ context.Context, r *pb.FileRequest) (*pb.FileRepl
 	}, nil
 }
 
-func (s *Controller) GetAllFileNames(_ context.Context, _ *pb.Void) (*pb.AllFileNamesReply, error) {
+func (s *Controller) AllFileNames(_ context.Context, _ *pb.Void) (*pb.AllFileNamesReply, error) {
 	f, err := s.repo.Files()
 	if err != nil {
 		return nil, err

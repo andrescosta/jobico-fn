@@ -43,7 +43,7 @@ func Recv[T proto.Message](ctx context.Context, s grpc.ClientStream, c chan<- T)
 	}
 }
 
-func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *broadcaster.Broadcaster[T]) error {
+func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, bc *broadcaster.Broadcaster[T]) error {
 	logger := zerolog.Ctx(ctx)
 	for {
 		select {
@@ -69,7 +69,7 @@ func Listen[T proto.Message](ctx context.Context, s grpc.ClientStream, b *broadc
 				}
 				continue
 			}
-			if err := b.Write(p.Interface().(T)); err != nil {
+			if err := bc.Write(p.Interface().(T)); err != nil {
 				return err
 			}
 		}

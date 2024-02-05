@@ -7,30 +7,30 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Cache struct {
+type DAOS struct {
 	mu   *sync.Mutex
 	daos map[string]*DAO[proto.Message]
 	db   *database.Database
 }
 
-func NewCache(db *database.Database) *Cache {
-	return &Cache{
+func NewDAOS(db *database.Database) *DAOS {
+	return &DAOS{
 		daos: make(map[string]*DAO[proto.Message]),
 		db:   db,
 		mu:   &sync.Mutex{},
 	}
 }
 
-func (c *Cache) GetGeneric(entity string, message proto.Message) (*DAO[proto.Message], error) {
-	return c.GetForTenant(entity, entity, message)
+func (c *DAOS) Generic(entity string, message proto.Message) (*DAO[proto.Message], error) {
+	return c.ForTenant(entity, entity, message)
 }
 
-func (c *Cache) GetForTenant(tenant string, entity string, message proto.Message) (*DAO[proto.Message], error) {
+func (c *DAOS) ForTenant(tenant string, entity string, message proto.Message) (*DAO[proto.Message], error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	dao, ok := c.daos[tenant]
 	if !ok {
-		dao = NewDAO(c.db, entity, tenant,
+		dao = New(c.db, entity, tenant,
 			&ProtoMessageMarshaller{
 				prototype: message,
 			})

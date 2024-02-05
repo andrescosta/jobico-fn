@@ -8,8 +8,12 @@ import (
 )
 
 func main() {
-	err := service.Service{}.Start(context.Background())
+	svc, err := service.New(context.Background())
 	if err != nil {
-		log.Fatalf("error starting executors: %v", err)
+		log.Panicf("error creating executor service: %s", err)
+	}
+	defer svc.Dispose()
+	if err := svc.Start(); err != nil {
+		log.Panicf("error starting executor service: %s", err)
 	}
 }

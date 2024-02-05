@@ -14,11 +14,12 @@ import (
 )
 
 type Controller struct {
+	ctx         context.Context
 	queue       *client.Queue
 	eventsCache *EventDefCache
 }
 
-func New(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (Controller, error) {
+func NewController(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (Controller, error) {
 	queue, err := client.NewQueue(ctx, d)
 	var empty Controller
 	if err != nil {
@@ -29,6 +30,7 @@ func New(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (Con
 		return empty, err
 	}
 	return Controller{
+		ctx:         ctx,
 		queue:       queue,
 		eventsCache: eventsCache,
 	}, nil
@@ -37,7 +39,7 @@ func New(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (Con
 func (c Controller) Close() error {
 	var err error
 	err = errors.Join(err, c.queue.Close())
-	err = errors.Join(err, c.eventsCache.Close())
+	err = errors.Join(err, c.eventsCache.close())
 	return err
 }
 
@@ -69,7 +71,7 @@ func (c Controller) Post(writer http.ResponseWriter, request *http.Request) {
 
 	tenant := mux.Vars(request)["tenant_id"]
 	eventID := mux.Vars(request)["event_id"]
-	ef, err := c.eventsCache.Get(tenant, eventID)
+	ef, err := c.eventsCache.Get(c.ctx, tenant, eventID)
 	if err != nil {
 		logger.Err(err).Msgf("Get: error getting event")
 		http.Error(writer, "", http.StatusInternalServerError)

@@ -318,7 +318,7 @@ func (s *testClient) addTenant(tenant string) error {
 	return nil
 }
 
-func (s *testClient) getAllPackages() ([]*pb.JobPackage, error) {
+func (s *testClient) AllPackages() ([]*pb.JobPackage, error) {
 	t, err := s.ctl.AllPackages(s.ctx)
 	if err != nil {
 		return nil, err

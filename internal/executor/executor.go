@@ -48,7 +48,6 @@ type VM struct {
 	ctl          *client.Ctl
 	queue        *client.Queue
 	repo         *client.Repo
-	grpcDialer   service.GrpcDialer
 	manualWakeup bool
 }
 type module struct {
@@ -91,16 +90,11 @@ func NewVM(ctx context.Context, d service.GrpcDialer, o Option) (*VM, error) {
 	e := &VM{
 		packages:     sync.Map{},
 		recorder:     recorder,
-		grpcDialer:   d,
 		manualWakeup: o.ManualWakeup,
 		w:            &sync.WaitGroup{},
 		ctl:          ctl,
 		queue:        queue,
 		repo:         repo,
-	}
-
-	if err := e.loadJobs(ctx); err != nil {
-		return nil, err
 	}
 
 	return e, nil
@@ -123,8 +117,13 @@ func (e *VM) Close(ctx context.Context) error {
 	return err
 }
 
-func (e *VM) StartExecutors(ctx context.Context) {
+func (e *VM) StartExecutors(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
+
+	if err := e.populate(ctx); err != nil {
+		return err
+	}
+
 	e.packages.Range(func(key, value any) bool {
 		pkg := value.(*jobPackage)
 		e.startPackage(ctx, pkg)
@@ -133,6 +132,7 @@ func (e *VM) StartExecutors(ctx context.Context) {
 	logger.Info().Msg("Workers started")
 	e.w.Wait()
 	logger.Info().Msg("Workers stopped")
+	return nil
 }
 
 func (e *VM) IsUp() bool {
@@ -172,7 +172,7 @@ func (e *VM) startPackage(ctx context.Context, pkg *jobPackage) {
 	}
 }
 
-func (e *VM) loadJobs(ctx context.Context) error {
+func (e *VM) populate(ctx context.Context) error {
 	ps, err := e.ctl.AllPackages(ctx)
 	if err != nil {
 		return err
@@ -496,41 +496,4 @@ func executeWasm(ctx context.Context, module *wasm.Module, id uint32, data []byt
 	}
 	logger.Debug().Msgf("%d | %s", code, result)
 	return code, result, nil
-}
-
-type ticker interface {
-	Chan() <-chan time.Time
-	Stop()
-	Tick()
-}
-
-type timeBasedTicker struct {
-	ticker *time.Ticker
-}
-
-func (t *timeBasedTicker) Chan() <-chan time.Time {
-	return t.ticker.C
-}
-
-func (t *timeBasedTicker) Stop() {
-	t.ticker.Stop()
-}
-
-func (t *timeBasedTicker) Tick() {
-}
-
-type channelBasedTicker struct {
-	c chan time.Time
-}
-
-func (t *channelBasedTicker) Chan() <-chan time.Time {
-	return t.c
-}
-
-func (t *channelBasedTicker) Stop() {
-	close(t.c)
-}
-
-func (t *channelBasedTicker) Tick() {
-	t.c <- time.Now()
 }

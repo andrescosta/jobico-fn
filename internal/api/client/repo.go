@@ -13,10 +13,10 @@ import (
 )
 
 type Repo struct {
-	addr                   string
-	conn                   *rpc.ClientConn
-	cli                    pb.RepoClient
-	broadcasterRepoUpdates *broadcaster.Broadcaster[*pb.UpdateToFileStrReply]
+	addr          string
+	conn          *rpc.ClientConn
+	cli           pb.RepoClient
+	bcRepoUpdates *broadcaster.Broadcaster[*pb.UpdateToFileStrReply]
 }
 
 func NewRepo(ctx context.Context, d service.GrpcDialer) (*Repo, error) {
@@ -92,23 +92,23 @@ func (c *Repo) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.UpdateToF
 }
 
 func (c *Repo) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToFileStrReply], error) {
-	if c.broadcasterRepoUpdates == nil {
+	if c.bcRepoUpdates == nil {
 		if err := c.startListenRepoUpdates(ctx); err != nil {
 			return nil, err
 		}
 	}
-	return c.broadcasterRepoUpdates.Subscribe()
+	return c.bcRepoUpdates.Subscribe()
 }
 
 func (c *Repo) startListenRepoUpdates(ctx context.Context) error {
-	cb := broadcaster.Start[*pb.UpdateToFileStrReply](ctx)
-	c.broadcasterRepoUpdates = cb
+	bc := broadcaster.Start[*pb.UpdateToFileStrReply](ctx)
+	c.bcRepoUpdates = bc
 	s, err := c.cli.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
 	if err != nil {
 		return err
 	}
 	go func() {
-		_ = grpchelper.Listen(ctx, s, cb)
+		_ = grpchelper.Listen(ctx, s, bc)
 	}()
 	return nil
 }

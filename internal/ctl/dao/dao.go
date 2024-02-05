@@ -9,7 +9,7 @@ type DAO[T proto.Message] struct {
 	table *database.Table[T]
 }
 
-func NewDAO[T proto.Message](db *database.Database, tableName string, tenant string, m database.Marshaler[T]) *DAO[T] {
+func New[T proto.Message](db *database.Database, tableName string, tenant string, m database.Marshaler[T]) *DAO[T] {
 	t := database.NewTable(db, tableName, tenant, m)
 	return &DAO[T]{
 		table: t,

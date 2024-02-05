@@ -13,12 +13,12 @@ const (
 )
 
 type TenantController struct {
-	daoCache *dao.Cache
+	daoCache *dao.DAOS
 }
 
 func NewTenantController(db *database.Database) *TenantController {
 	return &TenantController{
-		daoCache: dao.NewCache(db),
+		daoCache: dao.NewDAOS(db),
 	}
 }
 
@@ -45,7 +45,7 @@ func (c *TenantController) Tenants(in *pb.TenantsRequest) (*pb.TenantsReply, err
 }
 
 func (c *TenantController) AddTenant(in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
-	mydao, err := c.daoCache.GetGeneric(tblTenant, &pb.Tenant{})
+	mydao, err := c.daoCache.Generic(tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *TenantController) AddTenant(in *pb.AddTenantRequest) (*pb.AddTenantRepl
 }
 
 func (c *TenantController) getTenants() ([]*pb.Tenant, error) {
-	mydao, err := c.daoCache.GetGeneric(tblTenant, &pb.Tenant{})
+	mydao, err := c.daoCache.Generic(tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (c *TenantController) getTenants() ([]*pb.Tenant, error) {
 }
 
 func (c *TenantController) getTenant(id string) (*pb.Tenant, error) {
-	mydao, err := c.daoCache.GetGeneric(tblTenant, &pb.Tenant{})
+	mydao, err := c.daoCache.Generic(tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}

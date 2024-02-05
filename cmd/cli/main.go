@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/jobico/internal/cmd"
+	"github.com/andrescosta/jobico/internal/cli"
 )
 
 func main() {
@@ -21,6 +21,6 @@ func main() {
 	}
 
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	cmd.RunCli(ctx, os.Args)
+	cli.RunCli(ctx, os.Args)
 	defer done()
 }

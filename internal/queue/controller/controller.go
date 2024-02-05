@@ -10,21 +10,21 @@ import (
 )
 
 type Controller struct {
-	store *Cache[*pb.QueueItem]
+	cache *Cache[*pb.QueueItem]
 }
 
 func New(ctx context.Context, d service.GrpcDialer, o Option) (*Controller, error) {
-	s, err := NewQueueCache[*pb.QueueItem](ctx, d, o)
+	c, err := NewCache[*pb.QueueItem](ctx, d, o)
 	if err != nil {
 		return nil, err
 	}
 	return &Controller{
-		store: s,
+		cache: c,
 	}, nil
 }
 
-func (s *Controller) Queue(_ context.Context, in *pb.QueueRequest) (*pb.Void, error) {
-	myqueue, err := s.store.GetQueue(in.Tenant, in.Queue)
+func (s *Controller) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.Void, error) {
+	myqueue, err := s.cache.GetQueue(ctx, in.Tenant, in.Queue)
 	if err != nil {
 		return nil, err
 	}
@@ -38,11 +38,11 @@ func (s *Controller) Queue(_ context.Context, in *pb.QueueRequest) (*pb.Void, er
 }
 
 func (s *Controller) Close() error {
-	return s.store.Close()
+	return s.cache.Close()
 }
 
-func (s *Controller) Dequeue(_ context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
-	myqueue, err := s.store.GetQueue(in.Tenant, in.Queue)
+func (s *Controller) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
+	myqueue, err := s.cache.GetQueue(ctx, in.Tenant, in.Queue)
 	if err != nil {
 		return nil, err
 	}

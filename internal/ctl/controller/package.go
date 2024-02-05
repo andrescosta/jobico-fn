@@ -17,7 +17,7 @@ const (
 
 type PackageController struct {
 	ctx              context.Context
-	daoCache         *dao.Cache
+	daoCache         *dao.DAOS
 	bJobPackage      *grpchelper.GrpcBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message]
 	tenantController *TenantController
 }
@@ -25,7 +25,7 @@ type PackageController struct {
 func NewPackageController(ctx context.Context, db *database.Database) *PackageController {
 	return &PackageController{
 		ctx:              ctx,
-		daoCache:         dao.NewCache(db),
+		daoCache:         dao.NewDAOS(db),
 		bJobPackage:      grpchelper.StartBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message](ctx),
 		tenantController: NewTenantController(db),
 	}
@@ -60,7 +60,7 @@ func (c *PackageController) GetAllPackages() (*pb.AllPackagesReply, error) {
 	}
 	packages := make([]*pb.JobPackage, 0)
 	for _, me := range ms {
-		mydao, err := c.daoCache.GetForTenant(me.ID, tblPackage, &pb.JobPackage{})
+		mydao, err := c.daoCache.ForTenant(me.ID, tblPackage, &pb.JobPackage{})
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +75,7 @@ func (c *PackageController) GetAllPackages() (*pb.AllPackagesReply, error) {
 }
 
 func (c *PackageController) AddPackage(ctx context.Context, in *pb.AddPackageRequest) (*pb.AddPackageReply, error) {
-	mydao, err := c.daoCache.GetForTenant(in.Package.Tenant, tblPackage, &pb.JobPackage{})
+	mydao, err := c.daoCache.ForTenant(in.Package.Tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (c *PackageController) AddPackage(ctx context.Context, in *pb.AddPackageReq
 }
 
 func (c *PackageController) UpdatePackage(ctx context.Context, in *pb.UpdatePackageRequest) (*pb.Void, error) {
-	mydao, err := c.daoCache.GetForTenant(in.Package.Tenant, tblPackage, &pb.JobPackage{})
+	mydao, err := c.daoCache.ForTenant(in.Package.Tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (c *PackageController) UpdatePackage(ctx context.Context, in *pb.UpdatePack
 }
 
 func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeletePackageRequest) (*pb.Void, error) {
-	mydao, err := c.daoCache.GetForTenant(in.Package.Tenant, tblPackage, &pb.JobPackage{})
+	mydao, err := c.daoCache.ForTenant(in.Package.Tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (c *PackageController) UpdateToPackagesStr(_ *pb.UpdateToPackagesStrRequest
 }
 
 func (c *PackageController) getPackages(tenant string) ([]*pb.JobPackage, error) {
-	mydao, err := c.daoCache.GetForTenant(tenant, tblPackage, &pb.JobPackage{})
+	mydao, err := c.daoCache.ForTenant(tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (c *PackageController) getPackages(tenant string) ([]*pb.JobPackage, error)
 }
 
 func (c *PackageController) getPackage(tenant string, id string) (*pb.JobPackage, error) {
-	mydao, err := c.daoCache.GetForTenant(tenant, tblPackage, &pb.JobPackage{})
+	mydao, err := c.daoCache.ForTenant(tenant, tblPackage, &pb.JobPackage{})
 	if err != nil {
 		return nil, err
 	}

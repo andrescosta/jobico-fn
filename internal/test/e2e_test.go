@@ -17,12 +17,13 @@ import (
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/test"
 	ctl "github.com/andrescosta/jobico/cmd/ctl/service"
-	executor "github.com/andrescosta/jobico/cmd/executor/service"
+	exec "github.com/andrescosta/jobico/cmd/executor/service"
 	listener "github.com/andrescosta/jobico/cmd/listener/service"
 	queue "github.com/andrescosta/jobico/cmd/queue/service"
 	recorder "github.com/andrescosta/jobico/cmd/recorder/service"
 	repo "github.com/andrescosta/jobico/cmd/repo/service"
 	pb "github.com/andrescosta/jobico/internal/api/types"
+	"github.com/andrescosta/jobico/internal/executor"
 	queuectl "github.com/andrescosta/jobico/internal/queue/controller"
 	recorderctl "github.com/andrescosta/jobico/internal/recorder/controller"
 	repoctl "github.com/andrescosta/jobico/internal/repo/controller"
@@ -87,58 +88,69 @@ var (
 
 type JobicoPlatform struct {
 	conn     *service.BufConn
-	ctl      ctl.Service
-	queue    queue.Service
-	repo     repo.Service
-	listener listener.Service
-	executor executor.Service
-	recorder recorder.Service
+	ctl      *ctl.Service
+	queue    *queue.Service
+	repo     *repo.Service
+	listener *listener.Service
+	executor *exec.Service
+	recorder *recorder.Service
 }
 
-func (s *JobicoPlatform) ResetQueueService() {
-	s.queue = queue.Service{
-		Listener: s.conn,
-		Dialer:   s.conn,
-		Option:   &queuectl.Option{InMemory: true},
-	}
+func NewPlatform(ctx context.Context) (*JobicoPlatform, error) {
+	return NewPlatformWithTimeout(ctx, *env.Duration("dial.timeout"))
 }
 
-func NewPlatform() *JobicoPlatform {
-	return NewPlatformWithTimeout(*env.Duration("dial.timeout"))
-}
-
-func NewPlatformWithTimeout(time time.Duration) *JobicoPlatform {
+func NewPlatformWithTimeout(ctx context.Context, time time.Duration) (*JobicoPlatform, error) {
 	conn := service.NewBufConnWithTimeout(time)
-	ctl := ctl.Service{
-		Listener: conn,
-		DBOption: &database.Option{InMemory: true},
-		Dialer:   conn,
+	ctl, err := ctl.New(ctx,
+		ctl.WithGrpcConn(service.GrpcConn{
+			Listener: conn,
+			Dialer:   conn,
+		}),
+		ctl.WithDBOption(database.Option{InMemory: true}))
+	if err != nil {
+		return nil, err
 	}
-	queue := queue.Service{
-		Listener: conn,
-		Dialer:   conn,
-		Option:   &queuectl.Option{InMemory: true},
+	queue, err := queue.New(ctx, queue.WithGrpcConn(
+		service.GrpcConn{
+			Listener: conn,
+			Dialer:   conn,
+		}), queue.WithOption(queuectl.Option{InMemory: true}))
+	if err != nil {
+		return nil, err
 	}
-	repo := repo.Service{
-		Listener: conn,
-		Option:   &repoctl.Option{InMemory: true},
-		Dialer:   conn,
+	repo, err := repo.New(ctx, repo.WithGrpcConn(
+		service.GrpcConn{
+			Listener: conn,
+			Dialer:   conn,
+		}), repo.WithOption(repoctl.Option{InMemory: true}))
+	if err != nil {
+		return nil, err
 	}
-	listener := listener.Service{
-		Dialer:        conn,
-		Listener:      conn,
-		ListenerCache: conn,
+
+	listener, err := listener.New(ctx, listener.WithHttpConn(service.HttpConn{
 		ClientBuilder: conn,
-	}
-	executor := executor.Service{
 		Listener:      conn,
-		Dialer:        conn,
-		ClientBuilder: conn,
+	}), listener.WithGrpcDialer(conn), listener.WithHttpListener(conn))
+	if err != nil {
+		return nil, err
 	}
-	recorder := recorder.Service{
-		Listener: conn,
-		Option:   &recorderctl.Option{InMemory: true},
-		Dialer:   conn,
+
+	executor, err := exec.New(ctx, exec.WithHttpConn(service.HttpConn{
+		ClientBuilder: conn,
+		Listener:      conn,
+	}), exec.WithGrpcDialer(conn), exec.WithOption(executor.Option{ManualWakeup: false}))
+	if err != nil {
+		return nil, err
+	}
+
+	recorder, err := recorder.New(ctx,
+		recorder.WithGrpcConn(service.GrpcConn{
+			Listener: conn,
+			Dialer:   conn,
+		}), recorder.WithOption(recorderctl.Option{InMemory: true}))
+	if err != nil {
+		return nil, err
 	}
 	return &JobicoPlatform{
 		ctl:      ctl,
@@ -148,7 +160,7 @@ func NewPlatformWithTimeout(time time.Duration) *JobicoPlatform {
 		listener: listener,
 		executor: executor,
 		recorder: recorder,
-	}
+	}, nil
 }
 
 type testFn func(*testing.T)
@@ -156,6 +168,8 @@ type testFn func(*testing.T)
 func Test(t *testing.T) {
 	tests := []testFn{
 		testSunny,
+		testStreamingSchemaUpdate,
+		testStreamingDelete,
 		testEventErrors,
 		testQueueDown,
 		testErroRepo,
@@ -169,90 +183,54 @@ func Test(t *testing.T) {
 		name := reflectutil.FuncName(testItFn)
 		name, _ = strings.CutPrefix(name, "Test")
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			testItFn(t)
-		})
-	}
-}
-
-func TestStreaming(t *testing.T) {
-	t.Skip()
-	tests := []testFn{
-		testSunnyStreaming,
-		testStreamingSchemaUpdate,
-		testStreamingDelete,
-	}
-	setEnvVars()
-	//	defer goleak.VerifyNone(t)
-	for _, fn := range tests {
-		testItFn := fn
-		name := reflectutil.FuncName(testItFn)
-		name, _ = strings.CutPrefix(name, "Test")
-		t.Run(name, func(t *testing.T) {
+			// t.Parallel()
 			testItFn(t)
 		})
 	}
 }
 
 func testSunny(t *testing.T) {
-	platform := NewPlatform()
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := NewPlatform(ctx)
+	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
-	cli, err := newClient(context.Background(), platform.conn, platform.conn)
+	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
+		cancel()
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
-	err = svcGroup.Start([]test.Starter{platform.ctl, platform.recorder, platform.repo})
+	err = svcGroup.Start([]test.Starter{platform.ctl, platform.queue, platform.recorder, platform.listener, platform.repo})
 	test.Nil(t, err)
 	pkg := addPackageAndFiles(t, cli)
-	ps, err := cli.getAllPackages()
+	ps, err := cli.AllPackages()
 	test.Nil(t, err)
 	test.NotEmpty(t, ps)
-	err = svcGroup.Start([]test.Starter{platform.queue, platform.listener})
-	test.Nil(t, err)
-	err = svcGroup.Start([]test.Starter{platform.executor})
-	test.Nil(t, err)
-	_ = sendEventV1AndCheckResultOk(t, pkg, cli)
-}
-
-func testSunnyStreaming(t *testing.T) {
-	platform := NewPlatform()
-	svcGroup := test.NewServiceGroup(platform.conn)
-	cli, err := newClient(context.Background(), platform.conn, platform.conn)
-	t.Cleanup(func() {
-		cleanUp(t, svcGroup, cli)
-	})
-	test.Nil(t, err)
-	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue, platform.recorder})
-	test.Nil(t, err)
-	err = cli.startRecvCacheEvents()
-	test.Nil(t, err)
-	pkg := addPackageAndFiles(t, cli)
-	err = cli.waitForCacheEvents()
-	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.executor})
 	test.Nil(t, err)
 	_ = sendEventV1AndCheckResultOk(t, pkg, cli)
 }
 
 func testStreamingSchemaUpdate(t *testing.T) {
-	platform := NewPlatform()
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := NewPlatform(ctx)
+	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
-	cli, err := newClient(context.Background(), platform.conn, platform.conn)
+	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
+		cancel()
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue, platform.recorder})
 	test.Nil(t, err)
+	pkg := addPackageAndFiles(t, cli)
+	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.executor})
 	test.Nil(t, err)
+	url := sendEventV1AndCheckResultOk(t, pkg, cli)
 	err = cli.startRecvCacheEvents()
 	test.Nil(t, err)
-	pkg := addPackageAndFiles(t, cli)
-	err = cli.waitForCacheEvents()
-	test.Nil(t, err)
-	url := sendEventV1AndCheckResultOk(t, pkg, cli)
 	pkg.Jobs[0].Event.Schema.SchemaRef = "sch1_v2"
 	err = cli.uploadSchemas(pkg, schemasV2)
 	test.Nil(t, err)
@@ -268,10 +246,13 @@ func testStreamingSchemaUpdate(t *testing.T) {
 }
 
 func testStreamingDelete(t *testing.T) {
-	platform := NewPlatform()
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := NewPlatform(ctx)
+	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
-	cli, err := newClient(context.Background(), platform.conn, platform.conn)
+	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
+		cancel()
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
@@ -279,12 +260,10 @@ func testStreamingDelete(t *testing.T) {
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.executor})
 	test.Nil(t, err)
+	pkg := addPackageAndFiles(t, cli)
+	url := sendEventV1AndCheckResultOk(t, pkg, cli)
 	err = cli.startRecvCacheEvents()
 	test.Nil(t, err)
-	pkg := addPackageAndFiles(t, cli)
-	err = cli.waitForCacheEvents()
-	test.Nil(t, err)
-	url := sendEventV1AndCheckResultOk(t, pkg, cli)
 	err = cli.deletePackage(pkg)
 	test.Nil(t, err)
 	err = cli.waitForCacheEvents()
@@ -295,10 +274,13 @@ func testStreamingDelete(t *testing.T) {
 
 func testEventErrors(t *testing.T) {
 	setEnvVars()
-	platform := NewPlatform()
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := NewPlatform(ctx)
+	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
-	cli, err := newClient(context.Background(), platform.conn, platform.conn)
+	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
+		cancel()
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
@@ -328,7 +310,8 @@ func testEventErrors(t *testing.T) {
 func testQueueDown(t *testing.T) {
 	setEnvVars()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	platform := NewPlatform()
+	platform, err := NewPlatform(ctx)
+	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
@@ -344,82 +327,37 @@ func testQueueDown(t *testing.T) {
 	err = svcGroup.Start([]test.Starter{platform.executor})
 	test.Nil(t, err)
 	url := sendEventV1AndCheckResultOk(t, pkg, cli)
-	err = svcGroup.Stop(ctx, platform.queue)
-	test.Nil(t, err)
+	platform.queue.Stop()
 	err = cli.sendEventV1(url)
 	test.ErrorIs(t, err, errSend{StatusCode: 500})
 }
 
-// func TestQueueDownUp(t *testing.T) {
-// 	setEnv()
-// 	platform := New()
-// 	svcGroup := test.NewServiceGroup(platform.conn)
-// 	t.Cleanup(func() {
-// 		err := svcGroup.Stop()
-// 		test.Nil(t, err)
-// 	})
-// 	svcGroup.AddAndStart([]test.Starter{platform.ctl, platform.repo})
-// 	s, err := New(context.Background(), platform.conn, platform.conn)
-// 	test.Nil(t, err)
-// 	p := s.NewPackage(schemaRefIds{"sch1","",""}, "run1")
-// 	err = s.AddTenant(p.Tenant)
-// 	test.Nil(t, err)
-// 	err = s.AddPackage(p)
-// 	test.Nil(t, err)
-// 	ps, err := s.GetAllPackages()
-// 	test.Nil(t, err)
-// 	test.NotEmpty(t, ps)
-// 	err = s.UploadfileForPackage(p, schemas)
-// 	test.Nil(t, err)
-// 	svcGroup.AddAndStart([]test.Starter{platform.listener, platform.queue})
-// 	u := fmt.Sprintf("http://listener:1/events/%s/%s", p.Tenant, p.Jobs[0].Event.ID)
-// 	url, err := url.Parse(u)
-// 	test.Nil(t, err)
-// 	err = s.SendEventV1(url)
-// 	test.Nil(t, err)
-// 	res, err := s.Dequeue(p.Tenant, p.Queues[0].ID)
-// 	test.Nil(t, err)
-// 	test.NotEmpty(t, res)
-// 	err = svcGroup.StopService(platform.queue)
-// 	test.Nil(t, err)
-// 	_, err = s.GetAllPackages()
-// 	test.Nil(t, err)
-// 	err = s.SendEventV1(url)
-// 	test.ErrorIs(t, err, test.ErrSendEvent{StatusCode: 500})
-// 	platform.ResetQueueService()
-// 	svcGroup.AddAndStart([]test.Starter{platform.queue})
-// 	time.Sleep(5 * time.Second)
-// 	err = s.SendEventV1(url)
-// 	test.Nil(t, err)
-// 	res, err = s.Dequeue(p.Tenant, p.Queues[0].ID)
-// 	test.Nil(t, err)
-// 	test.NotEmpty(t, res)
-// }
-
 func testErroCtl(t *testing.T) {
-	platform := NewPlatformWithTimeout(40 * time.Microsecond)
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := NewPlatformWithTimeout(ctx, 40*time.Microsecond)
+	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
-	cli, err := newClient(context.Background(), platform.conn, platform.conn)
+	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
-		_ = svcGroup.Stop(context.Background(), platform.listener)
-		_ = svcGroup.Stop(context.Background(), platform.queue)
+		cancel()
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
-	err = svcGroup.Start([]test.Starter{platform.repo})
+	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	err = svcGroup.Start([]test.Starter{platform.repo, platform.listener, platform.queue})
 	test.Nil(t, err)
-	err = svcGroup.Start([]test.Starter{platform.listener})
-	test.NotNil(t, err)
-	err = svcGroup.Start([]test.Starter{platform.queue})
+	err = sendEventV1NotCheck(t, pkg, cli)
 	test.NotNil(t, err)
 }
 
 func testErrorInitQueue(t *testing.T) {
-	platform := NewPlatform()
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := NewPlatform(ctx)
+	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
-	ctx := context.Background()
 	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
+		cancel()
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
@@ -436,29 +374,33 @@ func testErrorInitQueue(t *testing.T) {
 
 func testErroRepo(t *testing.T) {
 	os.Setenv("dial.timeout", (40 * time.Millisecond).String())
-	platform := NewPlatform()
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := NewPlatform(ctx)
+	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
-	cli, err := newClient(context.Background(), platform.conn, platform.conn)
+	cli, err := newClient(ctx, platform.conn, platform.conn)
 	t.Cleanup(func() {
-		_ = svcGroup.Stop(context.Background(), platform.listener)
+		cancel()
 		cleanUp(t, svcGroup, cli)
 	})
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.ctl})
 	test.Nil(t, err)
-	_ = addPackage(t, cli)
+	pkg := addPackage(t, cli)
 	err = svcGroup.Start([]test.Starter{platform.queue})
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.listener})
+	test.Nil(t, err)
+	err = sendEventV1NotCheck(t, pkg, cli)
 	test.NotNil(t, err)
 }
 
 func cleanUp(t *testing.T, svcGroup *test.ServiceGroup, cli *testClient) {
 	fail := false
-	if err := svcGroup.StopAll(); err != nil {
+	if err := svcGroup.WaitToStop(); err != nil {
 		errw := test.ErrWhileStopping{}
 		if errors.As(err, &errw) {
-			t.Errorf("error while stopping the service %s: %v", *errw.Starter.Addr(), errw.Err)
+			t.Errorf("error while stopping the service %s: %v", errw.Starter.Addr(), errw.Err)
 		} else {
 			t.Errorf("error while stopping %v", err)
 		}
@@ -497,6 +439,14 @@ func sendEventV1(t *testing.T, pkg *pb.JobPackage, cli *testClient) *url.URL {
 	err = cli.sendEventV1(url)
 	test.Nil(t, err)
 	return url
+}
+
+func sendEventV1NotCheck(t *testing.T, pkg *pb.JobPackage, cli *testClient) error {
+	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
+	url, err := url.Parse(u)
+	test.Nil(t, err)
+	err = cli.sendEventV1(url)
+	return err
 }
 
 func addPackage(t *testing.T, cli *testClient) *pb.JobPackage {

@@ -41,11 +41,11 @@ func (c *Server) Close() error {
 	return err
 }
 
-func (c *Server) GetPackages(_ context.Context, in *pb.PackagesRequest) (*pb.PackagesReply, error) {
+func (c *Server) Packages(_ context.Context, in *pb.PackagesRequest) (*pb.PackagesReply, error) {
 	return c.pkgCont.GetPackages(in)
 }
 
-func (c *Server) GetAllPackages(_ context.Context, _ *pb.Void) (*pb.AllPackagesReply, error) {
+func (c *Server) AllPackages(_ context.Context, _ *pb.Void) (*pb.AllPackagesReply, error) {
 	return c.pkgCont.GetAllPackages()
 }
 
@@ -61,7 +61,7 @@ func (c *Server) DeletePackage(ctx context.Context, in *pb.DeletePackageRequest)
 	return c.pkgCont.DeletePackage(ctx, in)
 }
 
-func (c *Server) GetTenants(_ context.Context, in *pb.TenantsRequest) (*pb.TenantsReply, error) {
+func (c *Server) Tenants(_ context.Context, in *pb.TenantsRequest) (*pb.TenantsReply, error) {
 	return c.tenantCont.Tenants(in)
 }
 
@@ -77,7 +77,7 @@ func (c *Server) UpdateEnvironment(_ context.Context, in *pb.UpdateEnvironmentRe
 	return c.envCont.UpdateEnvironment(in)
 }
 
-func (c *Server) GetEnvironment(_ context.Context, _ *pb.Void) (*pb.EnvironmentReply, error) {
+func (c *Server) Environment(_ context.Context, _ *pb.Void) (*pb.EnvironmentReply, error) {
 	return c.envCont.GetEnvironment()
 }
 

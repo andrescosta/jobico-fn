@@ -1,4 +1,4 @@
-package tapp
+package dashboard
 
 import (
 	"context"
@@ -35,7 +35,7 @@ type TApp struct {
 	recorderCli             *client.Recorder
 	metadataCli             *client.Metadata
 	infoClients             map[string]*svcmeta.InfoClient
-	helthCheckClients       map[string]*grpc.HelthCheckClient
+	helthCheckClients       map[string]*grpc.HealthCheckClient
 	app                     *tview.Application
 	mainView                *tview.Pages
 	lastNode                *tview.TreeNode
@@ -80,7 +80,7 @@ func New(ctx context.Context, d service.GrpcDialer, name string, sync bool) (*TA
 		recorderCli:       recorderCli,
 		metadataCli:       metadataCli,
 		infoClients:       make(map[string]*svcmeta.InfoClient),
-		helthCheckClients: make(map[string]*grpc.HelthCheckClient),
+		helthCheckClients: make(map[string]*grpc.HealthCheckClient),
 		app:               app,
 		sync:              sync,
 		dialer:            d,

@@ -1,4 +1,4 @@
-package tapp
+package dashboard
 
 import (
 	"context"
@@ -49,7 +49,7 @@ func onFocusServerNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 					return nil, errors.Join(errors.New(`"Server Info" service down`), err)
 				}
 				c.infoClients[addr] = infoClient
-				helthCheckClient, err = grpc.NewHelthCheckClient(ctx, addr, service.DefaultGrpcDialer)
+				helthCheckClient, err = grpc.NewHelthCheckClient(ctx, addr, h.name, service.DefaultGrpcDialer)
 				if err != nil {
 					return nil, errors.Join(errors.New(`"Healcheck" service down`), err)
 				}
@@ -59,7 +59,7 @@ func onFocusServerNode(ctx context.Context, c *TApp, n *tview.TreeNode) {
 			if err != nil {
 				return nil, err
 			}
-			s, err := helthCheckClient.Check(context.Background(), h.name)
+			s, err := helthCheckClient.Check(context.Background())
 			if err != nil {
 				s = healthpb.HealthCheckResponse_NOT_SERVING
 			}
