@@ -5,7 +5,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/database"
 	pb "github.com/andrescosta/jobico/internal/api/types"
-	"github.com/andrescosta/jobico/internal/ctl/dao"
+	"github.com/andrescosta/jobico/internal/ctl/data"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	"google.golang.org/protobuf/proto"
 )
@@ -17,14 +17,14 @@ const (
 
 type EnvironmentController struct {
 	ctx          context.Context
-	daoCache     *dao.DAOS
+	daoCache     *data.DAOS
 	bEnvironment *grpchelper.GrpcBroadcaster[*pb.UpdateToEnvironmentStrReply, proto.Message]
 }
 
 func NewEnvironmentController(ctx context.Context, db *database.Database) *EnvironmentController {
 	return &EnvironmentController{
 		ctx:          ctx,
-		daoCache:     dao.NewDAOS(db),
+		daoCache:     data.NewDAOS(db),
 		bEnvironment: grpchelper.StartBroadcaster[*pb.UpdateToEnvironmentStrReply, proto.Message](ctx),
 	}
 }
@@ -92,5 +92,5 @@ func (c *EnvironmentController) broadcastUpdate(m *pb.Environment) {
 }
 
 func (c *EnvironmentController) broadcast(m *pb.Environment, utype pb.UpdateType) {
-	c.bEnvironment.Broadcast(c.ctx, m, utype)
+	_ = c.bEnvironment.Broadcast(c.ctx, m, utype)
 }

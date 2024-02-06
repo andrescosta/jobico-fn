@@ -4,7 +4,7 @@ import (
 	"github.com/andrescosta/goico/pkg/database"
 	"github.com/andrescosta/goico/pkg/service/grpc/protoutil"
 	pb "github.com/andrescosta/jobico/internal/api/types"
-	"github.com/andrescosta/jobico/internal/ctl/dao"
+	"github.com/andrescosta/jobico/internal/ctl/data"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -13,12 +13,12 @@ const (
 )
 
 type TenantController struct {
-	daoCache *dao.DAOS
+	daoCache *data.DAOS
 }
 
 func NewTenantController(db *database.Database) *TenantController {
 	return &TenantController{
-		daoCache: dao.NewDAOS(db),
+		daoCache: data.NewDAOS(db),
 	}
 }
 

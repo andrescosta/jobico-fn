@@ -36,7 +36,7 @@ func (s *Server) GetJobExecutionsStr(in *pb.JobExecutionsRequest, srv pb.Recorde
 	return s.controller.GetJobExecutionsStr(s.ctx, in, srv)
 }
 
-func (s *Server) GetJobExecutions(ctx context.Context, in *pb.JobExecutionsRequest) (*pb.JobExecutionsReply, error) {
+func (s *Server) GetJobExecutions(_ context.Context, in *pb.JobExecutionsRequest) (*pb.JobExecutionsReply, error) {
 	l, err := s.controller.OldRecords(int(*in.Lines))
 	if err != nil {
 		return nil, err

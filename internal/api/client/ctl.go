@@ -40,13 +40,24 @@ func NewCtl(ctx context.Context, d service.GrpcDialer) (*Ctl, error) {
 }
 
 func (c *Ctl) Close() error {
+	errs := make([]error, 0)
 	if c.bcEnvUpdates != nil {
-		c.bcEnvUpdates.Stop()
+		err := c.bcEnvUpdates.Stop()
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
 	if c.bcJobPackage != nil {
-		c.bcJobPackage.Stop()
+		err := c.bcJobPackage.Stop()
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
-	return c.conn.Close()
+	err := c.conn.Close()
+	if err != nil {
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
 }
 
 func (c *Ctl) Environment(ctx context.Context) (*pb.Environment, error) {

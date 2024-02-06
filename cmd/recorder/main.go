@@ -12,7 +12,6 @@ func main() {
 	if err != nil {
 		log.Panicf("error creating recorder service: %s", err)
 	}
-	defer svc.Dispose()
 	if err := svc.Start(); err != nil {
 		log.Panicf("error starting recorder service: %s", err)
 	}

@@ -45,7 +45,7 @@ linters:
   - 'nakedret'
   - 'noctx'
   - 'nolintlint'
-  - 'paralleltest'
+  #- 'paralleltest'
   - 'prealloc'
   - 'predeclared'
   - 'revive'

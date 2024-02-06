@@ -128,15 +128,15 @@ func NewPlatformWithTimeout(ctx context.Context, time time.Duration) (*JobicoPla
 		return nil, err
 	}
 
-	listener, err := listener.New(ctx, listener.WithHttpConn(service.HttpConn{
+	listener, err := listener.New(ctx, listener.WithHTTPConn(service.HTTPConn{
 		ClientBuilder: conn,
 		Listener:      conn,
-	}), listener.WithGrpcDialer(conn), listener.WithHttpListener(conn))
+	}), listener.WithGrpcDialer(conn), listener.WithHTTPListener(conn))
 	if err != nil {
 		return nil, err
 	}
 
-	executor, err := exec.New(ctx, exec.WithHttpConn(service.HttpConn{
+	executor, err := exec.New(ctx, exec.WithHTTPConn(service.HTTPConn{
 		ClientBuilder: conn,
 		Listener:      conn,
 	}), exec.WithGrpcDialer(conn), exec.WithOption(executor.Option{ManualWakeup: false}))
@@ -370,7 +370,8 @@ func testErrorInitQueue(t *testing.T) {
 	err = svcGroup.Start([]test.Starter{platform.repo, platform.ctl})
 	test.Nil(t, err)
 	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
-	svcGroup.Start([]test.Starter{platform.listener})
+	err = svcGroup.Start([]test.Starter{platform.listener})
+	test.Nil(t, err)
 	u := fmt.Sprintf("http://listener:1/events/%s/%s", pkg.Tenant, pkg.Jobs[0].Event.ID)
 	url, err := url.Parse(u)
 	test.Nil(t, err)

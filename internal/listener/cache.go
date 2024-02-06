@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc/cache"
@@ -23,7 +24,7 @@ type EventDefCache struct {
 	serviceCache  *cache.Service
 	repoClient    *client.Repo
 	controlClient *client.Ctl
-	populated     bool
+	populated     atomic.Bool
 }
 type EventEntry struct {
 	EventDef *pb.EventDef
@@ -50,6 +51,7 @@ func newCache(ctx context.Context, dialer service.GrpcDialer, listener service.G
 		controlClient: controlClient,
 		serviceCache:  svc,
 		mu:            sync.Mutex{},
+		populated:     atomic.Bool{},
 	}
 	return &cache, nil
 }
@@ -65,7 +67,7 @@ func (j *EventDefCache) close() error {
 func (j *EventDefCache) populate(ctx context.Context) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	if !j.populated {
+	if !j.populated.Load() {
 		go func() {
 			logger := zerolog.Ctx(ctx)
 			if err := j.serviceCache.Serve(); err != nil {
@@ -78,13 +80,13 @@ func (j *EventDefCache) populate(ctx context.Context) error {
 		if err := j.startListeningUpdates(ctx); err != nil {
 			return err
 		}
-		j.populated = true
+		j.populated.Store(true)
 	}
 	return nil
 }
 
 func (j *EventDefCache) Get(ctx context.Context, tenant string, eventID string) (*EventEntry, error) {
-	if !j.populated {
+	if !j.populated.Load() {
 		err := j.populate(ctx)
 		if err != nil {
 			return nil, err
@@ -120,7 +122,7 @@ func (j *EventDefCache) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrR
 	case pb.UpdateType_Delete:
 		j.deleteEventsOfPackage(ctx, u.Object)
 	case pb.UpdateType_New, pb.UpdateType_Update:
-		j.addOrUpdateEventsForPackages(ctx, []*pb.JobPackage{u.Object})
+		_ = j.addOrUpdateEventsForPackages(ctx, []*pb.JobPackage{u.Object})
 	}
 }
 

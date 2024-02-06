@@ -55,13 +55,13 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 
 func (s *Service) Start() (err error) {
 	defer func() {
-		err = errors.Join(err, s.Dispose())
+		err = errors.Join(err, s.dispose())
 	}()
 	err = s.Svc.Serve()
 	return
 }
 
-func (s *Service) Dispose() error {
+func (s *Service) dispose() error {
 	return s.controller.Close()
 }
 
@@ -71,13 +71,13 @@ func WithGrpcDialer(d service.GrpcDialer) Setter {
 	}
 }
 
-func WithHttpConn(h service.HttpConn) Setter {
+func WithHTTPConn(h service.HTTPConn) Setter {
 	return func(s *Service) {
-		s.Container.HttpConn = h
+		s.Container.HTTPConn = h
 	}
 }
 
-func WithHttpListener(l service.HTTPListener) Setter {
+func WithHTTPListener(l service.HTTPListener) Setter {
 	return func(s *Service) {
 		s.listenerCache = l
 	}

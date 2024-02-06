@@ -57,7 +57,7 @@ func (m *MemRecorder) Close() error {
 	return nil
 }
 
-func (m *MemRecorder) StartTailing(ctx context.Context) (Tailer, error) {
+func (m *MemRecorder) StartTailing(_ context.Context) (Tailer, error) {
 	mt := &MemTailer{
 		m: m,
 		c: make(chan string),

@@ -372,23 +372,23 @@ func (e *VM) updatePackage(ctx context.Context, p *pb.JobPackage) error {
 	return e.newPackage(ctx, p)
 }
 
-func (e *Executor) execute(ctx context.Context, w *sync.WaitGroup) {
+func (ex *Executor) execute(ctx context.Context, w *sync.WaitGroup) {
 	defer w.Done()
-	defer e.setStatus(Stopped)
-	defer e.tick.Stop()
+	defer ex.setStatus(Stopped)
+	defer ex.tick.Stop()
 	logger := zerolog.Ctx(ctx)
-	logger.Debug().Msgf("Worker for Tenant: %s and queue: %s started", e.jobPackage.tenant, e.queue)
+	logger.Debug().Msgf("Worker for Tenant: %s and queue: %s started", ex.jobPackage.tenant, ex.queue)
 	queueErrors := 0
 	maxQueueErrors := env.Int("max.queue.errors", 10)
-	chTick := e.tick.Chan()
-	e.setStatus(Started)
+	chTick := ex.tick.Chan()
+	ex.setStatus(Started)
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Debug().Msgf("Worker for Tenant: %s and queue: %s stopped", e.jobPackage.tenant, e.queue)
+			logger.Debug().Msgf("Worker for Tenant: %s and queue: %s stopped", ex.jobPackage.tenant, ex.queue)
 			return
 		case <-chTick:
-			items, err := e.vm.queue.Dequeue(ctx, e.jobPackage.tenant, e.queue)
+			items, err := ex.vm.queue.Dequeue(ctx, ex.jobPackage.tenant, ex.queue)
 			if err != nil {
 				queueErrors++
 				logger.Err(err).Msg("error dequeuing")
@@ -400,7 +400,7 @@ func (e *Executor) execute(ctx context.Context, w *sync.WaitGroup) {
 			}
 			queueErrors = 0
 			for _, item := range items {
-				module, ok := e.jobPackage.Modules[getModuleName(e.queue, item.Event)]
+				module, ok := ex.jobPackage.Modules[getModuleName(ex.queue, item.Event)]
 				if !ok {
 					logger.Warn().Msgf("event %s not supported", item.Event)
 					continue
@@ -409,11 +409,11 @@ func (e *Executor) execute(ctx context.Context, w *sync.WaitGroup) {
 				if err != nil {
 					logger.Err(err).Msg("error executing")
 				}
-				if err := e.vm.reportResultToRecorder(ctx, e.queue, item.Event, e.jobPackage.tenant, code, result); err != nil {
+				if err := ex.vm.reportResultToRecorder(ctx, ex.queue, item.Event, ex.jobPackage.tenant, code, result); err != nil {
 					logger.Err(err).Msg("error reporting to recorder")
 				}
-				if nextSteps, ok := e.jobPackage.NextStep[item.Event]; ok {
-					if err := e.vm.makeDecisions(ctx, item.Event, e.jobPackage.tenant, code, result, nextSteps); err != nil {
+				if nextSteps, ok := ex.jobPackage.NextStep[item.Event]; ok {
+					if err := ex.vm.makeDecisions(ctx, item.Event, ex.jobPackage.tenant, code, result, nextSteps); err != nil {
 						logger.Err(err).Msg("error enqueuing the result")
 					}
 				}

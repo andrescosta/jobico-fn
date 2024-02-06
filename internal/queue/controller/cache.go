@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	"github.com/andrescosta/goico/pkg/collection"
 	"github.com/andrescosta/goico/pkg/service"
@@ -26,7 +27,7 @@ type Cache[T any] struct {
 	queues       *collection.SyncMap[string, provider.Queue[T]]
 	queueBuilder QueueBuilder[T]
 	ctl          *client.Ctl
-	populated    bool
+	populated    atomic.Bool
 }
 
 func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (*Cache[T], error) {
@@ -44,6 +45,7 @@ func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (
 		queues:       syncmap,
 		ctl:          ctl,
 		queueBuilder: queueBuilder,
+		populated:    atomic.Bool{},
 	}
 	return cache, nil
 }
@@ -51,14 +53,14 @@ func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (
 func (q *Cache[T]) populate(ctx context.Context) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	if !q.populated {
+	if !q.populated.Load() {
 		if err := q.addPackages(ctx); err != nil {
 			return err
 		}
 		if err := q.startListeningUpdates(ctx); err != nil {
 			return err
 		}
-		q.populated = true
+		q.populated.Store(true)
 	}
 	return nil
 }
@@ -71,7 +73,7 @@ func (q *Cache[T]) Close() error {
 }
 
 func (q *Cache[T]) GetQueue(ctx context.Context, tentant string, queueID string) (provider.Queue[T], error) {
-	if !q.populated {
+	if !q.populated.Load() {
 		err := q.populate(ctx)
 		if err != nil {
 			return nil, err

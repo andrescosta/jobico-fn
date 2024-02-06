@@ -107,13 +107,19 @@ func (c *TApp) Run() error {
 }
 
 func (c *TApp) Dispose() {
-	c.controlCli.Close()
-	c.repoCli.Close()
+	if err := c.controlCli.Close(); err != nil {
+		fmt.Printf("warning: error ctl client: %v\n", err)
+	}
+	if err := c.repoCli.Close(); err != nil {
+		fmt.Printf("warning: error repo client: %v\n", err)
+	}
 	for _, v := range c.infoClients {
 		v.Close()
 	}
 	for _, v := range c.helthCheckClients {
-		v.Close()
+		if err := v.Close(); err != nil {
+			fmt.Printf("warning: error closing health check clients: %v\n", err)
+		}
 	}
 }
 

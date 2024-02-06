@@ -52,11 +52,11 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 }
 
 func (s *Service) Start() error {
-	defer s.Dispose()
+	defer s.dispose()
 	return s.Svc.Serve()
 }
 
-func (s *Service) Dispose() {
+func (s *Service) dispose() {
 	s.Svc.Dispose()
 }
 

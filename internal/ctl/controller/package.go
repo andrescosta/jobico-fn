@@ -6,7 +6,7 @@ import (
 	"github.com/andrescosta/goico/pkg/database"
 	"github.com/andrescosta/goico/pkg/service/grpc/protoutil"
 	pb "github.com/andrescosta/jobico/internal/api/types"
-	"github.com/andrescosta/jobico/internal/ctl/dao"
+	"github.com/andrescosta/jobico/internal/ctl/data"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	"google.golang.org/protobuf/proto"
 )
@@ -17,7 +17,7 @@ const (
 
 type PackageController struct {
 	ctx              context.Context
-	daoCache         *dao.DAOS
+	daoCache         *data.DAOS
 	bJobPackage      *grpchelper.GrpcBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message]
 	tenantController *TenantController
 }
@@ -25,7 +25,7 @@ type PackageController struct {
 func NewPackageController(ctx context.Context, db *database.Database) *PackageController {
 	return &PackageController{
 		ctx:              ctx,
-		daoCache:         dao.NewDAOS(db),
+		daoCache:         data.NewDAOS(db),
 		bJobPackage:      grpchelper.StartBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message](ctx),
 		tenantController: NewTenantController(db),
 	}
@@ -159,5 +159,5 @@ func (c *PackageController) broadcastDelete(ctx context.Context, m *pb.JobPackag
 }
 
 func (c *PackageController) broadcast(ctx context.Context, m *pb.JobPackage, utype pb.UpdateType) {
-	c.bJobPackage.Broadcast(ctx, m, utype)
+	_ = c.bJobPackage.Broadcast(ctx, m, utype)
 }

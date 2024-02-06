@@ -46,7 +46,14 @@ func (s *Controller) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.Add
 	if err := s.repo.Add(r.TenantFile.Tenant, r.TenantFile.File.Name, int32(r.TenantFile.File.Type), r.TenantFile.File.Content); err != nil {
 		return nil, err
 	}
-	s.bJobPackage.Broadcast(ctx, &pb.TenantFile{Tenant: r.TenantFile.Tenant, File: &pb.File{Name: r.TenantFile.File.Name, Content: r.TenantFile.File.Content}}, pb.UpdateType_New)
+	if err := s.bJobPackage.Broadcast(ctx,
+		&pb.TenantFile{
+			Tenant: r.TenantFile.Tenant,
+			File:   &pb.File{Name: r.TenantFile.File.Name, Content: r.TenantFile.File.Content},
+		},
+		pb.UpdateType_New); err != nil {
+		return nil, err
+	}
 	return &pb.AddFileReply{}, nil
 }
 
