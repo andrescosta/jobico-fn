@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option go_package = "/types";
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+
+service Recorder {
+    rpc GetJobExecutionsStr (JobExecutionsRequest) returns (stream JobExecutionsReply);
+    rpc JobExecutions (JobExecutionsRequest) returns (JobExecutionsReply);
+    rpc AddJobExecution (AddJobExecutionRequest) returns (Void);
+}
+
+message JobExecutionsRequest{
+    optional string tenant =1;
+    optional int32 lines = 2;
+}
+
+message JobExecutionsReply{
+    repeated string result = 1;
+}
+
+message AddJobExecutionRequest{
+    JobExecution execution = 1;
+}
+
+message JobExecution{
+    string event = 1;
+    string tenant = 2;
+    string queue = 3;
+    google.protobuf.Timestamp date=4;
+    string server = 5;
+    JobResult result = 6;
+}
+
+message JobResult {
+    enum Type {
+        Result = 0;
+        Log = 1;
+    }
+    uint64 code = 1;
+    string message = 2;
+    Type type = 3;
+    string typeDesc = 4;
+}

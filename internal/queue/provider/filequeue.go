@@ -17,39 +17,25 @@ const (
 	dir     = "data"
 )
 
-var queuesMap sync.Map
-
-type FileBasedQueue[T any] struct {
+type FileQueue[T any] struct {
 	directory string
 	mutex     sync.Mutex
 }
 
-func GetFileBasedQueue[T any](id string) *FileBasedQueue[T] {
+func NewFileQueue[T any](id string) *FileQueue[T] {
 	directory := queueDirectory(dir, id)
-	queue, ok := queuesMap.Load(directory)
-	if !ok {
-		newQueue := &FileBasedQueue[T]{directory: directory}
-		queue, _ = queuesMap.LoadOrStore(directory, newQueue)
-	}
-	return queue.(*FileBasedQueue[T])
+	return &FileQueue[T]{directory: directory}
 }
 
-// aka Poor man queue
-func NewDefaultFileBasedQueue[T any]() (*FileBasedQueue[T], error) {
-	return &FileBasedQueue[T]{
-		directory: dir,
-	}, nil
-}
-
-func (f *FileBasedQueue[T]) Add(data T) error {
+func (f *FileQueue[T]) Add(data T) error {
 	return f.writeData(data)
 }
 
-func (f *FileBasedQueue[T]) Remove() (T, error) {
+func (f *FileQueue[T]) Remove() (T, error) {
 	return f.readAndRemove()
 }
 
-func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
+func (f *FileQueue[T]) readAndRemove() (T, error) {
 	// sync the access to the "queue"
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
@@ -60,7 +46,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	}
 	if bdata == nil {
 		var d T
-		return d, nil
+		return d, ErrQueueEmpty
 	}
 	buffer := bytes.NewBuffer(bdata)
 	decoder := gob.NewDecoder(buffer)
@@ -80,7 +66,7 @@ func (f *FileBasedQueue[T]) readAndRemove() (T, error) {
 	return data, nil
 }
 
-func (f *FileBasedQueue[T]) writeData(data T) error {
+func (f *FileQueue[T]) writeData(data T) error {
 	buffer := bytes.NewBuffer(make([]byte, 0))
 	encoder := gob.NewEncoder(buffer)
 	if err := encoder.Encode(data); err != nil {

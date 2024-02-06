@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
+	"errors"
 
 	"github.com/andrescosta/goico/pkg/database"
 	"github.com/andrescosta/goico/pkg/env"
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/controller"
 )
 
@@ -17,9 +18,9 @@ type Server struct {
 	tenantCont *controller.TenantController
 }
 
-func New(ctx context.Context, dbFileName string) (*Server, error) {
+func New(ctx context.Context, dbFileName string, dbo database.Option) (*Server, error) {
 	dbPath := env.WorkdirPlus(dbFileName)
-	db, err := database.Open(dbPath)
+	db, err := database.Open(dbPath, dbo)
 	if err != nil {
 		return nil, err
 	}
@@ -32,34 +33,36 @@ func New(ctx context.Context, dbFileName string) (*Server, error) {
 }
 
 func (c *Server) Close() error {
-	c.tenantCont.Close()
-	c.pkgCont.Close()
-	c.envCont.Close()
-	return c.db.Close()
+	var err error
+	err = errors.Join(err, c.tenantCont.Close())
+	err = errors.Join(err, c.pkgCont.Close())
+	err = errors.Join(err, c.envCont.Close())
+	err = errors.Join(err, c.db.Close())
+	return err
 }
 
-func (c *Server) GetPackages(_ context.Context, in *pb.GetJobPackagesRequest) (*pb.GetJobPackagesReply, error) {
+func (c *Server) Packages(_ context.Context, in *pb.PackagesRequest) (*pb.PackagesReply, error) {
 	return c.pkgCont.GetPackages(in)
 }
 
-func (c *Server) GetAllPackages(_ context.Context, _ *pb.Void) (*pb.GetAllJobPackagesReply, error) {
+func (c *Server) AllPackages(_ context.Context, _ *pb.Void) (*pb.AllPackagesReply, error) {
 	return c.pkgCont.GetAllPackages()
 }
 
-func (c *Server) AddPackage(ctx context.Context, in *pb.AddJobPackageRequest) (*pb.AddJobPackageReply, error) {
+func (c *Server) AddPackage(ctx context.Context, in *pb.AddPackageRequest) (*pb.AddPackageReply, error) {
 	return c.pkgCont.AddPackage(ctx, in)
 }
 
-func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdateJobPackageRequest) (*pb.Void, error) {
+func (c *Server) UpdatePackage(ctx context.Context, in *pb.UpdatePackageRequest) (*pb.Void, error) {
 	return c.pkgCont.UpdatePackage(ctx, in)
 }
 
-func (c *Server) DeletePackage(ctx context.Context, in *pb.DeleteJobPackageRequest) (*pb.Void, error) {
+func (c *Server) DeletePackage(ctx context.Context, in *pb.DeletePackageRequest) (*pb.Void, error) {
 	return c.pkgCont.DeletePackage(ctx, in)
 }
 
-func (c *Server) GetTenants(_ context.Context, in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
-	return c.tenantCont.GetTenants(in)
+func (c *Server) Tenants(_ context.Context, in *pb.TenantsRequest) (*pb.TenantsReply, error) {
+	return c.tenantCont.Tenants(in)
 }
 
 func (c *Server) AddTenant(_ context.Context, in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
@@ -74,7 +77,7 @@ func (c *Server) UpdateEnvironment(_ context.Context, in *pb.UpdateEnvironmentRe
 	return c.envCont.UpdateEnvironment(in)
 }
 
-func (c *Server) GetEnvironment(_ context.Context, _ *pb.Void) (*pb.GetEnvironmentReply, error) {
+func (c *Server) Environment(_ context.Context, _ *pb.Void) (*pb.EnvironmentReply, error) {
 	return c.envCont.GetEnvironment()
 }
 

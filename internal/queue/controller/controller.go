@@ -2,26 +2,29 @@ package controller
 
 import (
 	"context"
+	"errors"
 
-	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/goico/pkg/service"
+	pb "github.com/andrescosta/jobico/internal/api/types"
+	"github.com/andrescosta/jobico/internal/queue/provider"
 )
 
 type Controller struct {
-	store *QueueCache[*pb.QueueItem]
+	cache *Cache[*pb.QueueItem]
 }
 
-func New(ctx context.Context) (*Controller, error) {
-	s, err := NewQueueCache[*pb.QueueItem](ctx)
+func New(ctx context.Context, d service.GrpcDialer, o Option) (*Controller, error) {
+	c, err := NewCache[*pb.QueueItem](ctx, d, o)
 	if err != nil {
 		return nil, err
 	}
 	return &Controller{
-		store: s,
+		cache: c,
 	}, nil
 }
 
-func (s *Controller) Queue(_ context.Context, in *pb.QueueRequest) (*pb.Void, error) {
-	myqueue, err := s.store.GetQueue(in.Tenant, in.Queue)
+func (s *Controller) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.Void, error) {
+	myqueue, err := s.cache.GetQueue(ctx, in.Tenant, in.Queue)
 	if err != nil {
 		return nil, err
 	}
@@ -34,13 +37,17 @@ func (s *Controller) Queue(_ context.Context, in *pb.QueueRequest) (*pb.Void, er
 	return &ret, nil
 }
 
-func (s *Controller) Dequeue(_ context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
-	myqueue, err := s.store.GetQueue(in.Tenant, in.Queue)
+func (s *Controller) Close() error {
+	return s.cache.Close()
+}
+
+func (s *Controller) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
+	myqueue, err := s.cache.GetQueue(ctx, in.Tenant, in.Queue)
 	if err != nil {
 		return nil, err
 	}
 	i, err := myqueue.Remove()
-	if err != nil {
+	if err != nil && !errors.Is(err, provider.ErrQueueEmpty) {
 		return nil, err
 	}
 	var iqs []*pb.QueueItem

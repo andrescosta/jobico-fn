@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/repo/controller"
 )
 
@@ -12,22 +12,26 @@ type Server struct {
 	controller *controller.Controller
 }
 
-func New(ctx context.Context, dir string) *Server {
+func New(ctx context.Context, dir string, o controller.Option) *Server {
 	return &Server{
-		controller: controller.New(ctx, dir),
+		controller: controller.New(ctx, dir, o),
 	}
+}
+
+func (s *Server) Close() error {
+	return s.controller.Close()
 }
 
 func (s *Server) AddFile(ctx context.Context, in *pb.AddFileRequest) (*pb.AddFileReply, error) {
 	return s.controller.AddFile(ctx, in)
 }
 
-func (s *Server) GetFile(ctx context.Context, in *pb.GetFileRequest) (*pb.GetFileReply, error) {
-	return s.controller.GetFile(ctx, in)
+func (s *Server) File(ctx context.Context, in *pb.FileRequest) (*pb.FileReply, error) {
+	return s.controller.File(ctx, in)
 }
 
-func (s *Server) GetAllFileNames(ctx context.Context, in *pb.Void) (*pb.GetAllFileNamesReply, error) {
-	return s.controller.GetAllFileNames(ctx, in)
+func (s *Server) AllFileNames(ctx context.Context, in *pb.Void) (*pb.AllFileNamesReply, error) {
+	return s.controller.AllFileNames(ctx, in)
 }
 
 func (s *Server) UpdateToFileStr(in *pb.UpdateToFileStrRequest, ctl pb.Repo_UpdateToFileStrServer) error {

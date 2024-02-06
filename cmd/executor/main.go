@@ -4,30 +4,15 @@ import (
 	"context"
 	"log"
 
-	"github.com/andrescosta/goico/pkg/service/process"
-	"github.com/andrescosta/jobico/internal/executor"
+	"github.com/andrescosta/jobico/cmd/executor/service"
 )
 
 func main() {
-	e, err := process.New(
-		process.WithContext(context.Background()),
-		process.WithName("executor"),
-		process.WithEnableSidecar(true),
-		process.WithServeHandler(func(ctx context.Context) error {
-			m, err := executor.NewExecutorMachine(ctx)
-			if err != nil {
-				return err
-			}
-			if err := m.StartExecutors(ctx); err != nil {
-				return err
-			}
-			return nil
-		}),
-	)
+	svc, err := service.New(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		log.Panicf("error creating executor service: %s", err)
 	}
-	if err := e.Serve(); err != nil {
-		log.Fatalf("error running the executor service %s", err)
+	if err := svc.Start(); err != nil {
+		log.Panicf("error starting executor service: %s", err)
 	}
 }

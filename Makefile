@@ -1,6 +1,6 @@
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 
-.PHONY: go-build checks hadolint init gosec obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
+.PHONY: go-build test test_coverage test_html checks hadolint init gosec obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -18,6 +18,14 @@ lint:
 
 hadolint:
 	@cat ./compose/Dockerfile | docker run --rm -i hadolint/hadolint
+test:
+	go test -count=1 -race -timeout 60s ./internal/test 
+
+test_coverage: init
+	go test ./... -coverprofile=./reports/coverage.out
+
+test_html: test_coverage
+	go tool cover -html=./reports/coverage.out
 
 vuln:
 	@govulncheck ./...
@@ -33,7 +41,7 @@ format: $(FORMAT_FILES)
 $(FORMAT_FILES):
 	@gofumpt -w $@
 
-release: checks build env
+release: checks env test build 
 
 checks: format lint vuln gosec 
 

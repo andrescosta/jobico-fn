@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/andrescosta/goico/pkg/database"
-	pb "github.com/andrescosta/jobico/api/types"
-	"github.com/andrescosta/jobico/internal/ctl/dao"
+	pb "github.com/andrescosta/jobico/internal/api/types"
+	"github.com/andrescosta/jobico/internal/ctl/data"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
 	"google.golang.org/protobuf/proto"
 )
@@ -17,24 +17,24 @@ const (
 
 type EnvironmentController struct {
 	ctx          context.Context
-	daoCache     *dao.Cache
+	daoCache     *data.DAOS
 	bEnvironment *grpchelper.GrpcBroadcaster[*pb.UpdateToEnvironmentStrReply, proto.Message]
 }
 
 func NewEnvironmentController(ctx context.Context, db *database.Database) *EnvironmentController {
 	return &EnvironmentController{
 		ctx:          ctx,
-		daoCache:     dao.NewCache(db),
+		daoCache:     data.NewDAOS(db),
 		bEnvironment: grpchelper.StartBroadcaster[*pb.UpdateToEnvironmentStrReply, proto.Message](ctx),
 	}
 }
 
-func (c *EnvironmentController) Close() {
-	c.bEnvironment.Stop()
+func (c *EnvironmentController) Close() error {
+	return c.bEnvironment.Stop()
 }
 
 func (c *EnvironmentController) AddEnvironment(in *pb.AddEnvironmentRequest) (*pb.AddEnvironmentReply, error) {
-	mydao, err := c.daoCache.GetGeneric(tblEnvironment, &pb.Environment{})
+	mydao, err := c.daoCache.Generic(tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (c *EnvironmentController) AddEnvironment(in *pb.AddEnvironmentRequest) (*p
 
 func (c *EnvironmentController) UpdateEnvironment(in *pb.UpdateEnvironmentRequest) (*pb.Void, error) {
 	in.Environment.ID = environmentID
-	mydao, err := c.daoCache.GetGeneric(tblEnvironment, &pb.Environment{})
+	mydao, err := c.daoCache.Generic(tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +63,8 @@ func (c *EnvironmentController) UpdateEnvironment(in *pb.UpdateEnvironmentReques
 	return &pb.Void{}, nil
 }
 
-func (c *EnvironmentController) GetEnvironment() (*pb.GetEnvironmentReply, error) {
-	mydao, err := c.daoCache.GetGeneric(tblEnvironment, &pb.Environment{})
+func (c *EnvironmentController) GetEnvironment() (*pb.EnvironmentReply, error) {
+	mydao, err := c.daoCache.Generic(tblEnvironment, &pb.Environment{})
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (c *EnvironmentController) GetEnvironment() (*pb.GetEnvironmentReply, error
 	if ms != nil {
 		environment = (*ms).(*pb.Environment)
 	}
-	return &pb.GetEnvironmentReply{Environment: environment}, nil
+	return &pb.EnvironmentReply{Environment: environment}, nil
 }
 
 func (c *EnvironmentController) UpdateToEnvironmentStr(_ *pb.Void, r pb.Control_UpdateToEnvironmentStrServer) error {
@@ -92,5 +92,5 @@ func (c *EnvironmentController) broadcastUpdate(m *pb.Environment) {
 }
 
 func (c *EnvironmentController) broadcast(m *pb.Environment, utype pb.UpdateType) {
-	c.bEnvironment.Broadcast(c.ctx, m, utype)
+	_ = c.bEnvironment.Broadcast(c.ctx, m, utype)
 }

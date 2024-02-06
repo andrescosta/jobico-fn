@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/andrescosta/goico/pkg/ioutil"
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
 var ErrFileExists = errors.New("file exists")
@@ -24,12 +24,9 @@ type (
 		dirFile string
 		dirMeta string
 	}
-	Metadata struct {
-		FileType int32
-	}
 )
 
-func New(baseDir string) *FileRepo {
+func NewFileRepo(baseDir string) *FileRepo {
 	return &FileRepo{
 		dirFile: filepath.Join(baseDir, dirFiles),
 		dirMeta: filepath.Join(baseDir, dirMeta),
@@ -75,7 +72,7 @@ func (f *FileRepo) Files() ([]*pb.TenantFiles, error) {
 	return ts, nil
 }
 
-func (f *FileRepo) AddFile(tenant string, name string, fileType int32, bytes []byte) error {
+func (f *FileRepo) Add(tenant string, name string, fileType int32, bytes []byte) error {
 	if err := addFile(name, bytes, f.dirFile, tenant); err != nil {
 		return err
 	}

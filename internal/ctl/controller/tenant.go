@@ -2,9 +2,9 @@ package controller
 
 import (
 	"github.com/andrescosta/goico/pkg/database"
-	"github.com/andrescosta/goico/pkg/service/grpc/grpcutil"
-	pb "github.com/andrescosta/jobico/api/types"
-	"github.com/andrescosta/jobico/internal/ctl/dao"
+	"github.com/andrescosta/goico/pkg/service/grpc/protoutil"
+	pb "github.com/andrescosta/jobico/internal/api/types"
+	"github.com/andrescosta/jobico/internal/ctl/data"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -13,38 +13,39 @@ const (
 )
 
 type TenantController struct {
-	daoCache *dao.Cache
+	daoCache *data.DAOS
 }
 
 func NewTenantController(db *database.Database) *TenantController {
 	return &TenantController{
-		daoCache: dao.NewCache(db),
+		daoCache: data.NewDAOS(db),
 	}
 }
 
-func (c *TenantController) Close() {
+func (c *TenantController) Close() error {
+	return nil
 }
 
-func (c *TenantController) GetTenants(in *pb.GetTenantsRequest) (*pb.GetTenantsReply, error) {
+func (c *TenantController) Tenants(in *pb.TenantsRequest) (*pb.TenantsReply, error) {
 	if in.ID != nil {
 		t, err := c.getTenant(*in.ID)
 		if err != nil {
 			return nil, err
 		}
 		if t != nil {
-			return &pb.GetTenantsReply{Tenants: []*pb.Tenant{t}}, nil
+			return &pb.TenantsReply{Tenants: []*pb.Tenant{t}}, nil
 		}
-		return &pb.GetTenantsReply{}, nil
+		return &pb.TenantsReply{}, nil
 	}
 	ts, err := c.getTenants()
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetTenantsReply{Tenants: ts}, nil
+	return &pb.TenantsReply{Tenants: ts}, nil
 }
 
 func (c *TenantController) AddTenant(in *pb.AddTenantRequest) (*pb.AddTenantReply, error) {
-	mydao, err := c.daoCache.GetGeneric(tblTenant, &pb.Tenant{})
+	mydao, err := c.daoCache.Generic(tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ func (c *TenantController) AddTenant(in *pb.AddTenantRequest) (*pb.AddTenantRepl
 }
 
 func (c *TenantController) getTenants() ([]*pb.Tenant, error) {
-	mydao, err := c.daoCache.GetGeneric(tblTenant, &pb.Tenant{})
+	mydao, err := c.daoCache.Generic(tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}
@@ -64,12 +65,12 @@ func (c *TenantController) getTenants() ([]*pb.Tenant, error) {
 	if err != nil {
 		return nil, err
 	}
-	tenants := grpcutil.Slices[*pb.Tenant](ms)
+	tenants := protoutil.Slices[*pb.Tenant](ms)
 	return tenants, nil
 }
 
 func (c *TenantController) getTenant(id string) (*pb.Tenant, error) {
-	mydao, err := c.daoCache.GetGeneric(tblTenant, &pb.Tenant{})
+	mydao, err := c.daoCache.Generic(tblTenant, &pb.Tenant{})
 	if err != nil {
 		return nil, err
 	}

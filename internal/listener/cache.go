@@ -3,60 +3,104 @@ package listener
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
-	"github.com/andrescosta/jobico/api/pkg/remote"
-	pb "github.com/andrescosta/jobico/api/types"
+	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/service/grpc/cache"
+	"github.com/andrescosta/jobico/internal/api/client"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/rs/zerolog"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
+var ErrEventUnknown = fmt.Errorf("event unknown")
+
 type EventDefCache struct {
-	defs       *sync.Map
-	repoClient *remote.RepoClient
+	mu            sync.Mutex
+	eventCache    *cache.Cache[string, *EventEntry]
+	serviceCache  *cache.Service
+	repoClient    *client.Repo
+	controlClient *client.Ctl
+	populated     atomic.Bool
 }
 type EventEntry struct {
 	EventDef *pb.EventDef
 	Schema   *jsonschema.Schema
 }
 
-func NewEventDefCache(ctx context.Context) (*EventDefCache, error) {
-	repoClient, err := remote.NewRepoClient(ctx)
+func newCache(ctx context.Context, dialer service.GrpcDialer, listener service.GrpcListener) (*EventDefCache, error) {
+	repoClient, err := client.NewRepo(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	store := EventDefCache{
-		defs:       &sync.Map{},
-		repoClient: repoClient,
-	}
-	if err := store.fill(ctx); err != nil {
+	controlClient, err := client.NewCtl(ctx, dialer)
+	if err != nil {
 		return nil, err
 	}
-	if err := store.startListeningUpdates(ctx); err != nil {
+	c := cache.New[string, *EventEntry](ctx, "listener")
+	svc, err := cache.NewService[string, *EventEntry](ctx, c, cache.WithGrpcConn(service.GrpcConn{Dialer: dialer, Listener: listener}))
+	if err != nil {
 		return nil, err
 	}
-	return &store, nil
+	cache := EventDefCache{
+		eventCache:    c,
+		repoClient:    repoClient,
+		controlClient: controlClient,
+		serviceCache:  svc,
+		mu:            sync.Mutex{},
+		populated:     atomic.Bool{},
+	}
+	return &cache, nil
 }
 
-func (j *EventDefCache) Get(tenant string, eventID string) (*EventEntry, error) {
-	ev, ok := j.defs.Load(getEventName(tenant, eventID))
+func (j *EventDefCache) close() error {
+	var err error
+	err = errors.Join(err, j.controlClient.Close())
+	err = errors.Join(err, j.repoClient.Close())
+	err = errors.Join(err, j.eventCache.Close())
+	return err
+}
+
+func (j *EventDefCache) populate(ctx context.Context) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	if !j.populated.Load() {
+		go func() {
+			logger := zerolog.Ctx(ctx)
+			if err := j.serviceCache.Serve(); err != nil {
+				logger.Warn().Msgf("Error stopping cache: %v", err)
+			}
+		}()
+		if err := j.addPackages(ctx); err != nil {
+			return err
+		}
+		if err := j.startListeningUpdates(ctx); err != nil {
+			return err
+		}
+		j.populated.Store(true)
+	}
+	return nil
+}
+
+func (j *EventDefCache) Get(ctx context.Context, tenant string, eventID string) (*EventEntry, error) {
+	if !j.populated.Load() {
+		err := j.populate(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	ev, ok := j.eventCache.Get(getEventName(tenant, eventID))
 	if !ok {
 		return nil, ErrEventUnknown
 	}
-	res, ok := ev.(*EventEntry)
-	if !ok {
-		return nil, ErrEventUnknown
-	}
-	return res, nil
+	return ev, nil
 }
 
 func (j *EventDefCache) startListeningUpdates(ctx context.Context) error {
-	controlClient, err := remote.NewControlClient(ctx)
-	if err != nil {
-		return err
-	}
-	l, err := controlClient.ListenerForPackageUpdates(ctx)
+	l, err := j.controlClient.ListenerForPackageUpdates(ctx)
 	if err != nil {
 		return err
 	}
@@ -76,46 +120,45 @@ func (j *EventDefCache) startListeningUpdates(ctx context.Context) error {
 func (j *EventDefCache) onUpdate(ctx context.Context, u *pb.UpdateToPackagesStrReply) {
 	switch u.Type {
 	case pb.UpdateType_Delete:
-		j.deleteEventsOfPackage(u.Object)
+		j.deleteEventsOfPackage(ctx, u.Object)
 	case pb.UpdateType_New, pb.UpdateType_Update:
-		j.addOrUpdateEventsForPackages(ctx, []*pb.JobPackage{u.Object})
+		_ = j.addOrUpdateEventsForPackages(ctx, []*pb.JobPackage{u.Object})
 	}
 }
 
-func (j *EventDefCache) deleteEventsOfPackage(p *pb.JobPackage) {
-	for _, d := range p.Jobs {
-		j.defs.Delete(getEventName(p.Tenant, d.Event.ID))
-	}
-}
-
-func (j *EventDefCache) fill(ctx context.Context) error {
-	controlClient, err := remote.NewControlClient(ctx)
-	if err != nil {
-		return err
-	}
-	pkgs, err := controlClient.GetAllPackages(ctx)
-	if err != nil {
-		return err
-	}
-	j.addOrUpdateEventsForPackages(ctx, pkgs)
-	return nil
-}
-
-func (j *EventDefCache) addOrUpdateEventsForPackages(ctx context.Context, pkgs []*pb.JobPackage) {
+func (j *EventDefCache) deleteEventsOfPackage(ctx context.Context, p *pb.JobPackage) {
 	logger := zerolog.Ctx(ctx)
-	for _, ps := range pkgs {
-		tenant := ps.Tenant
-		for _, job := range ps.Jobs {
-			if err := j.addOrUpdateEvent(ctx, tenant, job); err != nil {
-				logger.Warn().AnErr("error", err).Msg("Error updating package")
-			}
+	for _, d := range p.Jobs {
+		if err := j.eventCache.Delete(getEventName(p.Tenant, d.Event.ID)); err != nil {
+			logger.Warn().Msgf("cache broken, error: %v", err)
 		}
 	}
 }
 
+func (j *EventDefCache) addPackages(ctx context.Context) error {
+	pkgs, err := j.controlClient.AllPackages(ctx)
+	if err != nil {
+		return err
+	}
+	return j.addOrUpdateEventsForPackages(ctx, pkgs)
+}
+
+func (j *EventDefCache) addOrUpdateEventsForPackages(ctx context.Context, pkgs []*pb.JobPackage) error {
+	for _, ps := range pkgs {
+		tenant := ps.Tenant
+		for _, job := range ps.Jobs {
+			if err := j.addOrUpdateEvent(ctx, tenant, job); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (j *EventDefCache) addOrUpdateEvent(ctx context.Context, tenant string, job *pb.JobDef) error {
+	logger := zerolog.Ctx(ctx)
 	event := job.Event
-	f, err := j.repoClient.GetFile(ctx, tenant, event.Schema.SchemaRef)
+	f, err := j.repoClient.File(ctx, tenant, event.Schema.SchemaRef)
 	if err != nil {
 		return err
 	}
@@ -132,21 +175,11 @@ func (j *EventDefCache) addOrUpdateEvent(ctx context.Context, tenant string, job
 		EventDef: event,
 		Schema:   compiledSchema,
 	}
-	if j.existEvent(eventName) {
-		j.defs.Swap(eventName, ev)
-	} else {
-		j.defs.Store(
-			eventName,
-			ev)
+
+	if err := j.eventCache.AddOrUpdate(eventName, ev); err != nil {
+		logger.Warn().Msgf("cache broken, error: %v", err)
 	}
 	return nil
-}
-
-var ErrEventUnknown = fmt.Errorf("event unknown")
-
-func (j *EventDefCache) existEvent(eventName string) bool {
-	_, ok := j.defs.Load(eventName)
-	return ok
 }
 
 func getEventName(tenant string, eventID string) string {

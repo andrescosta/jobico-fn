@@ -2,30 +2,39 @@ package controller
 
 import (
 	"context"
-	"io"
+	"errors"
 	"strings"
 
-	"github.com/andrescosta/goico/pkg/ioutil"
-	pb "github.com/andrescosta/jobico/api/types"
+	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/recorder/recorder"
-	"github.com/nxadm/tail"
 	"github.com/rs/zerolog"
 )
 
 type Recorder struct {
-	recorder *recorder.LogRecorder
-	fullpath string
+	recorder recorder.ExecutionRecorder
+}
+type Option struct {
+	InMemory bool
 }
 
-func New(fullpath string) (*Recorder, error) {
-	r, err := recorder.New(fullpath)
-	if err != nil {
-		return nil, err
+func New(path string, o Option) (*Recorder, error) {
+	var r recorder.ExecutionRecorder
+	if o.InMemory {
+		r = recorder.NewMemrecorder()
+	} else {
+		var err error
+		r, err = recorder.NewFileLogRecorder(path)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &Recorder{
 		recorder: r,
-		fullpath: fullpath,
 	}, nil
+}
+
+func (s *Recorder) Close() error {
+	return s.recorder.Close()
 }
 
 func (s *Recorder) AddJobExecution(_ context.Context, r *pb.AddJobExecutionRequest) (*pb.Void, error) {
@@ -35,19 +44,19 @@ func (s *Recorder) AddJobExecution(_ context.Context, r *pb.AddJobExecutionReque
 	return &pb.Void{}, nil
 }
 
-func (s *Recorder) GetJobExecutions(ctx context.Context, g *pb.GetJobExecutionsRequest, r pb.Recorder_GetJobExecutionsServer) error {
+func (s *Recorder) OldRecords(lines int) ([]string, error) {
+	return s.recorder.OldRecords(lines)
+}
+
+func (s *Recorder) GetJobExecutionsStr(ctx context.Context, g *pb.JobExecutionsRequest, r pb.Recorder_GetJobExecutionsStrServer) error {
 	logger := zerolog.Ctx(ctx)
-	seekInfo := &tail.SeekInfo{
-		Offset: 0,
-		Whence: io.SeekEnd,
-	}
 	if g.Lines != nil && *g.Lines > 0 {
-		lines, err := ioutil.LastLines(s.fullpath, int(*g.Lines), true, true)
+		lines, err := s.recorder.OldRecords(int(*g.Lines))
 		if err != nil {
-			logger.Warn().Msgf("error getting tail lines %s", err)
+			logger.Warn().Msgf("error getting old records %s", err)
 		} else {
 			if len(lines) > 0 {
-				if err := r.Send(&pb.GetJobExecutionsReply{
+				if err := r.Send(&pb.JobExecutionsReply{
 					Result: lines,
 				}); err != nil {
 					logger.Warn().Msgf("error sending tail lines %s", err)
@@ -55,25 +64,28 @@ func (s *Recorder) GetJobExecutions(ctx context.Context, g *pb.GetJobExecutionsR
 			}
 		}
 	}
-	tail, err := tail.TailFile(s.fullpath, tail.Config{Follow: true, ReOpen: true, Poll: true, CompleteLines: true, Location: seekInfo})
+	tail, err := s.recorder.StartTailing(r.Context())
 	if err != nil {
 		logger.Err(err).Msg("error tailing file")
 		return err
 	}
+	var errLoop error
+loop:
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			errLoop = ctx.Err()
+			break loop
 		case <-r.Context().Done():
-			return r.Context().Err()
-		case line := <-tail.Lines:
-			if line != nil && strings.TrimSpace(line.Text) != "" {
-				if line.Err != nil {
-					logger.Err(err).Msg("error tailing file")
-					return line.Err
-				}
-				err := r.Send(&pb.GetJobExecutionsReply{
-					Result: []string{line.Text},
+			errLoop = r.Context().Err()
+			break loop
+		case line, ok := <-tail.Lines():
+			if !ok {
+				break loop
+			}
+			if strings.TrimSpace(line) != "" {
+				err := r.Send(&pb.JobExecutionsReply{
+					Result: []string{line},
 				})
 				if err != nil {
 					logger.Err(err).Msg("error sending content")
@@ -81,4 +93,13 @@ func (s *Recorder) GetJobExecutions(ctx context.Context, g *pb.GetJobExecutionsR
 			}
 		}
 	}
+	errs := make([]error, 0)
+	if errLoop != nil {
+		errs = append(errs, errLoop)
+	}
+
+	if err := tail.Stop(); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
 }

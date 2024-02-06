@@ -4,24 +4,15 @@ import (
 	"context"
 	"log"
 
-	"github.com/andrescosta/goico/pkg/service/grpc"
-	pb "github.com/andrescosta/jobico/api/types"
-	"github.com/andrescosta/jobico/internal/recorder/server"
+	"github.com/andrescosta/jobico/cmd/recorder/service"
 )
 
 func main() {
-	svc, err := grpc.New(
-		grpc.WithName("recorder"),
-		grpc.WithContext(context.Background()),
-		grpc.WithServiceDesc(&pb.Recorder_ServiceDesc),
-		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			return server.New(ctx, ".\\log.log")
-		}),
-	)
+	svc, err := service.New(context.Background())
 	if err != nil {
-		log.Panicf("error starting recorder service: %s", err)
+		log.Panicf("error creating recorder service: %s", err)
 	}
-	if err = svc.Serve(); err != nil {
-		log.Fatalf("error serving recorder service: %s", err)
+	if err := svc.Start(); err != nil {
+		log.Panicf("error starting recorder service: %s", err)
 	}
 }
