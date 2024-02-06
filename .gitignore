@@ -8,7 +8,6 @@
 *.so
 *.dylib
 *.local
-*.wasm
 *.wat
 *.db
 *.bkp
