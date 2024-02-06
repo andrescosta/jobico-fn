@@ -328,13 +328,19 @@ func testQueueDown(t *testing.T) {
 	test.Nil(t, err)
 	url := sendEventV1AndCheckResultOk(t, pkg, cli)
 	platform.queue.Stop()
+	time.Sleep(10 * time.Microsecond)
 	err = cli.sendEventV1(url)
 	test.ErrorIs(t, err, errSend{StatusCode: 500})
 }
 
 func testErroCtl(t *testing.T) {
+	os.Setenv("http.shutdown.timeout", (10 * time.Microsecond).String())
+	os.Setenv("http.timeout.write", (5 * time.Microsecond).String())
+	os.Setenv("http.timeout.read", (5 * time.Microsecond).String())
+	os.Setenv("http.timeout.idle", (5 * time.Microsecond).String())
+	os.Setenv("http.timeout.handler", (5 * time.Microsecond).String())
 	ctx, cancel := context.WithCancel(context.Background())
-	platform, err := NewPlatformWithTimeout(ctx, 40*time.Microsecond)
+	platform, err := NewPlatformWithTimeout(ctx, 10*time.Microsecond)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)

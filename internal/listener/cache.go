@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc/cache"
@@ -17,6 +18,7 @@ import (
 var ErrEventUnknown = fmt.Errorf("event unknown")
 
 type EventDefCache struct {
+	mu            sync.Mutex
 	eventCache    *cache.Cache[string, *EventEntry]
 	serviceCache  *cache.Service
 	repoClient    *client.Repo
@@ -28,17 +30,17 @@ type EventEntry struct {
 	Schema   *jsonschema.Schema
 }
 
-func newCache(ctx context.Context, d service.GrpcDialer, l service.GrpcListener) (*EventDefCache, error) {
-	repoClient, err := client.NewRepo(ctx, d)
+func newCache(ctx context.Context, dialer service.GrpcDialer, listener service.GrpcListener) (*EventDefCache, error) {
+	repoClient, err := client.NewRepo(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	controlClient, err := client.NewCtl(ctx, d)
+	controlClient, err := client.NewCtl(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
 	c := cache.New[string, *EventEntry](ctx, "listener")
-	svc, err := cache.NewService[string, *EventEntry](ctx, c, cache.WithGrpcConn(service.GrpcConn{Dialer: d, Listener: l}))
+	svc, err := cache.NewService[string, *EventEntry](ctx, c, cache.WithGrpcConn(service.GrpcConn{Dialer: dialer, Listener: listener}))
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +49,7 @@ func newCache(ctx context.Context, d service.GrpcDialer, l service.GrpcListener)
 		repoClient:    repoClient,
 		controlClient: controlClient,
 		serviceCache:  svc,
+		mu:            sync.Mutex{},
 	}
 	return &cache, nil
 }
@@ -59,25 +62,24 @@ func (j *EventDefCache) close() error {
 	return err
 }
 
-func (j *EventDefCache) Serve(ctx context.Context) error {
-	return j.serviceCache.Serve()
-}
-
 func (j *EventDefCache) populate(ctx context.Context) error {
-	go func() { _ = j.Serve(ctx) }()
-	if err := j.addPackages(ctx); err != nil {
-		return err
-	}
-	if err := j.startListeningUpdates(ctx); err != nil {
-		return err
-	}
-	go func() {
-		logger := zerolog.Ctx(ctx)
-		if err := j.serviceCache.Serve(); err != nil {
-			logger.Warn().Msgf("Error stopping cache: %v", err)
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	if !j.populated {
+		go func() {
+			logger := zerolog.Ctx(ctx)
+			if err := j.serviceCache.Serve(); err != nil {
+				logger.Warn().Msgf("Error stopping cache: %v", err)
+			}
+		}()
+		if err := j.addPackages(ctx); err != nil {
+			return err
 		}
-	}()
-	j.populated = true
+		if err := j.startListeningUpdates(ctx); err != nil {
+			return err
+		}
+		j.populated = true
+	}
 	return nil
 }
 

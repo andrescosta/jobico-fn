@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/andrescosta/goico/pkg/collection"
 	"github.com/andrescosta/goico/pkg/service"
@@ -21,6 +22,7 @@ type Option struct {
 type QueueBuilder[T any] func(string) provider.Queue[T]
 
 type Cache[T any] struct {
+	mu           sync.Mutex
 	queues       *collection.SyncMap[string, provider.Queue[T]]
 	queueBuilder QueueBuilder[T]
 	ctl          *client.Ctl
@@ -38,6 +40,7 @@ func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (
 		return nil, err
 	}
 	cache := &Cache[T]{
+		mu:           sync.Mutex{},
 		queues:       syncmap,
 		ctl:          ctl,
 		queueBuilder: queueBuilder,
@@ -46,13 +49,17 @@ func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (
 }
 
 func (q *Cache[T]) populate(ctx context.Context) error {
-	if err := q.addPackages(ctx); err != nil {
-		return err
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if !q.populated {
+		if err := q.addPackages(ctx); err != nil {
+			return err
+		}
+		if err := q.startListeningUpdates(ctx); err != nil {
+			return err
+		}
+		q.populated = true
 	}
-	if err := q.startListeningUpdates(ctx); err != nil {
-		return err
-	}
-	q.populated = true
 	return nil
 }
 
