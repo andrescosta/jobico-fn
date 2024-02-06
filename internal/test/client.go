@@ -36,7 +36,7 @@ type testClient struct {
 	repo         *client.Repo
 	queue        *client.Queue
 	recorder     *client.Recorder
-	cache        *cache.CacheServiceClient
+	cache        *cache.Client
 	httpClient   *http.Client
 }
 
@@ -57,7 +57,7 @@ func newClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder servic
 	if err != nil {
 		return nil, err
 	}
-	cache, err := cache.NewCacheServiceClient(ctx, env.String("cache_listener.addr"), dialer)
+	cache, err := cache.NewClient(ctx, env.String("cache_listener.addr"), dialer)
 	if err != nil {
 		return nil, err
 	}
