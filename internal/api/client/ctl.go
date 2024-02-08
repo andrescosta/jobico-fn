@@ -7,8 +7,8 @@ import (
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/service/grpc/grpcstream"
 	pb "github.com/andrescosta/jobico/internal/api/types"
-	"github.com/andrescosta/jobico/pkg/grpchelper"
 	rpc "google.golang.org/grpc"
 )
 
@@ -175,7 +175,7 @@ func (c *Ctl) startListenEnvironmentUpdates(ctx context.Context) error {
 		return err
 	}
 	go func() {
-		_ = grpchelper.Listen(ctx, s, cb)
+		_ = grpcstream.Listen(ctx, s, cb)
 	}()
 	return nil
 }
@@ -197,7 +197,7 @@ func (c *Ctl) startListenerForPackageUpdates(ctx context.Context) error {
 		return err
 	}
 	go func() {
-		_ = grpchelper.Listen(ctx, s, cb)
+		_ = grpcstream.Listen(ctx, s, cb)
 	}()
 	return nil
 }
