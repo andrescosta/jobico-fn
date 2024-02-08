@@ -58,15 +58,11 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	return s, nil
 }
 
-func (s *Service) Start() (err error) {
-	defer func() {
-		err = errors.Join(err, s.dispose())
-	}()
-	err = s.Svc.Serve()
-	return
+func (s *Service) Start() error {
+	return s.Svc.Serve()
 }
 
-func (s *Service) dispose() error {
+func (s *Service) Dispose() error {
 	return s.vm.Close(s.Svc.Base.Ctx)
 }
 

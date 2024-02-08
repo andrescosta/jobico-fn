@@ -20,12 +20,10 @@ type Service struct {
 }
 
 func New(ctx context.Context, ops ...Setter) (*Service, error) {
-	ctx, cancel := context.WithCancel(ctx)
 	s := &Service{
 		option: controller.Option{},
 		Container: grpc.Container{
-			Name:   name,
-			Cancel: cancel,
+			Name: name,
 			GrpcConn: service.GrpcConn{
 				Dialer:   service.DefaultGrpcDialer,
 				Listener: service.DefaultGrpcListener,
@@ -54,16 +52,15 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 }
 
 func (s *Service) Start() error {
-	defer s.dispose()
 	return s.Svc.Serve()
 }
 
-func (s *Service) dispose() {
+func (s *Service) Dispose() {
 	s.Svc.Dispose()
 }
 
 func (s *Service) Stop() {
-	s.Cancel()
+	s.Svc.Stop()
 }
 
 func WithOption(o controller.Option) Setter {

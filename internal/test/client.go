@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/andrescosta/goico/pkg/env"
@@ -22,6 +23,16 @@ import (
 
 type event struct {
 	Data []interface{} `json:"data"`
+}
+type eventTenantV1 struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Age       int    `json:"age"`
+}
+
+type eventTenantV2 struct {
+	Name string `json:"name"`
+	Dob  string `json:"dob"`
 }
 
 type errSend struct {
@@ -38,6 +49,16 @@ type testClient struct {
 	recorder     *client.Recorder
 	cache        *cache.Client
 	httpClient   *http.Client
+}
+
+type Result struct {
+	Level        string `json:"level"`
+	TypeResult   string `json:"Type"`
+	EventID      string `json:"Event"`
+	Queue        string `json:"Queue"`
+	Code         int    `json:"Code"`
+	ResultString string `json:"Result"`
+	ResultJSON   eventTenantV1
 }
 
 func newClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder service.HTTPClient) (*testClient, error) {
@@ -242,25 +263,21 @@ func (s *testClient) uploadRuntimes(p *pb.JobPackage, files map[string][]byte) e
 	return nil
 }
 
-func (s *testClient) sendEventV1(url *url.URL) error {
-	d := struct {
-		FirstName string `json:"firstName"`
-		LastName  string `json:"lastName"`
-		Age       int    `json:"age"`
-	}{"john", "connor", 50}
+func (s *testClient) sendEventV1(url *url.URL) (eventTenantV1, error) {
+	d := eventTenantV1{"john", "connor", 50}
 	ev := event{[]interface{}{d}}
 	b, err := json.Marshal(ev)
 	if err != nil {
-		return err
+		return eventTenantV1{}, err
 	}
-	return s.sendEvent(url, b)
+	if err := s.sendEvent(url, b); err != nil {
+		return eventTenantV1{}, err
+	}
+	return d, nil
 }
 
 func (s *testClient) sendEventV2(url *url.URL) error {
-	d := struct {
-		Name string `json:"name"`
-		Dob  string `json:"dob"`
-	}{"john connor", "01/01/1973"}
+	d := eventTenantV2{"john connor", "01/01/1973"}
 	ev := event{[]interface{}{d}}
 	b, err := json.Marshal(ev)
 	if err != nil {
@@ -345,6 +362,30 @@ func (s *testClient) dequeue(tenant string, queue string) ([]*pb.QueueItem, erro
 			time.Sleep(1 * time.Millisecond)
 		}
 	}
+}
+
+func (s *testClient) getJobExecutions(pkg *pb.JobPackage, lines int32) ([]Result, error) {
+	res, err := s.recorder.JobExecutions(s.ctx, pkg.Tenant, lines)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]Result, len(res))
+	for idx, r := range res {
+		d := json.NewDecoder(strings.NewReader(r))
+		result[idx] = Result{}
+		if err := d.Decode(&result[idx]); err != nil {
+			return nil, err
+		}
+		if result[idx].TypeResult == strings.ToLower(pb.JobResult_Result.String()) {
+			dr := json.NewDecoder(strings.NewReader(result[idx].ResultString))
+			m := eventTenantV1{}
+			if err := dr.Decode(&m); err != nil {
+				return nil, err
+			}
+			result[idx].ResultJSON = m
+		}
+	}
+	return result, nil
 }
 
 func (s *testClient) startRecvCacheEvents() error {

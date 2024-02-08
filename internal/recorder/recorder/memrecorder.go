@@ -25,7 +25,8 @@ type MemTailer struct {
 
 func NewMemrecorder() *MemRecorder {
 	results := bytes.NewBuffer(make([]byte, 0))
-	logger := zerolog.New(results).With().Timestamp().Logger()
+
+	logger := zerolog.New(results).With().Timestamp().Logger().Level(zerolog.InfoLevel)
 	return &MemRecorder{
 		results: results,
 		logger:  &logger,
@@ -46,6 +47,7 @@ func (m *MemRecorder) OldRecords(n int) ([]string, error) {
 			break
 		}
 		l = append(l, str)
+		n--
 	}
 	return l, nil
 }

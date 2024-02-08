@@ -70,7 +70,7 @@ type Option struct {
 	ManualWakeup bool
 }
 
-func NewVM(ctx context.Context, d service.GrpcDialer, o Option) (*VM, error) {
+func NewVM(ctx context.Context, d service.GrpcDialer, option Option) (*VM, error) {
 	recorder, err := client.NewRecorder(ctx, d)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func NewVM(ctx context.Context, d service.GrpcDialer, o Option) (*VM, error) {
 	e := &VM{
 		packages:     sync.Map{},
 		recorder:     recorder,
-		manualWakeup: o.ManualWakeup,
+		manualWakeup: option.ManualWakeup,
 		w:            &sync.WaitGroup{},
 		ctl:          ctl,
 		queue:        queue,
@@ -200,11 +200,13 @@ func (e *VM) addPackage(ctx context.Context, pkg *pb.JobPackage) error {
 	jobPackage.PackageID = pkg.ID
 	modulesForEvents := make(map[string]module)
 	nextStepForEvents := make(map[string]*pb.ResultDef)
-	r, err := wasm.NewRuntime(env.WorkdirPlus(cacheDir))
+	var runtime *wasm.Runtime
+	var err error
+	runtime, err = wasm.NewRuntimeWithCompilationCache(env.WorkdirPlus(cacheDir))
 	if err != nil {
 		return err
 	}
-	jobPackage.Runtime = r
+	jobPackage.Runtime = runtime
 	executors := make([]*Executor, 0)
 
 	for _, q := range pkg.Queues {
