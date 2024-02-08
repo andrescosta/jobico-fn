@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-func TestSunny(t *testing.T) {
+func TestOk(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
