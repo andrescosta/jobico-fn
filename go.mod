@@ -3,7 +3,7 @@ module github.com/andrescosta/jobico
 go 1.21.4
 
 require (
-	github.com/andrescosta/goico v0.4.1-beta
+	github.com/andrescosta/goico v0.4.2-beta
 	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/gdamore/tcell/v2 v2.7.0
 	github.com/gorilla/mux v1.8.1
@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.23.3 // indirect
+	cloud.google.com/go/compute v1.23.4 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -95,7 +95,7 @@ require (
 	golang.org/x/term v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
-	google.golang.org/genproto v0.0.0-20240125205218-1f4bbc51befe // indirect
+	google.golang.org/genproto v0.0.0-20240205150955-31a09d347014 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240205150955-31a09d347014 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240205150955-31a09d347014 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
