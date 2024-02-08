@@ -37,6 +37,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/pprof v0.0.0-20240125082051-42cd04596328 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0 // indirect
@@ -58,7 +59,7 @@ require (
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	github.com/rogpeppe/go-internal v1.11.0 // indirect
+	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/tetratelabs/wazero v1.6.0 // indirect
@@ -84,12 +85,16 @@ require (
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240108191215-35c7eff3a6b1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240108191215-35c7eff3a6b1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	mvdan.cc/gofumpt v0.6.0 // indirect
 )
