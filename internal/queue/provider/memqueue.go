@@ -19,10 +19,10 @@ func (f *MemBasedQueue[T]) Add(data T) error {
 	return nil
 }
 
-func (f *MemBasedQueue[T]) Remove() (T, error) {
+func (f *MemBasedQueue[T]) Remove() ([]T, error) {
 	if f.q.Size() == 0 {
-		var t T
+		var t []T
 		return t, ErrQueueEmpty
 	}
-	return f.q.Dequeue(), nil
+	return f.q.DequeueSlice(MaxItems), nil
 }

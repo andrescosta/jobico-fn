@@ -66,24 +66,24 @@ type jobPackage struct {
 	NextStep  map[string]*pb.ResultDef
 }
 
-type Option struct {
+type Options struct {
 	ManualWakeup bool
 }
 
-func NewVM(ctx context.Context, d service.GrpcDialer, option Option) (*VM, error) {
-	recorder, err := client.NewRecorder(ctx, d)
+func NewVM(ctx context.Context, dialer service.GrpcDialer, option Options) (*VM, error) {
+	recorder, err := client.NewRecorder(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	ctl, err := client.NewCtl(ctx, d)
+	ctl, err := client.NewCtl(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	queue, err := client.NewQueue(ctx, d)
+	queue, err := client.NewQueue(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := client.NewRepo(ctx, d)
+	repo, err := client.NewRepo(ctx, dialer)
 	if err != nil {
 		return nil, err
 	}

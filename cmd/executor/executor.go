@@ -1,15 +1,17 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 
+	"github.com/andrescosta/goico/pkg/context"
 	"github.com/andrescosta/jobico/cmd/executor/service"
 )
 
 func main() {
-	svc, err := service.New(context.Background())
+	ctx, cancel := context.ForEndSignals()
+	defer cancel()
+	svc, err := service.New(ctx)
 	if err != nil {
 		log.Panicf("error creating executor service: %s", err)
 	}

@@ -1,7 +1,6 @@
-Start-Job -Name ctl -WorkingDirectory C:\users\Andres\projects\go\jobico\ctl\cmd\ {go run -race main.go}
-Start-Sleep -Seconds 4
-Start-Job -Name queue -WorkingDirectory C:\users\Andres\projects\go\jobico\srv\cmd\queue\ {go run -race main.go}
-Start-Job -Name repo -WorkingDirectory C:\users\Andres\projects\go\jobico\repo\cmd\ {go run -race main.go}
-Start-Job -Name recorder -WorkingDirectory C:\users\Andres\projects\go\jobico\recorder\cmd {go run -race main.go}
-Start-Job -Name listener -WorkingDirectory C:\users\Andres\projects\go\jobico\srv\cmd\listener\ {go run -race main.go}
-Start-Job -Name exec -WorkingDirectory C:\users\Andres\projects\go\jobico\srv\cmd\executor\ {go run -race main.go}
+Start-Job -Name ctl -WorkingDirectory C:\users\Andres\projects\go\jobico\bin {.\ctl.exe}
+Start-Job -Name queue -WorkingDirectory C:\users\Andres\projects\go\jobico\bin {.\queue.exe}
+Start-Job -Name repo -WorkingDirectory C:\users\Andres\projects\go\jobico\bin {.\repo.exe}
+Start-Job -Name recorder -WorkingDirectory C:\users\Andres\projects\go\jobico\bin {.\recorder.exe}
+Start-Job -Name listener -WorkingDirectory C:\users\Andres\projects\go\jobico\bin {.\listener.exe}
+Start-Job -Name exec -WorkingDirectory C:\users\Andres\projects\go\jobico\bin {.\executor.exe}

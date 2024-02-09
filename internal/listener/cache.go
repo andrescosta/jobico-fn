@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc/cache"
 	"github.com/andrescosta/jobico/internal/api/client"
@@ -21,7 +22,7 @@ var ErrEventUnknown = fmt.Errorf("event unknown")
 type EventDefCache struct {
 	mu            sync.Mutex
 	eventCache    *cache.Cache[string, *EventEntry]
-	serviceCache  *cache.Service
+	eventCacheSvc *cache.Service
 	repoClient    *client.Repo
 	controlClient *client.Ctl
 	populated     atomic.Bool
@@ -40,16 +41,20 @@ func newCache(ctx context.Context, dialer service.GrpcDialer, listener service.G
 	if err != nil {
 		return nil, err
 	}
-	c := cache.New[string, *EventEntry](ctx, "listener")
-	svc, err := cache.NewService[string, *EventEntry](ctx, c, cache.WithGrpcConn(service.GrpcConn{Dialer: dialer, Listener: listener}))
-	if err != nil {
-		return nil, err
+	publish := env.Bool("listener.publish.event.cache")
+	ec := cache.New[string, *EventEntry](ctx, "listener", publish)
+	var ecSvc *cache.Service
+	if publish {
+		ecSvc, err = cache.NewService[string, *EventEntry](ctx, ec, cache.WithGrpcConn(service.GrpcConn{Dialer: dialer, Listener: listener}))
+		if err != nil {
+			return nil, err
+		}
 	}
 	cache := EventDefCache{
-		eventCache:    c,
+		eventCache:    ec,
 		repoClient:    repoClient,
 		controlClient: controlClient,
-		serviceCache:  svc,
+		eventCacheSvc: ecSvc,
 		mu:            sync.Mutex{},
 		populated:     atomic.Bool{},
 	}
@@ -68,12 +73,14 @@ func (j *EventDefCache) populate(ctx context.Context) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	if !j.populated.Load() {
-		go func() {
-			logger := zerolog.Ctx(ctx)
-			if err := j.serviceCache.Serve(); err != nil {
-				logger.Warn().Msgf("Error stopping cache: %v", err)
-			}
-		}()
+		if j.eventCacheSvc != nil {
+			go func() {
+				logger := zerolog.Ctx(ctx)
+				if err := j.eventCacheSvc.Serve(); err != nil {
+					logger.Warn().Msgf("Error stopping cache: %v", err)
+				}
+			}()
+		}
 		if err := j.addPackages(ctx); err != nil {
 			return err
 		}

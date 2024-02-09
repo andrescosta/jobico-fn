@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/http"
 	"github.com/andrescosta/jobico/internal/listener"
@@ -29,6 +30,10 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	}
 	for _, op := range ops {
 		op(s)
+	}
+	_, _, err := env.Load(s.Name)
+	if err != nil {
+		return nil, err
 	}
 	c, err := listener.NewController(ctx, s.dialer, s.listenerCache)
 	if err != nil {

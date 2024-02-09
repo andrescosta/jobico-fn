@@ -9,14 +9,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Option struct {
+type Options struct {
 	InMemory bool
 }
 
 type Controller struct {
-	repo        Repository
-	bJobPackage *grpchelper.GrpcBroadcaster[*pb.UpdateToFileStrReply, proto.Message]
-	ctx         context.Context
+	repoProvider Repository
+	bJobPackage  *grpchelper.GrpcBroadcaster[*pb.UpdateToFileStrReply, proto.Message]
+	ctx          context.Context
 }
 
 type Repository interface {
@@ -26,15 +26,17 @@ type Repository interface {
 	Files() ([]*pb.TenantFiles, error)
 }
 
-func New(ctx context.Context, dir string, o Option) *Controller {
-	r := provider.NewMemRepo()
-	if !o.InMemory {
-		provider.NewFileRepo(dir)
+func New(ctx context.Context, dir string, o Options) *Controller {
+	var repoProvider Repository
+	if o.InMemory {
+		repoProvider = provider.NewMemRepo()
+	} else {
+		repoProvider = provider.NewFileRepo(dir)
 	}
 	return &Controller{
-		ctx:         ctx,
-		bJobPackage: grpchelper.StartBroadcaster[*pb.UpdateToFileStrReply, proto.Message](ctx),
-		repo:        r,
+		ctx:          ctx,
+		bJobPackage:  grpchelper.StartBroadcaster[*pb.UpdateToFileStrReply, proto.Message](ctx),
+		repoProvider: repoProvider,
 	}
 }
 
@@ -43,7 +45,7 @@ func (s *Controller) Close() error {
 }
 
 func (s *Controller) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.AddFileReply, error) {
-	if err := s.repo.Add(r.TenantFile.Tenant, r.TenantFile.File.Name, int32(r.TenantFile.File.Type), r.TenantFile.File.Content); err != nil {
+	if err := s.repoProvider.Add(r.TenantFile.Tenant, r.TenantFile.File.Name, int32(r.TenantFile.File.Type), r.TenantFile.File.Content); err != nil {
 		return nil, err
 	}
 	if err := s.bJobPackage.Broadcast(ctx,
@@ -58,11 +60,11 @@ func (s *Controller) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.Add
 }
 
 func (s *Controller) File(_ context.Context, r *pb.FileRequest) (*pb.FileReply, error) {
-	f, err := s.repo.File(r.TenantFile.Tenant, r.TenantFile.File.Name)
+	f, err := s.repoProvider.File(r.TenantFile.Tenant, r.TenantFile.File.Name)
 	if err != nil {
 		return nil, err
 	}
-	m, err := s.repo.GetMetadataForFile(r.TenantFile.Tenant, r.TenantFile.File.Name)
+	m, err := s.repoProvider.GetMetadataForFile(r.TenantFile.Tenant, r.TenantFile.File.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +77,7 @@ func (s *Controller) File(_ context.Context, r *pb.FileRequest) (*pb.FileReply, 
 }
 
 func (s *Controller) AllFileNames(_ context.Context, _ *pb.Void) (*pb.AllFileNamesReply, error) {
-	f, err := s.repo.Files()
+	f, err := s.repoProvider.Files()
 	if err != nil {
 		return nil, err
 	}

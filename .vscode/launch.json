@@ -15,7 +15,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/cmd/ctl/main.go",
+        "program": "${workspaceFolder}/cmd/ctl/ctl.go",
         "args": [
             "--env:basedir=../../bin",
             "--env:workdir=../../work",
@@ -26,14 +26,14 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/repo/cmd/main.go"
+        "program": "${workspaceFolder}/cmd/repo/repo.go"
     },
     {
         "name": "Launch queue",
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/cmd/queue/main.go",
+        "program": "${workspaceFolder}/cmd/queue/queue.go",
         "args": [
             "--env:basedir=../../bin",
             "--env:workdir=../../work",
@@ -44,14 +44,14 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/cmd/executor/main.go"
+        "program": "${workspaceFolder}/cmd/executor/executor.go"
     },
     {
         "name": "Launch listener",
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/cmd/listener/main.go"
+        "program": "${workspaceFolder}/cmd/listener/listener.go"
     },
     {
         "name": "Launch CLI Repo",

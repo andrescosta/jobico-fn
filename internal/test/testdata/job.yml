@@ -1,0 +1,45 @@
+package:
+  ID: job_id_1
+  name: job_name_1
+  tenant: tenant_1
+  queues:
+  - ID: queue_id_1
+    name: queue_name_1
+  - ID: queue_id_1_ok
+    name: queue_name_1_ok
+  - ID: queue_id_1_error
+    name: queue_name_1_error
+  jobs:
+  - event:
+      ID: event_id_1
+      name: event_name_1
+      dataType: 0
+      schema:
+        ID: ""
+        name: null
+        schemaRef: sch1
+      supplierQueue: queue_id_1
+      runtime: runtime_id_1
+    result:
+      ok:
+        ID: event_id_1_ok
+        name: event_name_1_ok
+        dataType: 0
+        schema: null
+        supplierQueue: queue_id_1_ok
+        runtime: runtime_id_1
+      error:
+        ID: event_id_1_error
+        name: event_name_1_error
+        dataType: 0
+        schema: null
+        supplierQueue: queue_id_1_error
+        runtime: runtime_id_1
+  runtimes:
+  - ID: runtime_id_1
+    name: runtime_name_1
+    moduleRef: run1
+    mainFuncName: event
+    type: 0
+    platform: 0
+

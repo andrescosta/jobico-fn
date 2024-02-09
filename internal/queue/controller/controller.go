@@ -51,9 +51,7 @@ func (s *Controller) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.De
 		return nil, err
 	}
 	var iqs []*pb.QueueItem
-	if i != nil {
-		iqs = append(iqs, i)
-	}
+	iqs = append(iqs, i...)
 	return &pb.DequeueReply{
 		Items: iqs,
 	}, nil

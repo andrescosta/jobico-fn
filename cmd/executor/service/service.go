@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/process"
 	"github.com/andrescosta/jobico/internal/executor"
@@ -17,18 +18,23 @@ type Service struct {
 	process.Container
 	vm     *executor.VM
 	dialer service.GrpcDialer
-	option executor.Option
+	option executor.Options
 }
 
 func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	s := &Service{
-		option: executor.Option{},
+		option: executor.Options{},
+		dialer: service.DefaultGrpcDialer,
 		Container: process.Container{
 			Name: name,
 		},
 	}
 	for _, op := range ops {
 		op(s)
+	}
+	_, _, err := env.Load(s.Name)
+	if err != nil {
+		return nil, err
 	}
 	vm, err := executor.NewVM(ctx, s.dialer, s.option)
 	if err != nil {
@@ -78,7 +84,7 @@ func WithHTTPConn(h service.HTTPConn) Setter {
 	}
 }
 
-func WithOption(o executor.Option) Setter {
+func WithOption(o executor.Options) Setter {
 	return func(s *Service) {
 		s.option = o
 	}

@@ -18,9 +18,9 @@ type Recorder struct {
 	cli  pb.RecorderClient
 }
 
-func NewRecorder(ctx context.Context, d service.GrpcDialer) (*Recorder, error) {
+func NewRecorder(ctx context.Context, dialer service.GrpcDialer) (*Recorder, error) {
 	addr := env.String("recorder.host")
-	conn, err := d.Dial(ctx, addr)
+	conn, err := dialer.Dial(ctx, addr)
 	if err != nil {
 		return nil, err
 	}

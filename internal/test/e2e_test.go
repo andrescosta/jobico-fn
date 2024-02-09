@@ -209,7 +209,7 @@ func TestErroCtl(t *testing.T) {
 		cleanUp(t, platform, svcGroup, cli)
 	})
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	pkg := NewTestPackage(SchemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
 	err = svcGroup.Start([]test.Starter{platform.repo, platform.listener, platform.queue})
 	test.Nil(t, err)
 	err = sendEvtV1(pkg, cli)
@@ -229,7 +229,7 @@ func TestErrorInitQueue(t *testing.T) {
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.repo, platform.ctl})
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	pkg := NewTestPackage(SchemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
 	err = svcGroup.Start([]test.Starter{platform.listener})
 	test.Nil(t, err)
 	u := fmt.Sprintf(sendEventURL, pkg.Tenant, pkg.Jobs[0].Event.ID)
@@ -319,7 +319,7 @@ func sendEvtV1(pkg *pb.JobPackage, cli *testClient) error {
 }
 
 func addPackage(t *testing.T, cli *testClient) *pb.JobPackage {
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	pkg := NewTestPackage(SchemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
 	err := cli.addTenant(pkg.Tenant)
 	test.Nil(t, err)
 	err = cli.addPackage(pkg)
@@ -381,6 +381,7 @@ func setEnvVars() {
 	os.Setenv("listener.addr", "listener:1")
 	os.Setenv("listener.host", "listener:1")
 	os.Setenv("cache_listener.addr", "cache_listener:1")
+	os.Setenv("listener.publish.event.cache", "true")
 
 	os.Setenv("ctl.addr", "ctl:1")
 	os.Setenv("ctl.host", "ctl:1")

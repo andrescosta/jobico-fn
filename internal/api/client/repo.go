@@ -7,7 +7,7 @@ import (
 	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
-	"github.com/andrescosta/goico/pkg/service/grpc/grpcstream"
+	"github.com/andrescosta/goico/pkg/service/grpc/stream"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	rpc "google.golang.org/grpc"
 )
@@ -83,14 +83,6 @@ func (c *Repo) AllFilenames(ctx context.Context) ([]*pb.TenantFiles, error) {
 	return ret, nil
 }
 
-func (c *Repo) UpdateToFileStr(ctx context.Context, resChan chan<- *pb.UpdateToFileStrReply) error {
-	s, err := c.cli.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
-	if err != nil {
-		return err
-	}
-	return grpcstream.Recv(ctx, s, resChan)
-}
-
 func (c *Repo) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.Listener[*pb.UpdateToFileStrReply], error) {
 	if c.bcRepoUpdates == nil {
 		if err := c.startListenRepoUpdates(ctx); err != nil {
@@ -108,7 +100,7 @@ func (c *Repo) startListenRepoUpdates(ctx context.Context) error {
 		return err
 	}
 	go func() {
-		_ = grpcstream.Listen(ctx, s, bc)
+		_ = stream.Recv(ctx, s, bc)
 	}()
 	return nil
 }
