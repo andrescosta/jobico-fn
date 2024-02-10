@@ -1,5 +1,7 @@
 # Jobico
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/andrescosta/jobico)](https://goreportcard.com/report/github.com/andrescosta/jobico)
+
 ## Introduction
 
 Welcome to Jobico – An Experimental, Multi-Tenancy asynchronous computing Platform!

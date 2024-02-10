@@ -9,6 +9,14 @@ import { randomString, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2
 // 2 - Upload schema
 // 3 - Upload the job from test data
 
+const HOST_CTL = 'localhost:50052'
+const HOST_REPO = 'localhost:50053'
+const HOST_LISTENER = 'localhost:8080'
+const TENANT = 'tenant_1'
+const SCHEMA = 'sch1'
+const WASM = 'run1' 
+const EVENT = 'event_id_1'
+const URL_LISTENER = 'http://'+HOST_LISTENER+'/events/'+TENANT+'/'+EVENT
 
 export let options = {
   vus: 30,
@@ -17,22 +25,22 @@ export let options = {
 
 const clientCtl = new grpc.Client();
 const clientRepo = new grpc.Client();
-clientCtl.load(['C:\\Users\\Andres\\projects\\go\\jobico\\internal\\api\\proto'], 'ctl.proto');
-clientRepo.load(['C:\\Users\\Andres\\projects\\go\\jobico\\internal\\api\\proto'], 'repo.proto');
+clientCtl.load(['../internal/api/proto'], 'ctl.proto');
+clientRepo.load(['../internal/api/proto'], 'repo.proto');
 const jobyml = open('../internal/test/testdata/job.yml')
 const wasmFile = open('../internal/test/testdata/echo.wasm', 'b')
 const schemaFile = open('../internal/test/testdata/schema.json', 'b')
 
 export function setup() {
-  clientCtl.connect('localhost:50052', {
+  clientCtl.connect(HOST_CTL, {
     plaintext: true
   });
-  clientRepo.connect('localhost:50053', {
+  clientRepo.connect(HOST_REPO, {
     plaintext: true
   });
 
   const gettenant = {
-    ID: "tenant_1",
+    ID: TENANT,
   }
   var response = clientCtl.invoke('/Control/Tenants', gettenant);
   check(response, {
@@ -43,26 +51,26 @@ export function setup() {
       tenantFile: {
         file: {
           content: b64encode(schemaFile),
-          name: "sch1",
+          name: SCHEMA,
           type: 1
         },
-        tenant: "tenant_1"
+        tenant: TENANT
       }
     }
     const wasm = {
       tenantFile: {
         file: {
           content: b64encode(wasmFile),
-          name: "run1",
+          name: WASM,
           type: 2
         },
-        tenant: "tenant_1"
+        tenant: TENANT
       }
     }
     const tenant = {
       tenant: {
-        ID: "tenant_1",
-        Name: "tenant_1"
+        ID: TENANT,
+        Name: TENANT
       }
     }
     var response = clientCtl.invoke('/Control/AddTenant', tenant);
@@ -99,7 +107,7 @@ export default () => {
         }
       ]
   };
-  const response = http.post('http://localhost:8080/events/tenant_1/event_id_1', JSON.stringify(payload), {
+  const response = http.post(URL_LISTENER, JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json' },
   })
   check(response, {

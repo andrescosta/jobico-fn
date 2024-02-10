@@ -24,5 +24,5 @@ func (f *MemBasedQueue[T]) Remove() ([]T, error) {
 		var t []T
 		return t, ErrQueueEmpty
 	}
-	return f.q.DequeueSlice(MaxItems), nil
+	return f.q.DequeueN(MaxItems), nil
 }
