@@ -7,11 +7,20 @@ export function Test(tenant, hostCtl, hostListener, hostRepo) {
     this.api = new Api(hostCtl, hostListener, hostRepo)
     this.tenant = tenant
 }
-Test.prototype.Init = function () {
-    this.api.Init()
+
+Test.prototype.LoadFile = function (path) {
+    this.api.LoadFile(path)
+}
+
+Test.prototype.LoadFileBin = function (path) {
+    this.api.LoadFileBin(path)
+}
+
+Test.prototype.Connect = function () {
+    this.api.Connect()
 }
 Test.prototype.SendEventV1Random = function () {
-    this.SendEventV1(this.tenant, randomString(8), randomString(10), randomIntBetween(0, 99))
+    this.SendEventV1(randomString(8), randomString(10), randomIntBetween(0, 99))
 }
 
 Test.prototype.SendEventV1 = function (firstName, lastName, age) {
@@ -69,6 +78,18 @@ Test.prototype.UploadSchemaFile = function (fileId, path) {
 
 Test.prototype.AddPackageFile = function (path) {
     const response = this.api.AddPackageFile(path);
+    check(response, {
+        'status is OK': (r) => r && r.status === grpc.StatusOK,
+    });
+}
+
+Test.prototype.AddPackageFileForJobWithTemplate = function (id, name, idQ, nameQ, path) {
+    const job = this.api.GetPackageObj(path);
+    job.package.ID = id;
+    job.package.name = name;
+    job.package.queues[0].ID = idQ;
+    job.package.queues[0].name = nameQ;
+    const response = this.api.InvokeAddPackage(job);
     check(response, {
         'status is OK': (r) => r && r.status === grpc.StatusOK,
     });

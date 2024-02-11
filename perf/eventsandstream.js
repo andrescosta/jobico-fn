@@ -18,120 +18,70 @@ T1                              T2
 */
 
 
-import http from 'k6/http';
-import grpc from 'k6/net/grpc';
-import * as YAML from "k6/x/yaml";
-import { check } from 'k6';
-import { b64encode } from 'k6/encoding';
-import { randomString, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import { Test } from './lib/test.js'
+import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import { sleep } from 'k6'
+
 
 const HOST_CTL = 'localhost:50052'
 const HOST_REPO = 'localhost:50053'
 const HOST_LISTENER = 'localhost:8080'
 const TENANT = 'tenant_1'
-const SCHEMA = 'sch1'
-const WASM = 'run1' 
-const EVENT = 'event_id_1'
-const URL_LISTENER = 'http://'+HOST_LISTENER+'/events/'+TENANT+'/'+EVENT
+const test = new Test(TENANT, HOST_CTL, HOST_LISTENER, HOST_REPO)
+test.LoadFileBin('../internal/test/testdata/echo.wasm')
+test.LoadFileBin('../internal/test/testdata/schema.json')
+test.LoadFile('../internal/test/testdata/job.yml')
 
-export let options = {
-  vus: 30,
-  iterations: 100
+export const options = {
+  scenarios: {
+    tenant_sending_events: {
+      executor: 'constant-vus',
+      env: { WORKFLOW: 'sending_events' },
+      vus: 10,
+      duration: '20s',
+    },
+    tenant_adding_pkg: {
+      executor: 'per-vu-iterations',
+      exec: 'addPackage',
+      env: { WORKFLOW: 'adding' },
+      startTime: '1s',
+      vus: 3,
+      iterations: 5,
+      maxDuration: '10s',
+    },
+  },
 };
 
-const clientCtl = new grpc.Client();
-const clientRepo = new grpc.Client();
-clientCtl.load(['../internal/api/proto'], 'ctl.proto');
-clientRepo.load(['../internal/api/proto'], 'repo.proto');
-const jobyml = open('../internal/test/testdata/job.yml')
-const wasmFile = open('../internal/test/testdata/echo.wasm', 'b')
-const schemaFile = open('../internal/test/testdata/schema.json', 'b')
 
 export function setup() {
-  clientCtl.connect(HOST_CTL, {
-    plaintext: true
-  });
-  clientRepo.connect(HOST_REPO, {
-    plaintext: true
-  });
-
-  const gettenant = {
-    ID: TENANT,
+  test.Connect();
+  const e = test.ExistsTenant();
+  if (e) {
+    test.AddTenant();
+    test.UploadWasmFile('run1', '../internal/test/testdata/echo.wasm');
+    test.UploadSchemaFile('sch1', '../internal/test/testdata/schema.json');
+    test.AddPackageFile('../internal/test/testdata/job.yml');
   }
-  var response = clientCtl.invoke('/Control/Tenants', gettenant);
-  check(response, {
-    'status is OK': (r) => r && r.status === grpc.StatusOK,
-  });
-  if (response.message.Tenants.length == 0) {
-    const schema = {
-      tenantFile: {
-        file: {
-          content: b64encode(schemaFile),
-          name: SCHEMA,
-          type: 1
-        },
-        tenant: TENANT
-      }
-    }
-    const wasm = {
-      tenantFile: {
-        file: {
-          content: b64encode(wasmFile),
-          name: WASM,
-          type: 2
-        },
-        tenant: TENANT
-      }
-    }
-    const tenant = {
-      tenant: {
-        ID: TENANT,
-        Name: TENANT
-      }
-    }
-    var response = clientCtl.invoke('/Control/AddTenant', tenant);
-    check(response, {
-      'status is OK': (r) => r && r.status === grpc.StatusOK,
-    });
-    var response = clientRepo.invoke('Repo/AddFile', schema);
-    check(response, {
-      'status is OK': (r) => r && r.status === grpc.StatusOK,
-    });
-    var response = clientRepo.invoke('Repo/AddFile', wasm);
-    check(response, {
-      'status is OK': (r) => r && r.status === grpc.StatusOK,
-    });
-    const job = YAML.parse(jobyml)
-    response = clientCtl.invoke('Control/AddPackage', job);
-    check(response, {
-      'status is OK': (r) => r && r.status === grpc.StatusOK,
-    });
-  }
+  test.Close();
 }
 
 export default () => {
-  const randomFirstName = randomString(8);
-  const randomLastName = randomString(10);
-  const age = randomIntBetween(0,99)
-  const payload = {
-    data:
-      [
-        {
-          firstName: randomFirstName,
-          lastName: randomLastName,
-          age: age
-        }
-      ]
-  };
-  const response = http.post(URL_LISTENER, JSON.stringify(payload), {
-    headers: { 'Content-Type': 'application/json' },
-  })
-  check(response, {
-    'status is 200': (r) => r.status === 200
-  });
+  test.SendEventV1Random()
+}
+
+export function addPackage() {
+  if (__ITER === 0) {
+    test.Connect();
+  }
+  const id = randomIntBetween(0, 1000)
+  const jobid = 'job_id_' + id
+  const jobname = 'job_id_name_' + id
+  const idq = 'queue_id_' + id
+  const nameq = 'queue_name_' + id
+  test.AddPackageFileForJobWithTemplate(jobid, jobname, idq, nameq, '../internal/test/testdata/job.yml');
+  sleep(5)
 }
 
 export function teardown() {
-  clientRepo.close();
-  clientCtl.close();
+  test.Close()
 }

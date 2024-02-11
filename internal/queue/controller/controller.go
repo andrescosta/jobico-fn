@@ -11,6 +11,7 @@ import (
 
 type Controller struct {
 	cache *Cache[*pb.QueueItem]
+	ctx   context.Context
 }
 
 func New(ctx context.Context, d service.GrpcDialer, o Option) (*Controller, error) {
@@ -20,11 +21,12 @@ func New(ctx context.Context, d service.GrpcDialer, o Option) (*Controller, erro
 	}
 	return &Controller{
 		cache: c,
+		ctx:   ctx,
 	}, nil
 }
 
-func (s *Controller) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.Void, error) {
-	myqueue, err := s.cache.GetQueue(ctx, in.Tenant, in.Queue)
+func (s *Controller) Queue(in *pb.QueueRequest) (*pb.Void, error) {
+	myqueue, err := s.cache.GetQueue(s.ctx, in.Tenant, in.Queue)
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +43,8 @@ func (s *Controller) Close() error {
 	return s.cache.Close()
 }
 
-func (s *Controller) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
-	myqueue, err := s.cache.GetQueue(ctx, in.Tenant, in.Queue)
+func (s *Controller) Dequeue(in *pb.DequeueRequest) (*pb.DequeueReply, error) {
+	myqueue, err := s.cache.GetQueue(s.ctx, in.Tenant, in.Queue)
 	if err != nil {
 		return nil, err
 	}

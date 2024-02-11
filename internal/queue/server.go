@@ -27,10 +27,10 @@ func (s *Server) Close() error {
 	return s.controller.Close()
 }
 
-func (s *Server) Queue(ctx context.Context, in *pb.QueueRequest) (*pb.Void, error) {
-	return s.controller.Queue(ctx, in)
+func (s *Server) Queue(_ context.Context, in *pb.QueueRequest) (*pb.Void, error) {
+	return s.controller.Queue(in)
 }
 
-func (s *Server) Dequeue(ctx context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
-	return s.controller.Dequeue(ctx, in)
+func (s *Server) Dequeue(_ context.Context, in *pb.DequeueRequest) (*pb.DequeueReply, error) {
+	return s.controller.Dequeue(in)
 }

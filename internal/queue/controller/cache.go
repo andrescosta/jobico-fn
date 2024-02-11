@@ -135,9 +135,10 @@ func (q *Cache[T]) addOrUpdate(ctx context.Context, pkgs []*pb.JobPackage) error
 	return nil
 }
 
-func (q *Cache[T]) addOrUpdateQueue(_ context.Context, tenant string, def *pb.QueueDef) {
+func (q *Cache[T]) addOrUpdateQueue(ctx context.Context, tenant string, def *pb.QueueDef) {
 	name := getQueueName(tenant, def.ID)
 	queue := q.queueBuilder(name)
+	zerolog.Ctx(ctx).Debug().Msgf("New queue:%s", def.ID)
 	_ = q.queues.LoadOrStore(name, queue)
 }
 
