@@ -5,12 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
-	"sync/atomic"
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc/cache"
+	"github.com/andrescosta/goico/pkg/syncutil"
 	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/rs/zerolog"
@@ -20,12 +19,11 @@ import (
 var ErrEventUnknown = fmt.Errorf("event unknown")
 
 type EventDefCache struct {
-	mu            sync.Mutex
+	init          *syncutil.OnceDisposable
 	eventCache    *cache.Cache[string, *EventEntry]
 	eventCacheSvc *cache.Service
 	repoClient    *client.Repo
 	controlClient *client.Ctl
-	populated     atomic.Bool
 }
 type EventEntry struct {
 	EventDef *pb.EventDef
@@ -50,54 +48,44 @@ func newCache(ctx context.Context, dialer service.GrpcDialer, listener service.G
 			return nil, err
 		}
 	}
-	cache := EventDefCache{
+	cache := &EventDefCache{
 		eventCache:    ec,
 		repoClient:    repoClient,
 		controlClient: controlClient,
 		eventCacheSvc: ecSvc,
-		mu:            sync.Mutex{},
-		populated:     atomic.Bool{},
+		init:          syncutil.NewOnceDisposable(),
 	}
-	return &cache, nil
+	return cache, nil
 }
 
 func (j *EventDefCache) close() error {
-	var err error
-	err = errors.Join(err, j.controlClient.Close())
-	err = errors.Join(err, j.repoClient.Close())
-	err = errors.Join(err, j.eventCache.Close())
-	return err
+	return j.init.Dispose(context.Background(), func(_ context.Context) error {
+		var err error
+		err = errors.Join(err, j.controlClient.Close())
+		err = errors.Join(err, j.repoClient.Close())
+		err = errors.Join(err, j.eventCache.Close())
+		return err
+	})
 }
 
 func (j *EventDefCache) populate(ctx context.Context) error {
-	j.mu.Lock()
-	defer j.mu.Unlock()
-	if !j.populated.Load() {
-		if j.eventCacheSvc != nil {
-			go func() {
-				logger := zerolog.Ctx(ctx)
-				if err := j.eventCacheSvc.Serve(); err != nil {
-					logger.Warn().Msgf("Error stopping cache: %v", err)
-				}
-			}()
-		}
-		if err := j.addPackages(ctx); err != nil {
-			return err
-		}
-		if err := j.startListeningUpdates(ctx); err != nil {
-			return err
-		}
-		j.populated.Store(true)
+	var err error
+	if j.eventCacheSvc != nil {
+		go func() {
+			logger := zerolog.Ctx(ctx)
+			if err := j.eventCacheSvc.Serve(); err != nil {
+				logger.Warn().Msgf("Error stopping cache: %v", err)
+			}
+		}()
 	}
-	return nil
+	err = errors.Join(err, j.addPackages(ctx))
+	err = errors.Join(err, j.startListeningUpdates(ctx))
+	return err
 }
 
 func (j *EventDefCache) Get(ctx context.Context, tenant string, eventID string) (*EventEntry, error) {
-	if !j.populated.Load() {
-		err := j.populate(ctx)
-		if err != nil {
-			return nil, err
-		}
+	if err := j.init.Do(ctx, j.populate); err != nil {
+		return nil, err
 	}
 	ev, ok := j.eventCache.Get(getEventName(tenant, eventID))
 	if !ok {

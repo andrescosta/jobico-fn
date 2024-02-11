@@ -3,11 +3,10 @@ package controller
 import (
 	"context"
 	"errors"
-	"sync"
-	"sync/atomic"
 
 	"github.com/andrescosta/goico/pkg/collection"
 	"github.com/andrescosta/goico/pkg/service"
+	"github.com/andrescosta/goico/pkg/syncutil"
 	"github.com/andrescosta/jobico/internal/api/client"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/queue/provider"
@@ -23,11 +22,10 @@ type Option struct {
 type QueueBuilder[T any] func(string) provider.Queue[T]
 
 type Cache[T any] struct {
-	mu           sync.Mutex
+	init         *syncutil.OnceDisposable
 	queues       *collection.SyncMap[string, provider.Queue[T]]
 	queueBuilder QueueBuilder[T]
 	ctl          *client.Ctl
-	populated    atomic.Bool
 }
 
 func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (*Cache[T], error) {
@@ -41,43 +39,37 @@ func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (
 		return nil, err
 	}
 	cache := &Cache[T]{
-		mu:           sync.Mutex{},
+		init:         syncutil.NewOnceDisposable(),
 		queues:       syncmap,
 		ctl:          ctl,
 		queueBuilder: queueBuilder,
-		populated:    atomic.Bool{},
 	}
 	return cache, nil
 }
 
 func (q *Cache[T]) populate(ctx context.Context) error {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	if !q.populated.Load() {
-		if err := q.addPackages(ctx); err != nil {
-			return err
-		}
-		if err := q.startListeningUpdates(ctx); err != nil {
-			return err
-		}
-		q.populated.Store(true)
+	if err := q.addPackages(ctx); err != nil {
+		return err
+	}
+	if err := q.startListeningUpdates(ctx); err != nil {
+		return err
 	}
 	return nil
 }
 
 func (q *Cache[T]) Close() error {
-	if q.ctl != nil {
-		return q.ctl.Close()
-	}
-	return nil
+	return q.init.Dispose(context.Background(), func(ctx context.Context) error {
+		if q.ctl != nil {
+			return q.ctl.Close()
+		}
+		return nil
+	})
 }
 
 func (q *Cache[T]) GetQueue(ctx context.Context, tentant string, queueID string) (provider.Queue[T], error) {
-	if !q.populated.Load() {
-		err := q.populate(ctx)
-		if err != nil {
-			return nil, err
-		}
+	err := q.init.Do(ctx, q.populate)
+	if err != nil {
+		return nil, err
 	}
 	queue, ok := q.queues.Load(getQueueName(tentant, queueID))
 	if !ok {

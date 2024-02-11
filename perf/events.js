@@ -5,10 +5,6 @@ import { check } from 'k6';
 import { b64encode } from 'k6/encoding';
 import { randomString, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-// 1 - Upload wasm file
-// 2 - Upload schema
-// 3 - Upload the job from test data
-
 const HOST_CTL = 'localhost:50052'
 const HOST_REPO = 'localhost:50053'
 const HOST_LISTENER = 'localhost:8080'
@@ -19,8 +15,8 @@ const EVENT = 'event_id_1'
 const URL_LISTENER = 'http://'+HOST_LISTENER+'/events/'+TENANT+'/'+EVENT
 
 export let options = {
-  vus: 30,
-  iterations: 100
+  vus: 1,
+  iterations: 1
 };
 
 const clientCtl = new grpc.Client();
@@ -42,6 +38,7 @@ export function setup() {
   const gettenant = {
     ID: TENANT,
   }
+  console.log(gettenant)
   var response = clientCtl.invoke('/Control/Tenants', gettenant);
   check(response, {
     'status is OK': (r) => r && r.status === grpc.StatusOK,
