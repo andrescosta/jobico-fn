@@ -45,21 +45,21 @@ var (
 	}
 )
 
-func TestMain(m *testing.M) {
+func TestMain(_ *testing.M) {
 	setEnvVars()
-	goleak.VerifyTestMain(m)
 }
 
 func TestOk(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)
-	t.Cleanup(func() {
+	defer func() {
 		cancel()
 		cleanUp(t, platform, svcGroup, cli)
-	})
+	}()
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.ctl, platform.queue, platform.recorder, platform.listener, platform.repo})
 	test.Nil(t, err)
@@ -73,15 +73,16 @@ func TestOk(t *testing.T) {
 }
 
 func TestStreamingSchemaUpdate(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)
-	t.Cleanup(func() {
+	defer func() {
 		cancel()
 		cleanUp(t, platform, svcGroup, cli)
-	})
+	}()
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue, platform.recorder})
 	test.Nil(t, err)
@@ -107,15 +108,16 @@ func TestStreamingSchemaUpdate(t *testing.T) {
 }
 
 func TestStreamingDelete(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)
-	t.Cleanup(func() {
+	defer func() {
 		cancel()
 		cleanUp(t, platform, svcGroup, cli)
-	})
+	}()
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.listener, platform.queue, platform.recorder})
 	test.Nil(t, err)
@@ -134,15 +136,16 @@ func TestStreamingDelete(t *testing.T) {
 }
 
 func TestEventErrors(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)
-	t.Cleanup(func() {
+	defer func() {
 		cancel()
 		cleanUp(t, platform, svcGroup, cli)
-	})
+	}()
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo})
 	test.Nil(t, err)
@@ -168,16 +171,17 @@ func TestEventErrors(t *testing.T) {
 }
 
 func TestQueueDown(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	setEnvVars()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)
-	t.Cleanup(func() {
+	defer func() {
 		cancel()
 		cleanUp(t, platform, svcGroup, cli)
-	})
+	}()
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.ctl, platform.repo, platform.recorder})
 	test.Nil(t, err)
@@ -194,6 +198,7 @@ func TestQueueDown(t *testing.T) {
 }
 
 func TestErroCtl(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	os.Setenv("http.shutdown.timeout", (10 * time.Microsecond).String())
 	os.Setenv("http.timeout.write", (5 * time.Microsecond).String())
 	os.Setenv("http.timeout.read", (5 * time.Microsecond).String())
@@ -204,12 +209,12 @@ func TestErroCtl(t *testing.T) {
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)
-	t.Cleanup(func() {
+	defer func() {
 		cancel()
 		cleanUp(t, platform, svcGroup, cli)
-	})
+	}()
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	pkg := NewTestPackage(SchemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
 	err = svcGroup.Start([]test.Starter{platform.repo, platform.listener, platform.queue})
 	test.Nil(t, err)
 	err = sendEvtV1(pkg, cli)
@@ -217,19 +222,20 @@ func TestErroCtl(t *testing.T) {
 }
 
 func TestErrorInitQueue(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)
-	t.Cleanup(func() {
+	defer func() {
 		cancel()
 		cleanUp(t, platform, svcGroup, cli)
-	})
+	}()
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.repo, platform.ctl})
 	test.Nil(t, err)
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	pkg := NewTestPackage(SchemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
 	err = svcGroup.Start([]test.Starter{platform.listener})
 	test.Nil(t, err)
 	u := fmt.Sprintf(sendEventURL, pkg.Tenant, pkg.Jobs[0].Event.ID)
@@ -240,16 +246,17 @@ func TestErrorInitQueue(t *testing.T) {
 }
 
 func TestErrorRepo(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	os.Setenv("dial.timeout", (40 * time.Millisecond).String())
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup(platform.conn)
 	cli, err := newClient(ctx, platform.conn, platform.conn)
-	t.Cleanup(func() {
+	defer func() {
 		cancel()
 		cleanUp(t, platform, svcGroup, cli)
-	})
+	}()
 	test.Nil(t, err)
 	err = svcGroup.Start([]test.Starter{platform.ctl})
 	test.Nil(t, err)
@@ -319,7 +326,7 @@ func sendEvtV1(pkg *pb.JobPackage, cli *testClient) error {
 }
 
 func addPackage(t *testing.T, cli *testClient) *pb.JobPackage {
-	pkg := cli.newTestPackage(schemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	pkg := NewTestPackage(SchemaRefIds{"sch1", "sch1_ok", "sch1_error"}, "run1")
 	err := cli.addTenant(pkg.Tenant)
 	test.Nil(t, err)
 	err = cli.addPackage(pkg)
@@ -381,6 +388,7 @@ func setEnvVars() {
 	os.Setenv("listener.addr", "listener:1")
 	os.Setenv("listener.host", "listener:1")
 	os.Setenv("cache_listener.addr", "cache_listener:1")
+	os.Setenv("listener.publish.event.cache", "true")
 
 	os.Setenv("ctl.addr", "ctl:1")
 	os.Setenv("ctl.host", "ctl:1")

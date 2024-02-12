@@ -99,10 +99,10 @@ func newClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder servic
 	}, nil
 }
 
-type schemaRefIds struct {
-	schameRef      string
-	schemaRefOk    string
-	schemaRefError string
+type SchemaRefIds struct {
+	SchameRef      string
+	SchemaRefOk    string
+	SchemaRefError string
 }
 
 func (s *testClient) close() error {
@@ -126,7 +126,7 @@ func (s *testClient) close() error {
 	return errors.Join(errs...)
 }
 
-func (s *testClient) newTestPackage(schemaRefIds schemaRefIds, runtimeRef string) *pb.JobPackage {
+func NewTestPackage(schemaRefIds SchemaRefIds, runtimeRef string) *pb.JobPackage {
 	p := pb.JobPackage{
 		ID:     "job_id_1",
 		Name:   strptr("job_name_1"),
@@ -153,7 +153,7 @@ func (s *testClient) newTestPackage(schemaRefIds schemaRefIds, runtimeRef string
 					DataType:      pb.DataType_Json,
 					SupplierQueue: "queue_id_1",
 					Runtime:       "runtime_id_1",
-					Schema:        &pb.SchemaDef{SchemaRef: schemaRefIds.schameRef},
+					Schema:        &pb.SchemaDef{SchemaRef: schemaRefIds.SchameRef},
 				},
 				Result: &pb.ResultDef{
 					Ok: &pb.EventDef{

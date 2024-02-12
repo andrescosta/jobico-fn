@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/http"
 	"github.com/andrescosta/jobico/internal/listener"
@@ -30,6 +31,10 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	for _, op := range ops {
 		op(s)
 	}
+	_, _, err := env.Load(s.Name)
+	if err != nil {
+		return nil, err
+	}
 	c, err := listener.NewController(ctx, s.dialer, s.listenerCache)
 	if err != nil {
 		return nil, err
@@ -40,10 +45,11 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		http.WithAddr(s.AddrOrPanic()),
 		http.WithContext(ctx),
 		http.WithName(name),
+		http.WithProfilingEnabled(env.Bool("prof.enabled", false)),
 		http.WithHealthCheck[*http.ServiceOptions](func(ctx context.Context) (map[string]string, error) {
 			return make(map[string]string), nil
 		}),
-		http.WithInitRoutesFn(c.ConfigureRoutes),
+		http.WithInitRoutesFn[*http.ServiceOptions](c.ConfigureRoutes),
 	)
 	if err != nil {
 		return nil, err

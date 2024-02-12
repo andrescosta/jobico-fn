@@ -12,7 +12,7 @@ type Server struct {
 	controller *controller.Controller
 }
 
-func New(ctx context.Context, dir string, o controller.Option) *Server {
+func New(ctx context.Context, dir string, o controller.Options) *Server {
 	return &Server{
 		controller: controller.New(ctx, dir, o),
 	}

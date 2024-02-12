@@ -1,6 +1,6 @@
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 
-.PHONY: go-build test test_coverage test_html checks hadolint init gosec obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
+.PHONY: perf k6 go-build test test_coverage test_html checks hadolint init gosec obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -35,6 +35,13 @@ gosec: init
 
 build:
 	./build/build.sh
+
+k6: 
+	go install go.k6.io/xk6/cmd/xk6@latest
+	xk6 build --with github.com/szkiba/xk6-yaml@latest --output perf/k6.exe
+
+perf:
+	perf/k6.exe run perf/script.js
 
 format: $(FORMAT_FILES)  
 

@@ -17,12 +17,12 @@ type Setter func(*Service)
 
 type Service struct {
 	grpc.Container
-	option controller.Option
+	option controller.Options
 }
 
 func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	s := &Service{
-		option: controller.Option{},
+		option: controller.Options{InMemory: false},
 		Container: grpc.Container{
 			Name: name,
 			GrpcConn: service.GrpcConn{
@@ -34,16 +34,21 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	for _, op := range ops {
 		op(s)
 	}
-
+	_, _, err := env.Load(s.Name)
+	if err != nil {
+		return nil, err
+	}
 	svc, err := grpc.New(
 		grpc.WithListener(s.Listener),
 		grpc.WithName(s.Name),
 		grpc.WithAddr(s.AddrOrPanic()),
 		grpc.WithContext(ctx),
 		grpc.WithServiceDesc(&pb.Repo_ServiceDesc),
+		grpc.WithProfilingEnabled(env.Bool("prof.enabled", false)),
+		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			return server.New(ctx, env.String("repo.dir", "./"), s.option), nil
+			return server.New(ctx, env.String("repo.dir", "repo"), s.option), nil
 		}),
 	)
 	if err != nil {
@@ -61,7 +66,7 @@ func (s *Service) Dispose() {
 	s.Svc.Dispose()
 }
 
-func WithOption(o controller.Option) Setter {
+func WithOption(o controller.Options) Setter {
 	return func(s *Service) {
 		s.option = o
 	}

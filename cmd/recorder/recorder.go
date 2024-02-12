@@ -1,14 +1,16 @@
 package main
 
 import (
-	"context"
 	"log"
 
+	"github.com/andrescosta/goico/pkg/context"
 	"github.com/andrescosta/jobico/cmd/recorder/service"
 )
 
 func main() {
-	svc, err := service.New(context.Background())
+	ctx, cancel := context.ForEndSignals()
+	defer cancel()
+	svc, err := service.New(ctx)
 	if err != nil {
 		log.Panicf("error creating recorder service: %s", err)
 	}

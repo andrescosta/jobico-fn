@@ -1,0 +1,1 @@
+curl --request POST --url http://localhost:8080/events/tenant_1/event_id_1 --header 'content-type: application/json' --header 'user-agent: vscode-restclient' --data '{"data": [{"firstName": "Andres","lastName": "C", "age":10}]}'

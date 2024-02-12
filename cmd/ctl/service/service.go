@@ -34,6 +34,10 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	for _, op := range ops {
 		op(s)
 	}
+	_, _, err := env.Load(s.Name)
+	if err != nil {
+		return nil, err
+	}
 	svc, err := grpc.New(
 		grpc.WithName(s.Name),
 		grpc.WithAddr(s.AddrOrPanic()),
@@ -41,9 +45,11 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithContext(ctx),
 		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
 		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
+		grpc.WithProfilingEnabled(env.Bool("prof.enabled", false)),
+		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			dbFileName := env.String("ctl.dbname", "db.db")
-			return server.New(ctx, dbFileName, s.dbOption)
+			dbDir := env.String("ctl.dbdir", "db")
+			return server.New(ctx, dbDir, s.dbOption)
 		}),
 	)
 	if err != nil {

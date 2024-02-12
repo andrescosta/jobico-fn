@@ -73,7 +73,7 @@ func newPlatformWithTimeout(ctx context.Context, time time.Duration) (*jobicoPla
 		service.GrpcConn{
 			Listener: conn,
 			Dialer:   conn,
-		}), repo.WithOption(repoctl.Option{InMemory: true}))
+		}), repo.WithOption(repoctl.Options{InMemory: true}))
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func newPlatformWithTimeout(ctx context.Context, time time.Duration) (*jobicoPla
 	}),
 		exec.WithGrpcDialer(conn),
 		exec.WithOption(
-			executor.Option{ManualWakeup: false}))
+			executor.Options{ManualWakeup: false}))
 	if err != nil {
 		return nil, err
 	}

@@ -18,9 +18,9 @@ type Server struct {
 	tenantCont *controller.TenantController
 }
 
-func New(ctx context.Context, dbFileName string, dbo database.Option) (*Server, error) {
-	dbPath := env.WorkdirPlus(dbFileName)
-	db, err := database.Open(dbPath, dbo)
+func New(ctx context.Context, dbDir string, dbo database.Option) (*Server, error) {
+	dbFullPath := env.WorkdirPlus(dbDir)
+	db, err := database.Open(dbFullPath, dbo)
 	if err != nil {
 		return nil, err
 	}
@@ -33,8 +33,7 @@ func New(ctx context.Context, dbFileName string, dbo database.Option) (*Server, 
 }
 
 func (c *Server) Close() error {
-	var err error
-	err = errors.Join(err, c.tenantCont.Close())
+	err := errors.Join(c.tenantCont.Close())
 	err = errors.Join(err, c.pkgCont.Close())
 	err = errors.Join(err, c.envCont.Close())
 	err = errors.Join(err, c.db.Close())

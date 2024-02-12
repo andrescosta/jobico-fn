@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/internal/api/types"
@@ -33,12 +34,18 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	for _, op := range ops {
 		op(s)
 	}
+	_, _, err := env.Load(s.Name)
+	if err != nil {
+		return nil, err
+	}
 	svc, err := grpc.New(
 		grpc.WithListener(s.Listener),
 		grpc.WithName(s.Name),
 		grpc.WithAddr(s.AddrOrPanic()),
 		grpc.WithContext(ctx),
 		grpc.WithServiceDesc(&pb.Queue_ServiceDesc),
+		grpc.WithProfilingEnabled(env.Bool("prof.enabled", false)),
+		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			return queue.NewServer(ctx, s.Dialer, s.option)
