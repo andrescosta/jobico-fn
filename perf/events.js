@@ -17,12 +17,11 @@ export let options = {
 export function setup() {
   test.Connect();
   const e = test.ExistsTenant();
-  if (e) {
+  if (!e) {
     test.AddTenant();
     test.UploadWasmFile('run1', '../internal/test/testdata/echo.wasm');
     test.UploadSchemaFile('sch1', '../internal/test/testdata/schema.json');
-    test.AddPackageFile('../internal/test/testdata/job.yml');
-    test.AddPackageFileForJobWithTemplate('job_id_2','job_id_2_name','queue_id_2','queue_name_2','../internal/test/testdata/job.yml');
+    test.AddPackageWithFile('../internal/test/testdata/job.yml');
   }
   test.Close()
 }
