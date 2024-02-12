@@ -44,6 +44,8 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithAddr(s.AddrOrPanic()),
 		grpc.WithContext(ctx),
 		grpc.WithServiceDesc(&pb.Queue_ServiceDesc),
+		grpc.WithProfilingEnabled(env.Bool("prof.enabled", false)),
+		grpc.WithPProfAddr(env.String("pprof.addr", "localhost:6060")),
 		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			return queue.NewServer(ctx, s.Dialer, s.option)

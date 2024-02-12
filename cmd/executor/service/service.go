@@ -46,6 +46,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		process.WithContext(ctx),
 		process.WithName(name),
 		process.WithAddr(s.AddrOrPanic()),
+		process.WithProfilingEnabled(env.Bool("prof.enabled", false)),
 		process.WithHealthCheckFN(func(ctx context.Context) (map[string]string, error) {
 			status := make(map[string]string)
 			if !vm.IsUp() {

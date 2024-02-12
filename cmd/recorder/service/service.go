@@ -44,6 +44,8 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithName(s.Name),
 		grpc.WithContext(ctx),
 		grpc.WithServiceDesc(&pb.Recorder_ServiceDesc),
+		grpc.WithProfilingEnabled(env.Bool("prof.enabled", false)),
+		grpc.WithPProfAddr(env.String("pprof.addr", "localhost:6060")),
 		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			return server.New(ctx, ".\\log.log", s.option)
