@@ -45,7 +45,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithContext(ctx),
 		grpc.WithServiceDesc(&pb.Repo_ServiceDesc),
 		grpc.WithProfilingEnabled(env.Bool("prof.enabled", false)),
-		grpc.WithPProfAddr(env.String("pprof.addr", "localhost:6060")),
+		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			return server.New(ctx, env.String("repo.dir", "repo"), s.option), nil

@@ -46,7 +46,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
 		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
 		grpc.WithProfilingEnabled(env.Bool("prof.enabled", false)),
-		grpc.WithPProfAddr(env.String("pprof.addr", "localhost:6060")),
+		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			dbDir := env.String("ctl.dbdir", "db")
 			return server.New(ctx, dbDir, s.dbOption)
