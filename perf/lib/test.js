@@ -44,7 +44,7 @@ Test.prototype.ExistsTenant = function () {
     check(response, {
         'status is OK': (r) => r && r.status === grpc.StatusOK,
     });
-    return response.message.Tenants.length == 0
+    return response.message.Tenants.length > 0
 }
 
 Test.prototype.GetTenant = function () {
@@ -76,7 +76,7 @@ Test.prototype.UploadSchemaFile = function (fileId, path) {
 
 }
 
-Test.prototype.AddPackageFile = function (path) {
+Test.prototype.AddPackageWithFile = function (path) {
     const response = this.api.AddPackageFile(path);
     check(response, {
         'status is OK': (r) => r && r.status === grpc.StatusOK,
