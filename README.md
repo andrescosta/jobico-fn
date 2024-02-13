@@ -8,12 +8,6 @@ Welcome to Jobico – An Experimental, Multi-Tenancy asynchronous computing Plat
 
 Jobico is a Go project designed for experimental development, with a focus on exploring asynchronous computing using WebAssembly (WASM) in a multi-tenancy environment. It prioritizes flexibility and customization, allowing tenants to define events, validate incoming data using JSON Schema, and execute custom programs in any WASM-compatible language.
 
-## Platform Setup and Administration Guide
-
-This comprehensive guide provides step-by-step instructions for setting up new jobs, uploading wasm and schema files, and utilizing the administrative tools within the Jobico platform. If you're interested in exploring further, check out the full guide here:
-
-![](/Guide.MD)
-
 ## Key Characteristics
 
 - **Exploratory Nature**: Jobico serves as an exploratory project, providing a platform for investigating innovative approaches to asynchronous computing technologies.
@@ -23,6 +17,12 @@ This comprehensive guide provides step-by-step instructions for setting up new j
 - **Event Definition with JSON Schema**: Tenants can define events through JSON Schema, allowing for structured and dynamic event handling. Incoming requests undergo validation against the specified schema.
 
 - **WASM-Compatible Language Support**: Jobico offers support for custom program creation in any WASM-compatible language, fostering flexibility and diversity in the execution of jobs.
+
+# Platform Setup and Administration Guide
+
+Explore how to work with the Jobico platform by checking out our comprehensive guide. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the guide.
+
+### [Learn More in the Comprehensive Guide](/GUIDE.md)
 
 
 # Architecture
@@ -85,6 +85,13 @@ Goico integrates an embedded database based on [Pebble](https://github.com/cockr
 
 Goico provides streaming capabilities for database updates based on Grpc. This feature enables real-time monitoring and reaction to changes within the embedded database, facilitating dynamic adjustments, and enhancing the responsiveness of Jobico to evolving requirements.
 
+# Developing
+
+Setting the enviroment
+Running test cases
+Running performance tests
+OpenTelemetry
+Logs
 
 ## Roadmap
 
