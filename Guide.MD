@@ -6,44 +6,14 @@ Navigate through the sections to discover step-by-step instructions for setting 
 
 This section provides an overview of the workflow involved in managing jobs within the Jobico platform. Learn how tenants define jobs, upload necessary files, monitor job execution, and more. Follow the steps outlined below to efficiently manage your jobs within the platform.
 
-```mermaid
-graph TD;
-    Define_Job[1. Define Job using YAML]
-    Upload_Files[2. Upload Job definition, wasm, and schema files using CLI tool]
-    Send_Events[3. Tenant's backend services start sending events]
-    Monitor_Job[4. Monitor newly created job using the dashboard or CLI]
-
-    Define_Job --> Upload_Files
-    Upload_Files --> Send_Events
-    Send_Events --> Monitor_Job
-```
-```mermaid
-
-graph LR;
-   subgraph Tenant
-        T((Tenant))
-    end
-    subgraph External System
-        A[Business Process]
-    end
-    subgraph Jobico
-        B[Job]
-    end
-    subgraph Queue
-        C[Queues]
-    end
-    subgraph Runtime
-        D[Jobicolet]
-    end
-    A -->|Sends an event|B
-    T -->|Specifies| B
-    B -->|Add to| C
-    D -->|Process| C
-```
 
 ## Job Definition
 
+
+
 "Job Definition" provides a comprehensive specification within the Jobico framework, outlining how Events are validated, and processed by a Job, and how the results are managed. Utilizing YAML for this purpose ensures a structured and human-readable format, allowing clear articulation of rules and conditions governing event validation, processing, and result management by Jobs.
+
+![alt](docs/img/definiton.svg?)
 
 ### Anatomy of a Job Definition YAML:
 A Job Definition YAML file includes various attributes that define the job's characteristics:
