@@ -20,6 +20,9 @@ graph TD;
 ```mermaid
 
 graph LR;
+   subgraph Tenant
+        T((Tenant))
+    end
     subgraph External System
         A[Business Process]
     end
@@ -33,6 +36,7 @@ graph LR;
         D[Jobicolet]
     end
     A -->|Sends an event|B
+    T -->|Specifies| B
     B -->|Add to| C
     D -->|Process| C
 ```
