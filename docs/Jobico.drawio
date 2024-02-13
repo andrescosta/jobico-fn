@@ -1,4 +1,4 @@
-<mxfile host="Electron" modified="2024-02-13T14:46:38.782Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/23.0.2 Chrome/120.0.6099.109 Electron/28.1.0 Safari/537.36" etag="2YH88UEuQNJY4rKyMekB" version="23.0.2" type="device" pages="5">
+<mxfile host="Electron" modified="2024-02-13T14:55:19.338Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/23.0.2 Chrome/120.0.6099.109 Electron/28.1.0 Safari/537.36" etag="ePSWewNg9I4JJShZsAhJ" version="23.0.2" type="device" pages="5">
   <diagram name="Architecture" id="WZk79Mis1js5u0iVaJR2">
     <mxGraphModel dx="1221" dy="765" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -68,7 +68,7 @@
         <mxCell id="wdH5l6EvP93S32GJvvEm-28" value="Job&lt;br&gt;Recorder" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#00A2B8;strokeColor=#82D3DC;fontColor=#ffffff;" parent="1" vertex="1">
           <mxGeometry x="486" y="357" width="89" height="47" as="geometry" />
         </mxCell>
-        <mxCell id="wdH5l6EvP93S32GJvvEm-43" value="Cli" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#00A2B8;strokeColor=#82D3DC;fontColor=#ffffff;" parent="1" vertex="1">
+        <mxCell id="wdH5l6EvP93S32GJvvEm-43" value="CLI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#00A2B8;strokeColor=#82D3DC;fontColor=#ffffff;" parent="1" vertex="1">
           <mxGeometry x="354" y="644" width="92" height="44" as="geometry" />
         </mxCell>
         <mxCell id="wdH5l6EvP93S32GJvvEm-44" value="Term&lt;br&gt;Dashboard" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#00A2B8;strokeColor=#82D3DC;fontColor=#ffffff;" parent="1" vertex="1">
