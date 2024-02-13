@@ -7,7 +7,7 @@ Navigate through the sections to discover step-by-step instructions for setting 
 This section provides an overview of the workflow involved in managing jobs within the Jobico platform. Learn how tenants define jobs, upload necessary files, monitor job execution, and more. Follow the steps outlined below to efficiently manage your jobs within the platform.
 
 ```mermaid
-graph LR;
+graph TD;
     Define_Job[1. Define Job using YAML]
     Upload_Files[2. Upload Job definition, wasm, and schema files using CLI tool]
     Send_Events[3. Tenant's backend services start sending events]
