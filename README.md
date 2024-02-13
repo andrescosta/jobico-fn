@@ -85,13 +85,18 @@ Goico integrates an embedded database based on [Pebble](https://github.com/cockr
 
 Goico provides streaming capabilities for database updates based on Grpc. This feature enables real-time monitoring and reaction to changes within the embedded database, facilitating dynamic adjustments, and enhancing the responsiveness of Jobico to evolving requirements.
 
-# Developing
 
-Setting the enviroment
-Running test cases
-Running performance tests
-OpenTelemetry
-Logs
+# Getting Started with Jobico Development
+To start developing with Jobico, follow these steps:
+
+## Checkout from GitHub
+Clone the Jobico repository from GitHub to your local machine:
+
+``` bash
+
+git clone https://github.com/andrescosta/jobico.git
+
+```
 
 ## Roadmap
 
