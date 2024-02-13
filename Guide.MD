@@ -7,15 +7,23 @@ Navigate through the sections to discover step-by-step instructions for setting 
 This section provides an overview of the workflow involved in managing jobs within the Jobico platform. Learn how tenants define jobs, upload necessary files, monitor job execution, and more. Follow the steps outlined below to efficiently manage your jobs within the platform.
 
 
-## Job Definition
+## Jobs
 
+A job within the Jobico platform is a comprehensive specification that outlines the orchestration of computational tasks. It serves as a blueprint defining the following essential elements:
 
+* Queues: The job specification includes the definition of queues, which act as intermediary storage mechanisms for facilitating the flow of events between producers and consumers within the Jobico ecosystem. 
 
-"Job Definition" provides a comprehensive specification within the Jobico framework, outlining how Events are validated, and processed by a Job, and how the results are managed. Utilizing YAML for this purpose ensures a structured and human-readable format, allowing clear articulation of rules and conditions governing event validation, processing, and result management by Jobs.
+* Runtimes: Runtimes are Jobicolet programs programmed in any WebAssembly (WASM)-compatible language. These programs contain business logic for event processing, defining how incoming events are handled and specifying the resulting output.
 
-![alt](docs/img/definiton.svg?)
+* Events: Events represent occurrences or happenings within external systems or applications that trigger the execution of job logic within Jobico. External systems or applications trigger REST calls to Jobico with information about the event. Each event specified in the job definition includes detailed information such as the event schema for validation, the designated runtime for execution, and instructions for handling the result. Events serve as the catalyst for job execution, providing the necessary context and parameters for processing tasks efficiently within the Jobico platform.
 
-### Anatomy of a Job Definition YAML:
+![alt](docs/img/definition.svg?)
+
+### Job Specification and Deployment
+
+The job specification, detailing the queues, runtimes, and events, is written in YAML format. Tenants utilize the Jobico Command Line Interface (CLI) to upload the job specification to the Jobico platform, enabling seamless deployment and execution of the specified computational tasks.
+
+### Anatomy of the spec:
 A Job Definition YAML file includes various attributes that define the job's characteristics:
 
 #### `name`
