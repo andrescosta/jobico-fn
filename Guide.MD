@@ -20,18 +20,23 @@ graph TD;
 ```mermaid
 
 graph LR;
-    subgraph Event
-        A[Events]
+    subgraph External System
+        A[Business Process]
+    end
+    subgraph Jobico
+        B[Job]
     end
     subgraph Queue
-        B[Queues]
+        C[Queues]
     end
     subgraph Runtime
-        C[Runtimes]
+        D[Jobicolet]
     end
-    A -->|Trigger| B
-    B -->|Process| C
+    A -->|Sends an event|B
+    B -->|Add to| C
+    D -->|Process| C
 ```
+
 ## Job Definition
 
 "Job Definition" provides a comprehensive specification within the Jobico framework, outlining how Events are validated, and processed by a Job, and how the results are managed. Utilizing YAML for this purpose ensures a structured and human-readable format, allowing clear articulation of rules and conditions governing event validation, processing, and result management by Jobs.
