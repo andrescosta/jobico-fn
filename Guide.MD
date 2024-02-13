@@ -1,4 +1,24 @@
-# Job Definition
+# How to Use This Guide
+
+Navigate through the sections to discover step-by-step instructions for setting up new jobs, uploading wasm and schema files, and utilizing administrative tools within the Jobico platform. Click on each topic of interest to access detailed explanations and walkthroughs.
+
+## Workflow Overview: Tenant Job Management
+
+This section provides an overview of the workflow involved in managing jobs within the Jobico platform. Learn how tenants define jobs, upload necessary files, monitor job execution, and more. Follow the steps outlined below to efficiently manage your jobs within the platform.
+
+```mermaid
+graph LR;
+    Define_Job[1. Define Job using YAML]
+    Upload_Files[2. Upload Job definition, wasm, and schema files using CLI tool]
+    Send_Events[3. Tenant's backend services start sending events]
+    Monitor_Job[4. Monitor newly created job using the dashboard or CLI]
+
+    Define_Job --> Upload_Files
+    Upload_Files --> Send_Events
+    Send_Events --> Monitor_Job
+```
+
+## Job Definition
 
 "Job Definition" provides a comprehensive specification within the Jobico framework, outlining how Events are validated, and processed by a Job, and how the results are managed. Utilizing YAML for this purpose ensures a structured and human-readable format, allowing clear articulation of rules and conditions governing event validation, processing, and result management by Jobs.
 

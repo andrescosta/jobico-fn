@@ -20,9 +20,9 @@ Jobico is a Go project designed for experimental development, with a focus on ex
 
 # Platform Setup and Administration Guide
 
-Explore how to work with the Jobico platform by checking out our comprehensive guide. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the guide.
+Explore how to work with the Jobico platform by checking out our comprehensive tutotial. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the manual.
 
-### [Learn More in the Comprehensive Guide](/GUIDE.md)
+### [Learn more with our In-Depth Guide](/GUIDE.md)
 
 
 # Architecture
