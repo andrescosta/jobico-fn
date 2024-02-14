@@ -8,10 +8,10 @@ type MemBasedQueue[T any] struct {
 	q *collection.SyncQueue[T]
 }
 
-func NewMemBasedQueue[T any]() *MemBasedQueue[T] {
+func NewMemBasedQueue[T any]() (*MemBasedQueue[T], error) {
 	return &MemBasedQueue[T]{
 		q: collection.NewSyncQueue[T](),
-	}
+	}, nil
 }
 
 func (f *MemBasedQueue[T]) Add(data T) error {

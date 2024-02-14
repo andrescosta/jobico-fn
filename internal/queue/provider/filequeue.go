@@ -22,9 +22,12 @@ type FileQueue[T any] struct {
 	mutex     sync.Mutex
 }
 
-func NewFileQueue[T any](dir string, id string) *FileQueue[T] {
+func NewFileQueue[T any](dir string, id string) (*FileQueue[T], error) {
 	directory := queueDirectory(dir, dataDir, id)
-	return &FileQueue[T]{directory: directory}
+	if err := os.MkdirAll(directory, 0o700); err != nil {
+		return nil, err
+	}
+	return &FileQueue[T]{directory: directory}, nil
 }
 
 func (f *FileQueue[T]) Add(data T) error {
@@ -81,7 +84,7 @@ func (f *FileQueue[T]) writeData(data T) error {
 
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	if _, err := ioutil.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes(), 0o700); err != nil {
+	if _, err := ioutil.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes()); err != nil {
 		return err
 	}
 	return nil

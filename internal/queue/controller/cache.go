@@ -20,7 +20,7 @@ type Option struct {
 	Dir      string
 }
 
-type QueueBuilder[T any] func(string) provider.Queue[T]
+type QueueBuilder[T any] func(string) (provider.Queue[T], error)
 
 type Cache[T any] struct {
 	init         *syncutil.OnceDisposable
@@ -31,9 +31,9 @@ type Cache[T any] struct {
 
 func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (*Cache[T], error) {
 	syncmap := collection.NewSyncMap[string, provider.Queue[T]]()
-	queueBuilder := func(id string) provider.Queue[T] { return provider.NewFileQueue[T](o.Dir, id) }
+	queueBuilder := func(id string) (provider.Queue[T], error) { return provider.NewFileQueue[T](o.Dir, id) }
 	if o.InMemory {
-		queueBuilder = func(_ string) provider.Queue[T] { return provider.NewMemBasedQueue[T]() }
+		queueBuilder = func(_ string) (provider.Queue[T], error) { return provider.NewMemBasedQueue[T]() }
 	}
 	ctl, err := client.NewCtl(ctx, dialer)
 	if err != nil {
@@ -130,17 +130,24 @@ func (q *Cache[T]) addOrUpdate(ctx context.Context, pkgs []*pb.JobPackage) error
 	for _, ps := range pkgs {
 		tenant := ps.Tenant
 		for _, queue := range ps.Queues {
-			q.addOrUpdateQueue(ctx, tenant, queue)
+			err := q.addOrUpdateQueue(ctx, tenant, queue)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (q *Cache[T]) addOrUpdateQueue(ctx context.Context, tenant string, def *pb.QueueDef) {
+func (q *Cache[T]) addOrUpdateQueue(ctx context.Context, tenant string, def *pb.QueueDef) error {
 	name := getQueueName(tenant, def.ID)
-	queue := q.queueBuilder(name)
+	queue, err := q.queueBuilder(name)
+	if err != nil {
+		return err
+	}
 	zerolog.Ctx(ctx).Debug().Msgf("New queue:%s", def.ID)
 	_ = q.queues.LoadOrStore(name, queue)
+	return nil
 }
 
 func getQueueName(tenant string, queueID string) string {
