@@ -50,7 +50,7 @@ func (c *TApp) renderUI(ctx context.Context) *tview.Pages {
 		AddItem(c.mainView, 1, 1, 0, 0, 0, 160, false)
 	quitModal := tview.NewModal().SetText("Do you want to quit the application?").
 		AddButtons([]string{"Quit", "Cancel"}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+		SetDoneFunc(func(_ int, buttonLabel string) {
 			if buttonLabel == "Quit" {
 				c.app.Stop()
 			} else {

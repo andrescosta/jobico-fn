@@ -20,7 +20,7 @@ import (
 	repoctl "github.com/andrescosta/jobico/internal/repo/controller"
 )
 
-type jobicoPlatform struct {
+type platform struct {
 	conn     *service.BufConn
 	ctl      *ctl.Service
 	queue    *queue.Service
@@ -30,27 +30,21 @@ type jobicoPlatform struct {
 	recorder *recorder.Service
 }
 
-func (j *jobicoPlatform) dispose() error {
-	errs := make([]error, 0)
+func (j *platform) dispose() error {
 	j.ctl.Dispose()
 	j.queue.Dispose()
-	err := j.listener.Dispose()
-	if err != nil {
-		errs = append(errs, err)
-	}
-	err = j.executor.Dispose()
-	if err != nil {
-		errs = append(errs, err)
-	}
 	j.recorder.Dispose()
-	return errors.Join(errs...)
+	var err error
+	err = errors.Join(j.listener.Dispose(), err)
+	err = errors.Join(j.executor.Dispose(), err)
+	return err
 }
 
-func newPlatform(ctx context.Context) (*jobicoPlatform, error) {
+func newPlatform(ctx context.Context) (*platform, error) {
 	return newPlatformWithTimeout(ctx, *env.Duration("dial.timeout"))
 }
 
-func newPlatformWithTimeout(ctx context.Context, time time.Duration) (*jobicoPlatform, error) {
+func newPlatformWithTimeout(ctx context.Context, time time.Duration) (*platform, error) {
 	conn := service.NewBufConnWithTimeout(time)
 	ctl, err := ctl.New(ctx,
 		ctl.WithGrpcConn(service.GrpcConn{
@@ -105,7 +99,7 @@ func newPlatformWithTimeout(ctx context.Context, time time.Duration) (*jobicoPla
 	if err != nil {
 		return nil, err
 	}
-	return &jobicoPlatform{
+	return &platform{
 		ctl:      ctl,
 		conn:     conn,
 		queue:    queue,

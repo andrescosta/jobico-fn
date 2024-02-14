@@ -43,7 +43,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithAddr(s.AddrOrPanic()),
 		grpc.WithListener(s.Listener),
 		grpc.WithContext(ctx),
-		grpc.WithHealthCheckFn(func(ctx context.Context) error { return nil }),
+		grpc.WithHealthCheckFn(func(_ context.Context) error { return nil }),
 		grpc.WithServiceDesc(&pb.Control_ServiceDesc),
 		grpc.WithProfilingEnabled(env.Bool("prof.enabled", false)),
 		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),

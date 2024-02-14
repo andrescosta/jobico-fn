@@ -102,7 +102,7 @@ func NewVM(ctx context.Context, dialer service.GrpcDialer, option Options) (*VM,
 
 func (e *VM) Close(ctx context.Context) error {
 	var err error
-	e.packages.Range(func(key, value any) bool {
+	e.packages.Range(func(_, value any) bool {
 		pkg, _ := value.(*jobPackage)
 		for _, m := range pkg.Modules {
 			err = errors.Join(err, m.wasmModule.Close(ctx))
@@ -124,7 +124,7 @@ func (e *VM) StartExecutors(ctx context.Context) error {
 		return err
 	}
 
-	e.packages.Range(func(key, value any) bool {
+	e.packages.Range(func(_, value any) bool {
 		pkg := value.(*jobPackage)
 		e.startPackage(ctx, pkg)
 		return true

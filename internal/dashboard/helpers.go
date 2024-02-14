@@ -65,7 +65,7 @@ func showText(app *TApp, status *tview.TextView, text string, color tcell.Color,
 func disableTreeNode(tn *tview.TreeNode) {
 	tn.SetColor(tcell.ColorGray)
 	n := tn.GetReference().(*node)
-	n.selected = func(ctx context.Context, t *TApp, tn *tview.TreeNode) {}
+	n.selected = func(_ context.Context, _ *TApp, _ *tview.TreeNode) {}
 }
 
 func newModal(p tview.Primitive, width, height int) tview.Primitive {

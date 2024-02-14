@@ -61,7 +61,7 @@ type Result struct {
 	ResultJSON   eventTenantV1
 }
 
-func newClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder service.HTTPClient) (*testClient, error) {
+func newTestClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder service.HTTPClientBuilder) (*testClient, error) {
 	ctl, err := client.NewCtl(ctx, dialer)
 	if err != nil {
 		return nil, err
@@ -99,34 +99,24 @@ func newClient(ctx context.Context, dialer service.GrpcDialer, cliBuilder servic
 	}, nil
 }
 
-type SchemaRefIds struct {
+type SchemaRefIDs struct {
 	SchameRef      string
 	SchemaRefOk    string
 	SchemaRefError string
 }
 
 func (s *testClient) close() error {
-	errs := make([]error, 0)
+	var err error
 	s.cancel()
-	if err := s.ctl.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := s.queue.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := s.recorder.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := s.repo.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := s.cache.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	return errors.Join(errs...)
+	err = errors.Join(s.ctl.Close(), err)
+	err = errors.Join(s.queue.Close(), err)
+	err = errors.Join(s.recorder.Close(), err)
+	err = errors.Join(s.repo.Close(), err)
+	err = errors.Join(s.cache.Close(), err)
+	return err
 }
 
-func NewTestPackage(schemaRefIds SchemaRefIds, runtimeRef string) *pb.JobPackage {
+func newTestPackage(schemaRefIDs SchemaRefIDs, runtimeRef string) *pb.JobPackage {
 	p := pb.JobPackage{
 		ID:     "job_id_1",
 		Name:   strptr("job_name_1"),
@@ -153,7 +143,7 @@ func NewTestPackage(schemaRefIds SchemaRefIds, runtimeRef string) *pb.JobPackage
 					DataType:      pb.DataType_Json,
 					SupplierQueue: "queue_id_1",
 					Runtime:       "runtime_id_1",
-					Schema:        &pb.SchemaDef{SchemaRef: schemaRefIds.SchameRef},
+					Schema:        &pb.SchemaDef{SchemaRef: schemaRefIDs.SchameRef},
 				},
 				Result: &pb.ResultDef{
 					Ok: &pb.EventDef{
@@ -185,10 +175,6 @@ func NewTestPackage(schemaRefIds SchemaRefIds, runtimeRef string) *pb.JobPackage
 		},
 	}
 	return &p
-}
-
-func strptr(n string) *string {
-	return &n
 }
 
 func (s *testClient) addPackage(p *pb.JobPackage) error {
@@ -399,4 +385,8 @@ func (s *testClient) startRecvCacheEvents() error {
 
 func (s *testClient) waitForCacheEvents() error {
 	return test.WaitForClosed(context.Background(), s.cacheEventCh)
+}
+
+func strptr(n string) *string {
+	return &n
 }

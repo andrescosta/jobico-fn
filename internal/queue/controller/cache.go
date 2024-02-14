@@ -58,7 +58,7 @@ func (q *Cache[T]) populate(ctx context.Context) error {
 }
 
 func (q *Cache[T]) Close() error {
-	return q.init.Dispose(context.Background(), func(ctx context.Context) error {
+	return q.init.Dispose(context.Background(), func(_ context.Context) error {
 		if q.ctl != nil {
 			return q.ctl.Close()
 		}

@@ -10,7 +10,7 @@ type MemBasedQueue[T any] struct {
 
 func NewMemBasedQueue[T any]() *MemBasedQueue[T] {
 	return &MemBasedQueue[T]{
-		q: collection.NewQueue[T](),
+		q: collection.NewSyncQueue[T](),
 	}
 }
 
