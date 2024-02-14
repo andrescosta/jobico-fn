@@ -7,7 +7,7 @@ REGISTRY?=gcr.io/images
 COMMIT_SHA=$(shell git rev-parse --short HEAD)
 
 MKDIR_REPO_CMD = mkdir -p reports 
-MKDIR_BIN_CMD = mkdir bin
+MKDIR_BIN_CMD = mkdir -p bin
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"

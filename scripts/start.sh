@@ -1,19 +1,22 @@
-jobico::all_server_files_windows() {
+jobico::services() {
   local targets=(ctl
-				 recorder
-				 queue
-				 repo
-				 executor
-				 listener
+		 recorder
+		 queue
+		 repo
+		 executor
+		 listener
   )
   echo "${targets[@]}"
 }
+ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
 jobico::startall(){
-    local files=( $(jobico::all_server_files_windows) )
+    local files=( $(jobico::services) )
 	for t in "${files[@]}"; do
-		./bin/${t} --env:basedir=./bin --env:workdir=./work &
+		echo "Starting: $t"
+		$ROOT/bin/${t} --env:basedir=$ROOT/bin --env:workdir=$ROOT/work &
+		sleep 1
 	done
 }
 
-jobico::startall &
+jobico::startall&
