@@ -12,11 +12,10 @@ ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
 jobico::startall(){
     local files=( $(jobico::services) )
-	for t in "${files[@]}"; do
-		echo "Starting: $t"
-		$ROOT/bin/${t} --env:basedir=$ROOT/bin --env:workdir=$ROOT/work &
-		sleep 1
-	done
+    for t in "${files[@]}"; do
+       $ROOT/bin/${t} --env:basedir=$ROOT/bin --env:workdir=$ROOT/work &
+       sleep 1
+    done
 }
 
 jobico::startall&
