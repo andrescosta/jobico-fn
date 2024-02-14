@@ -49,6 +49,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			dbDir := env.String("ctl.dbdir", "db")
+			dbDir = env.WorkdirPlus(dbDir)
 			return server.New(ctx, dbDir, s.dbOption)
 		}),
 	)

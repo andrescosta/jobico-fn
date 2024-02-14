@@ -17,6 +17,7 @@ var ErrQueueUnknown = errors.New("queue unknown")
 
 type Option struct {
 	InMemory bool
+	Dir      string
 }
 
 type QueueBuilder[T any] func(string) provider.Queue[T]
@@ -30,7 +31,7 @@ type Cache[T any] struct {
 
 func NewCache[T any](ctx context.Context, dialer service.GrpcDialer, o Option) (*Cache[T], error) {
 	syncmap := collection.NewSyncMap[string, provider.Queue[T]]()
-	queueBuilder := func(id string) provider.Queue[T] { return provider.NewFileQueue[T](id) }
+	queueBuilder := func(id string) provider.Queue[T] { return provider.NewFileQueue[T](o.Dir, id) }
 	if o.InMemory {
 		queueBuilder = func(_ string) provider.Queue[T] { return provider.NewMemBasedQueue[T]() }
 	}

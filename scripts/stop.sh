@@ -1,10 +1,10 @@
 jobico::all_server_files_windows() {
-  local targets=(ctl.exe
-				 executor.exe
-				 listener.exe
-				 queue.exe
-				 recorder.exe
-				 repo.exe
+  local targets=(ctl
+				 executor
+				 listener
+				 queue
+				 recorder
+				 repo
   )
 	echo "${targets[@]}"
 }

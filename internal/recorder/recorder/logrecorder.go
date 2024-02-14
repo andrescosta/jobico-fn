@@ -18,9 +18,9 @@ type FileLogRecorder struct {
 	writer *lumberjack.Logger
 }
 
-func NewFileLogRecorder(path string) (ExecutionRecorder, error) {
+func NewFileLogRecorder(resFilename string) (ExecutionRecorder, error) {
 	writer := &lumberjack.Logger{
-		Filename:   path,
+		Filename:   resFilename,
 		MaxBackups: 1,
 		MaxSize:    1,
 		MaxAge:     1,
@@ -28,12 +28,12 @@ func NewFileLogRecorder(path string) (ExecutionRecorder, error) {
 	logger := zerolog.New(writer).With().Timestamp().Logger()
 	logger.Level(zerolog.InfoLevel)
 	// we create the file if not exists because tail has issues when the file is not present
-	if err := ioutil.Touch(path); err != nil {
+	if err := ioutil.Touch(resFilename); err != nil {
 		return nil, err
 	}
 	return &FileLogRecorder{
 		logger: logger,
-		path:   path,
+		path:   resFilename,
 		writer: writer,
 	}, nil
 }

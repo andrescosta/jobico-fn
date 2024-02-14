@@ -15,8 +15,6 @@ ifneq ($(MSYSTEM), MSYS)
 endif
 endif
 
-
-
 lint:
 	@golangci-lint run ./...
 

@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/andrescosta/goico/pkg/database"
-	"github.com/andrescosta/goico/pkg/env"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/controller"
 )
@@ -19,8 +18,7 @@ type Server struct {
 }
 
 func New(ctx context.Context, dbDir string, dbo database.Option) (*Server, error) {
-	dbFullPath := env.WorkdirPlus(dbDir)
-	db, err := database.Open(dbFullPath, dbo)
+	db, err := database.Open(dbDir, dbo)
 	if err != nil {
 		return nil, err
 	}
