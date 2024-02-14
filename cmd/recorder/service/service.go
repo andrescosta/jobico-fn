@@ -4,6 +4,7 @@ import (
 	"context"
 	"io/fs"
 	"os"
+	"path/filepath"
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
@@ -51,10 +52,11 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithHealthCheckFn(func(_ context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			dir := env.String("recorder.dir.results", "results")
-			if err := os.Mkdir(dir, fs.ModeDir); err != nil {
+			dir = env.WorkdirPlus(dir)
+			if err := os.MkdirAll(dir, fs.ModeDir); err != nil {
 				return nil, err
 			}
-			logFile := env.WorkdirPlus(dir, "log.log")
+			logFile := filepath.Join(dir, "log.log")
 			return server.New(ctx, logFile, s.option)
 		}),
 	)
