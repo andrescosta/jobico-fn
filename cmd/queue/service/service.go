@@ -22,7 +22,9 @@ type Service struct {
 
 func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	s := &Service{
-		option: controller.Option{},
+		option: controller.Option{
+			Dir: env.WorkdirPlus("queue"),
+		},
 		Container: grpc.Container{
 			Name: name,
 			GrpcConn: service.GrpcConn{

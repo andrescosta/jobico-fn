@@ -48,7 +48,9 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithHealthCheckFn(func(_ context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			return server.New(ctx, env.String("repo.dir", "repo"), s.option), nil
+			repoDir := env.String("repo.dir", "repo")
+			repoDir = env.WorkdirPlus(repoDir)
+			return server.New(ctx, repoDir, s.option), nil
 		}),
 	)
 	if err != nil {

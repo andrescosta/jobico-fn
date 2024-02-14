@@ -12,7 +12,7 @@ jobico::all_server_files_windows() {
 jobico::startall(){
     local files=( $(jobico::all_server_files_windows) )
 	for t in "${files[@]}"; do
-		./bin/${t} --env:basedir=./bin --env:workdir=./work &
+		../bin/${t} --env:basedir=../bin --env:workdir=../work &
 	done
 }
 
