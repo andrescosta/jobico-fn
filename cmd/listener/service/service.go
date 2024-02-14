@@ -46,7 +46,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		http.WithContext(ctx),
 		http.WithName(name),
 		http.WithProfilingEnabled(env.Bool("prof.enabled", false)),
-		http.WithHealthCheck[*http.ServiceOptions](func(ctx context.Context) (map[string]string, error) {
+		http.WithHealthCheckFn[*http.ServiceOptions](func(_ context.Context) (map[string]string, error) {
 			return make(map[string]string), nil
 		}),
 		http.WithInitRoutesFn[*http.ServiceOptions](c.ConfigureRoutes),

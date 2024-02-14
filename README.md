@@ -87,18 +87,39 @@ Goico provides streaming capabilities for database updates based on Grpc. This f
 
 
 # Getting Started with Jobico Development
-To start developing with Jobico, follow these steps:
+To start developing follow these steps:
 
 ## Checkout from GitHub
 Clone the Jobico repository from GitHub to your local machine:
 
 ``` bash
-
 git clone https://github.com/andrescosta/jobico.git
+```
+## Running Test Cases
+Ensure the codebase integrity by running the test cases:
 
+``` bash
+cd Jobico
+make test
 ```
 
-## Roadmap
+## Running Performances
+
+Assess the performance of Jobico by running performance tests:
+
+``` bash
+make performance
+```
+
+
+## Running Docker Compose
+Spin up a local Jobico environment using Docker Compose:
+
+``` bash
+docker-compose -f compose.yml --profile obs up
+```
+
+# Roadmap
 
 The roadmap can be accessed or queried at this location:
 
