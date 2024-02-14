@@ -22,9 +22,7 @@ type Service struct {
 
 func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	s := &Service{
-		option: controller.Option{
-			Dir: env.WorkdirPlus("queue"),
-		},
+		option: controller.Option{},
 		Container: grpc.Container{
 			Name: name,
 			GrpcConn: service.GrpcConn{
@@ -33,12 +31,13 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 			},
 		},
 	}
-	for _, op := range ops {
-		op(s)
-	}
 	_, _, err := env.Load(s.Name)
 	if err != nil {
 		return nil, err
+	}
+	s.option.Dir = env.WorkdirPlus("queue")
+	for _, op := range ops {
+		op(s)
 	}
 	svc, err := grpc.New(
 		grpc.WithListener(s.Listener),
