@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -59,7 +58,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 				return nil, err
 			}
 			if !e {
-				if err := os.MkdirAll(dir, fs.ModeDir); err != nil {
+				if err := os.MkdirAll(dir, 0o700); err != nil {
 					return nil, err
 				}
 			}
