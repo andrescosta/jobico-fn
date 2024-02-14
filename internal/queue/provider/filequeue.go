@@ -81,7 +81,7 @@ func (f *FileQueue[T]) writeData(data T) error {
 
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	if _, err := ioutil.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes()); err != nil {
+	if _, err := ioutil.WriteToRandomFile(f.directory, preffix, suffix, buffer.Bytes(), 0o700); err != nil {
 		return err
 	}
 	return nil
