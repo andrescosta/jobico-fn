@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/andrescosta/goico/pkg/env"
+	"github.com/andrescosta/goico/pkg/ioutil"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/internal/api/types"
@@ -53,8 +54,14 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			dir := env.String("recorder.dir.results", "results")
 			dir = env.WorkdirPlus(dir)
-			if err := os.MkdirAll(dir, fs.ModeDir); err != nil {
+			e, err := ioutil.FileExists(dir)
+			if err != nil {
 				return nil, err
+			}
+			if !e {
+				if err := os.MkdirAll(dir, fs.ModeDir); err != nil {
+					return nil, err
+				}
 			}
 			logFile := filepath.Join(dir, "log.log")
 			return server.New(ctx, logFile, s.option)

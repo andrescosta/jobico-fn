@@ -47,6 +47,17 @@
         "program": "${workspaceFolder}/cmd/executor/executor.go"
     },
     {
+        "name": "Launch recorder",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/cmd/recorder/recorder.go",
+        "args": [
+            "--env:basedir=../../bin",
+            "--env:workdir=../../work",
+        ]
+    },
+    {
         "name": "Launch listener",
         "type": "go",
         "request": "launch",
