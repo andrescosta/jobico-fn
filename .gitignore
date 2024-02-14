@@ -27,7 +27,6 @@ issues
 # Go workspace file
 go.work
 go.work.sum
-**/data/
 **/target/
 **/worklets/
 **/cache*/
