@@ -52,15 +52,9 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			dir := env.String("recorder.dir.results", "results")
 			dir = env.WorkdirPlus(dir)
-			// e, err := ioutil.FileExists(dir)
-			// if err != nil {
-			// 	return nil, err
-			// }
-			// if !e {
 			if err := os.MkdirAll(dir, 0o700); err != nil {
 				return nil, err
 			}
-			// }
 			logFile := filepath.Join(dir, "log.log")
 			return server.New(ctx, logFile, s.option)
 		}),
