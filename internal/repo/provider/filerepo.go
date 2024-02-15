@@ -95,7 +95,7 @@ func addFile(name string, bytes []byte, dirs ...string) error {
 	if e {
 		return ErrFileExists
 	}
-	if err := os.WriteFile(fulPath, bytes, 0o700); err != nil {
+	if err := os.WriteFile(fulPath, bytes, 0o600); err != nil {
 		return err
 	}
 	return nil

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
@@ -16,6 +17,7 @@ type Setter func(*Service)
 
 type Service struct {
 	process.Container
+	delay  time.Duration
 	vm     *executor.VM
 	dialer service.GrpcDialer
 	option executor.Options
@@ -28,6 +30,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		Container: process.Container{
 			Name: name,
 		},
+		delay: 0,
 	}
 	for _, op := range ops {
 		op(s)
@@ -36,6 +39,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	s.delay = *env.Duration("executor.delay", 0)
 	vm, err := executor.NewVM(ctx, s.dialer, s.option)
 	if err != nil {
 		return nil, err
@@ -66,7 +70,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 }
 
 func (s *Service) Start() error {
-	return s.Svc.Serve()
+	return s.Svc.ServeWithDelay(s.delay)
 }
 
 func (s *Service) Dispose() error {

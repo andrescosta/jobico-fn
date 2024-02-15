@@ -8,10 +8,14 @@ COMMIT_SHA=$(shell git rev-parse --short HEAD)
 
 MKDIR_REPO_CMD = mkdir -p reports 
 MKDIR_BIN_CMD = mkdir -p bin
+BUILD_CMD = ./build/build.sh
+ENV_CMD = ./build/env.sh
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
 	MKDIR_BIN_CMD = pwsh -noprofile -command "new-item bin -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
+	BUILD_CMD = pwsh -noprofile -command ".\build\build.ps1"
+	ENV_CMD = pwsh -noprofile -command ".\build\env.ps1"
 endif
 endif
 
@@ -33,7 +37,10 @@ vuln:
 	@govulncheck ./...
 
 build: init-release
-	./build/build.sh
+	@$(BUILD_CMD)
+
+env: init-release
+	@$(ENV_CMD)
 
 k6: 
 	go install go.k6.io/xk6/cmd/xk6@latest
@@ -78,6 +85,4 @@ down:
 stop:
 	docker compose -f .\compose\compose.yml stop
 
-env: init-release
-	./build/env.sh
 

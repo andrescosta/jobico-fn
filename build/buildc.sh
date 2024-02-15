@@ -22,12 +22,10 @@ export GOOS="${OS}"
 export GO111MODULE=on
 
 if [ "${DEBUG:-}" = 1 ]; then
-    # Debugging - disable optimizations and inlining
     gogcflags="all=-N -l"
     goasmflags=""
     goldflags=""
 else
-    # Not debugging - trim paths, disable symbols and DWARF.
     goasmflags="all=-trimpath=$(pwd)"
     gogcflags="all=-trimpath=$(pwd)"
     goldflags="-s -w"
