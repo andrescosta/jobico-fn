@@ -64,6 +64,9 @@ func (j *EventDefCache) close() error {
 		err = errors.Join(err, j.controlClient.Close())
 		err = errors.Join(err, j.repoClient.Close())
 		err = errors.Join(err, j.eventCache.Close())
+		if err != nil {
+			err = errors.Join(errors.New("error closing cache client"), err)
+		}
 		return err
 	})
 }
