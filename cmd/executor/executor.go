@@ -17,7 +17,7 @@ func main() {
 	}
 	defer func() {
 		if err := svc.Dispose(); err != nil {
-			fmt.Printf("error disposing resources %v", err)
+			fmt.Printf("error disposing executor resources %v", err)
 		}
 	}()
 	if err := svc.Start(); err != nil {
