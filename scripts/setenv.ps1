@@ -9,7 +9,7 @@ rd cache -Force -Recurse -ErrorAction Ignore
 rd files -Force -Recurse -ErrorAction Ignore
 rd log -Force -Recurse -ErrorAction Ignore
 rd data -Force -Recurse -ErrorAction Ignore
-del log.log
+rd res -Force -Recurse -ErrorAction Ignore
 '@ | Out-File -FilePath ".\reset.ps1"
 
 @'

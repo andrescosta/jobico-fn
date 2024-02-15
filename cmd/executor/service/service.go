@@ -45,6 +45,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		return nil, err
 	}
 	s.vm = vm
+	empty := make(map[string]string)
 	svc, err := process.New(
 		process.WithSidecarListener(s.ListenerOrDefault()),
 		process.WithContext(ctx),
@@ -52,11 +53,10 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		process.WithAddr(s.AddrOrPanic()),
 		process.WithProfilingEnabled(env.Bool("prof.enabled", false)),
 		process.WithHealthCheckFN(func(_ context.Context) (map[string]string, error) {
-			status := make(map[string]string)
 			if !vm.IsUp() {
-				return status, errors.New("error in executor")
+				return empty, errors.New("error in executor")
 			}
-			return status, nil
+			return empty, nil
 		}),
 		process.WithStarter(func(ctx context.Context) error {
 			return vm.StartExecutors(ctx)
