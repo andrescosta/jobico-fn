@@ -59,12 +59,16 @@ func (q *Cache[T]) populate(ctx context.Context) error {
 }
 
 func (q *Cache[T]) Close() error {
-	return q.init.Dispose(context.Background(), func(_ context.Context) error {
+	err := q.init.Dispose(context.Background(), func(_ context.Context) error {
 		if q.ctl != nil {
 			return q.ctl.Close()
 		}
 		return nil
 	})
+	if errors.Is(err, syncutil.ErrTaskNotDone) {
+		return nil
+	}
+	return err
 }
 
 func (q *Cache[T]) GetQueue(ctx context.Context, tentant string, queueID string) (provider.Queue[T], error) {

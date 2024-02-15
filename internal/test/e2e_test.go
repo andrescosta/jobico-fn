@@ -72,6 +72,22 @@ func TestOk(t *testing.T) {
 	_ = sendEvtV1AndValidate(t, pkg, cli)
 }
 
+func TestStartStop(t *testing.T) {
+	defer goleak.VerifyNone(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := newPlatform(ctx)
+	test.Nil(t, err)
+	svcGroup := test.NewServiceGroup()
+	cli, err := newTestClient(ctx, platform.conn, platform.conn)
+	defer func() {
+		cancel()
+		cleanUp(t, platform, svcGroup, cli)
+	}()
+	test.Nil(t, err)
+	err = svcGroup.Start(platform.ctl, platform.queue, platform.recorder, platform.listener, platform.repo, platform.executor)
+	test.Nil(t, err)
+}
+
 func TestStreamingSchemaUpdate(t *testing.T) {
 	defer goleak.VerifyNone(t)
 	ctx, cancel := context.WithCancel(context.Background())
