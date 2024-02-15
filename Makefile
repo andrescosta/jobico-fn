@@ -1,6 +1,6 @@
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 
-.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage obs up down stop compose lint vuln build release format local $(FORMAT_FILES)
+.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage obs up down stopdocker compose lint vuln build release format local $(FORMAT_FILES)
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -82,7 +82,7 @@ obs:
 down:
 	docker compose -f .\compose\compose.yml down 
 
-stop:
+stopdocker:
 	docker compose -f .\compose\compose.yml stop
 
 
