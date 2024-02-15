@@ -13,7 +13,7 @@ func main() {
 	defer cancel()
 	svc, err := service.New(ctx)
 	if err != nil {
-		log.Panicf("error creating listener service: %s", err)
+		log.Panicf("error creating listener service: %v", err)
 	}
 	defer func() {
 		if err := svc.Dispose(); err != nil {
@@ -21,6 +21,6 @@ func main() {
 		}
 	}()
 	if err := svc.Start(); err != nil {
-		log.Panicf("error starting listener service: %s", err)
+		log.Panicf("error starting listener service: %v", err)
 	}
 }
