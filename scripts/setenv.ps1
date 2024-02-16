@@ -8,7 +8,7 @@ rd db -Force -Recurse -ErrorAction Ignore
 rd cache -Force -Recurse -ErrorAction Ignore
 rd files -Force -Recurse -ErrorAction Ignore
 rd log -Force -Recurse -ErrorAction Ignore
-rd data -Force -Recurse -ErrorAction Ignore
+rd queue -Force -Recurse -ErrorAction Ignore
 rd res -Force -Recurse -ErrorAction Ignore
 '@ | Out-File -FilePath ".\reset.ps1"
 

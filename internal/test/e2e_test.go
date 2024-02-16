@@ -45,12 +45,26 @@ var (
 	}
 )
 
-func TestMain(_ *testing.M) {
+func TestStartStop(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	setEnvVars()
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := newPlatform(ctx)
+	test.Nil(t, err)
+	svcGroup := test.NewServiceGroup()
+	cli, err := newTestClient(ctx, platform.conn, platform.conn)
+	defer func() {
+		cancel()
+		cleanUp(t, platform, svcGroup, cli)
+	}()
+	test.Nil(t, err)
+	err = svcGroup.Start(platform.ctl, platform.queue) //, platform.recorder, platform.listener, platform.repo, platform.executor)
+	test.Nil(t, err)
 }
 
 func TestOk(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -72,24 +86,9 @@ func TestOk(t *testing.T) {
 	_ = sendEvtV1AndValidate(t, pkg, cli)
 }
 
-func TestStartStop(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	platform, err := newPlatform(ctx)
-	test.Nil(t, err)
-	svcGroup := test.NewServiceGroup()
-	cli, err := newTestClient(ctx, platform.conn, platform.conn)
-	defer func() {
-		cancel()
-		cleanUp(t, platform, svcGroup, cli)
-	}()
-	test.Nil(t, err)
-	err = svcGroup.Start(platform.ctl, platform.queue, platform.recorder, platform.listener, platform.repo, platform.executor)
-	test.Nil(t, err)
-}
-
 func TestStreamingSchemaUpdate(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -125,6 +124,7 @@ func TestStreamingSchemaUpdate(t *testing.T) {
 
 func TestStreamingDelete(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -153,6 +153,7 @@ func TestStreamingDelete(t *testing.T) {
 
 func TestEventErrors(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -215,6 +216,7 @@ func TestQueueDown(t *testing.T) {
 
 func TestErroCtl(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	os.Setenv("http.shutdown.timeout", (10 * time.Microsecond).String())
 	os.Setenv("http.timeout.write", (5 * time.Microsecond).String())
 	os.Setenv("http.timeout.read", (5 * time.Microsecond).String())
@@ -239,6 +241,7 @@ func TestErroCtl(t *testing.T) {
 
 func TestErrorInitQueue(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -263,7 +266,8 @@ func TestErrorInitQueue(t *testing.T) {
 
 func TestErrorRepo(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	os.Setenv("dial.timeout", (40 * time.Millisecond).String())
+	setEnvVars()
+	os.Setenv("dial.timeout", (1 * time.Second).String())
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)

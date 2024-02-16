@@ -15,10 +15,11 @@ type Server struct {
 	pkgCont    *controller.PackageController
 	envCont    *controller.EnvironmentController
 	tenantCont *controller.TenantController
+	ctx        context.Context
 }
 
 func New(ctx context.Context, dbDir string, dbo database.Option) (*Server, error) {
-	db, err := database.Open(dbDir, dbo)
+	db, err := database.Open(ctx, dbDir, dbo)
 	if err != nil {
 		return nil, err
 	}
@@ -27,6 +28,7 @@ func New(ctx context.Context, dbDir string, dbo database.Option) (*Server, error
 		tenantCont: controller.NewTenantController(db),
 		pkgCont:    controller.NewPackageController(ctx, db),
 		envCont:    controller.NewEnvironmentController(ctx, db),
+		ctx:        ctx,
 	}, nil
 }
 
@@ -34,7 +36,7 @@ func (c *Server) Close() error {
 	err := errors.Join(c.tenantCont.Close())
 	err = errors.Join(err, c.pkgCont.Close())
 	err = errors.Join(err, c.envCont.Close())
-	err = errors.Join(err, c.db.Close())
+	err = errors.Join(err, c.db.Close(c.ctx))
 	return err
 }
 

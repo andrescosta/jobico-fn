@@ -65,9 +65,6 @@ func (q *Cache[T]) Close() error {
 		}
 		return nil
 	})
-	if errors.Is(err, syncutil.ErrTaskNotDone) {
-		return nil
-	}
 	return err
 }
 

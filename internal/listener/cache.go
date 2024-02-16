@@ -69,9 +69,6 @@ func (j *EventDefCache) close() error {
 		}
 		return err
 	})
-	if errors.Is(err, syncutil.ErrTaskNotDone) {
-		return nil
-	}
 	return err
 }
 
