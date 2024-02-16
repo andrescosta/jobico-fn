@@ -46,7 +46,7 @@ func New(ctx context.Context, dir string, o Options) *Controller {
 }
 
 func (s *Controller) Close() error {
-	return s.init.Dispose(s.ctx, func(ctx context.Context) error {
+	return s.init.Dispose(s.ctx, func(_ context.Context) error {
 		err := s.bJobPackage.Stop()
 		if errors.Is(err, broadcaster.ErrStopped) {
 			return nil
@@ -99,7 +99,7 @@ func (s *Controller) AllFileNames(_ context.Context, _ *pb.Void) (*pb.AllFileNam
 }
 
 func (s *Controller) UpdateToFileStr(_ *pb.UpdateToFileStrRequest, r pb.Repo_UpdateToFileStrServer) error {
-	s.init.Do(s.ctx, func(ctx context.Context) error {
+	_ = s.init.Do(s.ctx, func(_ context.Context) error {
 		s.bJobPackage.Start()
 		return nil
 	})

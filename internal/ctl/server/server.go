@@ -36,7 +36,7 @@ func (c *Server) Close() error {
 	err := errors.Join(c.tenantControler.Close())
 	err = errors.Join(err, c.pkgControler.Close())
 	err = errors.Join(err, c.envControler.Close())
-	err = errors.Join(err, c.db.Close(c.ctx))
+	err = errors.Join(err, c.db.Close())
 	return err
 }
 

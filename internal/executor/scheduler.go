@@ -13,25 +13,33 @@ import (
 
 var maxExecutors = 10
 
-func NewScheduller(ctx context.Context, ticker syncutil.Ticker) *scheduler {
+type status int
+
+const (
+	statusStopped status = iota + 1
+	statusStarting
+	statusStarted
+)
+
+func newScheduller(ctx context.Context, ticker syncutil.Ticker) *scheduler {
 	return &scheduler{
-		statusScheduller: StatusStarting,
-		muStatus:         &sync.RWMutex{},
-		ctx:              ctx,
-		ticker:           ticker,
-		executors:        collection.NewSyncMap[string, *executor](),
+		currStatus: statusStarting,
+		muStatus:   &sync.RWMutex{},
+		ctx:        ctx,
+		ticker:     ticker,
+		executors:  collection.NewSyncMap[string, *process](),
 	}
 }
 
 type scheduler struct {
-	statusScheduller status
-	muStatus         *sync.RWMutex
-	ctx              context.Context
-	ticker           syncutil.Ticker
-	executors        *collection.SyncMap[string, *executor]
+	currStatus status
+	muStatus   *sync.RWMutex
+	ctx        context.Context
+	ticker     syncutil.Ticker
+	executors  *collection.SyncMap[string, *process]
 }
 
-func (s *scheduler) add(ex *executor) {
+func (s *scheduler) add(ex *process) {
 	s.executors.Store(id(ex.tenant, ex.packageID, ex.queue), ex)
 }
 
@@ -45,8 +53,8 @@ func (s *scheduler) remove(tenant string, pkg string, queue string) {
 
 func (s *scheduler) run() {
 	defer s.ticker.Stop()
-	defer s.setStatus(StatusStopped)
-	s.setStatus(StatusStarted)
+	defer s.setCurrStatus(statusStopped)
+	s.setCurrStatus(statusStarted)
 	for {
 		select {
 		case <-s.ctx.Done():
@@ -55,13 +63,13 @@ func (s *scheduler) run() {
 			if ok {
 				w := sync.WaitGroup{}
 				running := 0
-				s.executors.Range(func(id string, ex *executor) bool {
+				s.executors.Range(func(_ string, ex *process) bool {
 					if s.ctx.Err() != nil {
 						return false
 					}
 					w.Add(1)
-					running += 1
-					go ex.execute(s.ctx, &w)
+					running++
+					go ex.processEvents(s.ctx, &w)
 					if running == maxExecutors {
 						w.Wait()
 						running = 0
@@ -80,7 +88,7 @@ func (s *scheduler) dispose() error {
 	var err error
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	s.executors.Range(func(id string, ex *executor) bool {
+	s.executors.Range(func(_ string, ex *process) bool {
 		for _, e := range ex.events {
 			err = errors.Join(e.module.wasmModule.Close(ctx), err)
 		}
@@ -89,14 +97,14 @@ func (s *scheduler) dispose() error {
 	return err
 }
 
-func (e *scheduler) status() status {
-	e.muStatus.RLock()
-	defer e.muStatus.RUnlock()
-	return e.statusScheduller
+func (s *scheduler) status() status {
+	s.muStatus.RLock()
+	defer s.muStatus.RUnlock()
+	return s.currStatus
 }
 
-func (ex *scheduler) setStatus(status status) {
-	ex.muStatus.Lock()
-	defer ex.muStatus.Unlock()
-	ex.statusScheduller = status
+func (s *scheduler) setCurrStatus(status status) {
+	s.muStatus.Lock()
+	defer s.muStatus.Unlock()
+	s.currStatus = status
 }

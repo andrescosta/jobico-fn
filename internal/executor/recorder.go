@@ -15,16 +15,16 @@ type recorder struct {
 	event  string
 }
 
-func (l *recorder) sendLog(ctx context.Context, _ uint32, lvl uint32, msg string) error {
+func (r *recorder) sendLog(ctx context.Context, _ uint32, lvl uint32, msg string) error {
 	now := time.Now()
 	host, err := os.Hostname()
 	if err != nil {
 		host = "<error>"
 	}
 
-	return l.cli.recorder.AddJobExecution(ctx, &pb.JobExecution{
-		Event:  l.event,
-		Tenant: l.tenant,
+	return r.cli.recorder.AddJobExecution(ctx, &pb.JobExecution{
+		Event:  r.event,
+		Tenant: r.tenant,
 		Queue:  "",
 		Date: &timestamppb.Timestamp{
 			Seconds: now.Unix(),
@@ -40,15 +40,15 @@ func (l *recorder) sendLog(ctx context.Context, _ uint32, lvl uint32, msg string
 	})
 }
 
-func (e *recorder) sendResult(ctx context.Context, queue string, code uint64, result string) error {
+func (r *recorder) sendResult(ctx context.Context, queue string, code uint64, result string) error {
 	now := time.Now()
 	host, err := os.Hostname()
 	if err != nil {
 		host = "<error>"
 	}
 	ex := &pb.JobExecution{
-		Event:  e.event,
-		Tenant: e.tenant,
+		Event:  r.event,
+		Tenant: r.tenant,
 		Queue:  queue,
 		Date: &timestamppb.Timestamp{
 			Seconds: now.Unix(),
@@ -62,5 +62,5 @@ func (e *recorder) sendResult(ctx context.Context, queue string, code uint64, re
 			Message:  result,
 		},
 	}
-	return e.cli.recorder.AddJobExecution(ctx, ex)
+	return r.cli.recorder.AddJobExecution(ctx, ex)
 }

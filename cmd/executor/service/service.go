@@ -18,7 +18,7 @@ type Setter func(*Service)
 type Service struct {
 	process.Container
 	delay  time.Duration
-	vm     *executor.VM
+	vm     *executor.Executor
 	dialer service.GrpcDialer
 	option executor.Options
 }
@@ -40,7 +40,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		return nil, err
 	}
 	s.delay = *env.Duration("executor.delay", 0)
-	vm, err := executor.NewVM(ctx, s.dialer, s.option)
+	vm, err := executor.New(ctx, s.dialer, s.option)
 	if err != nil {
 		return nil, err
 	}

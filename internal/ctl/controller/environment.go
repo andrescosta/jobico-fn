@@ -35,7 +35,7 @@ func NewEnvironmentController(ctx context.Context, db *database.Database) *Envir
 }
 
 func (c *EnvironmentController) Close() error {
-	return c.init.Dispose(c.ctx, func(ctx context.Context) error {
+	return c.init.Dispose(c.ctx, func(_ context.Context) error {
 		err := c.bEnvironment.Stop()
 		if errors.Is(err, broadcaster.ErrStopped) {
 			return nil
@@ -91,7 +91,7 @@ func (c *EnvironmentController) GetEnvironment() (*pb.EnvironmentReply, error) {
 }
 
 func (c *EnvironmentController) UpdateToEnvironmentStr(_ *pb.Void, r pb.Control_UpdateToEnvironmentStrServer) error {
-	c.init.Do(c.ctx, func(ctx context.Context) error {
+	_ = c.init.Do(c.ctx, func(_ context.Context) error {
 		c.bEnvironment.Start()
 		return nil
 	})

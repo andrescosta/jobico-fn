@@ -37,7 +37,7 @@ func NewPackageController(ctx context.Context, db *database.Database) *PackageCo
 }
 
 func (c *PackageController) Close() error {
-	return c.init.Dispose(c.ctx, func(ctx context.Context) error {
+	return c.init.Dispose(c.ctx, func(_ context.Context) error {
 		err := c.bJobPackage.Stop()
 		if errors.Is(err, broadcaster.ErrStopped) {
 			return nil
@@ -126,13 +126,11 @@ func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeletePack
 }
 
 func (c *PackageController) UpdateToPackagesStr(_ *pb.UpdateToPackagesStrRequest, r pb.Control_UpdateToPackagesStrServer) error {
-	c.init.Do(c.ctx, c.s)
+	_ = c.init.Do(c.ctx, func(_ context.Context) error {
+		c.bJobPackage.Start()
+		return nil
+	})
 	return c.bJobPackage.RcvAndDispatchUpdates(c.ctx, r)
-}
-
-func (c *PackageController) s(ctx context.Context) error {
-	c.bJobPackage.Start()
-	return nil
 }
 
 func (c *PackageController) getPackages(tenant string) ([]*pb.JobPackage, error) {
