@@ -35,7 +35,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.option.Dir = env.WorkdirPlus("queue")
+	s.option.Dir = env.WorkdirPlus(env.String("queue.dir", "queue"), "data")
 	for _, op := range ops {
 		op(s)
 	}

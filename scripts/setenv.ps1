@@ -4,12 +4,12 @@ New-Item -ItemType SymbolicLink -Path . -name startall.ps1 -Value ..\scripts\sta
 
 @'
 .\stop.ps1
-rd db -Force -Recurse -ErrorAction Ignore
+rd ctl -Force -Recurse -ErrorAction Ignore
 rd cache -Force -Recurse -ErrorAction Ignore
 rd files -Force -Recurse -ErrorAction Ignore
 rd log -Force -Recurse -ErrorAction Ignore
 rd queue -Force -Recurse -ErrorAction Ignore
-rd res -Force -Recurse -ErrorAction Ignore
+rd recorder -Force -Recurse -ErrorAction Ignore
 '@ | Out-File -FilePath ".\reset.ps1"
 
 @'

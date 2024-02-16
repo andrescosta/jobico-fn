@@ -59,7 +59,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 			return empty, nil
 		}),
 		process.WithStarter(func(ctx context.Context) error {
-			return vm.StartExecutors(ctx)
+			return vm.Start(ctx)
 		}),
 	)
 	if err != nil {

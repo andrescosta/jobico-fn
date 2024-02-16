@@ -2,7 +2,10 @@ package controller
 
 import (
 	"context"
+	"errors"
 
+	"github.com/andrescosta/goico/pkg/broadcaster"
+	"github.com/andrescosta/goico/pkg/syncutil"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/repo/provider"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
@@ -17,6 +20,7 @@ type Controller struct {
 	repoProvider Repository
 	bJobPackage  *grpchelper.GrpcBroadcaster[*pb.UpdateToFileStrReply, proto.Message]
 	ctx          context.Context
+	init         *syncutil.OnceDisposable
 }
 
 type Repository interface {
@@ -35,25 +39,33 @@ func New(ctx context.Context, dir string, o Options) *Controller {
 	}
 	return &Controller{
 		ctx:          ctx,
-		bJobPackage:  grpchelper.StartBroadcaster[*pb.UpdateToFileStrReply, proto.Message](ctx),
 		repoProvider: repoProvider,
+		init:         syncutil.NewOnceDisposable(),
+		bJobPackage:  grpchelper.NewBroadcaster[*pb.UpdateToFileStrReply, proto.Message](ctx),
 	}
 }
 
 func (s *Controller) Close() error {
-	return s.bJobPackage.Stop()
+	return s.init.Dispose(s.ctx, func(ctx context.Context) error {
+		err := s.bJobPackage.Stop()
+		if errors.Is(err, broadcaster.ErrStopped) {
+			return nil
+		}
+		return err
+	})
 }
 
 func (s *Controller) AddFile(ctx context.Context, r *pb.AddFileRequest) (*pb.AddFileReply, error) {
 	if err := s.repoProvider.Add(r.TenantFile.Tenant, r.TenantFile.File.Name, int32(r.TenantFile.File.Type), r.TenantFile.File.Content); err != nil {
 		return nil, err
 	}
-	if err := s.bJobPackage.Broadcast(ctx,
+	err := s.bJobPackage.Broadcast(ctx,
 		&pb.TenantFile{
 			Tenant: r.TenantFile.Tenant,
 			File:   &pb.File{Name: r.TenantFile.File.Name, Content: r.TenantFile.File.Content},
 		},
-		pb.UpdateType_New); err != nil {
+		pb.UpdateType_New)
+	if err != nil && !errors.Is(err, broadcaster.ErrStopped) {
 		return nil, err
 	}
 	return &pb.AddFileReply{}, nil
@@ -87,5 +99,9 @@ func (s *Controller) AllFileNames(_ context.Context, _ *pb.Void) (*pb.AllFileNam
 }
 
 func (s *Controller) UpdateToFileStr(_ *pb.UpdateToFileStrRequest, r pb.Repo_UpdateToFileStrServer) error {
+	s.init.Do(s.ctx, func(ctx context.Context) error {
+		s.bJobPackage.Start()
+		return nil
+	})
 	return s.bJobPackage.RcvAndDispatchUpdates(s.ctx, r)
 }

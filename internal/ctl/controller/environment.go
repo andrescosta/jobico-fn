@@ -2,8 +2,11 @@ package controller
 
 import (
 	"context"
+	"errors"
 
+	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/database"
+	"github.com/andrescosta/goico/pkg/syncutil"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/data"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
@@ -19,18 +22,26 @@ type EnvironmentController struct {
 	ctx          context.Context
 	daoCache     *data.DAOS
 	bEnvironment *grpchelper.GrpcBroadcaster[*pb.UpdateToEnvironmentStrReply, proto.Message]
+	init         *syncutil.OnceDisposable
 }
 
 func NewEnvironmentController(ctx context.Context, db *database.Database) *EnvironmentController {
 	return &EnvironmentController{
 		ctx:          ctx,
 		daoCache:     data.NewDAOS(db),
-		bEnvironment: grpchelper.StartBroadcaster[*pb.UpdateToEnvironmentStrReply, proto.Message](ctx),
+		init:         syncutil.NewOnceDisposable(),
+		bEnvironment: grpchelper.NewBroadcaster[*pb.UpdateToEnvironmentStrReply, proto.Message](ctx),
 	}
 }
 
 func (c *EnvironmentController) Close() error {
-	return c.bEnvironment.Stop()
+	return c.init.Dispose(c.ctx, func(ctx context.Context) error {
+		err := c.bEnvironment.Stop()
+		if errors.Is(err, broadcaster.ErrStopped) {
+			return nil
+		}
+		return err
+	})
 }
 
 func (c *EnvironmentController) AddEnvironment(in *pb.AddEnvironmentRequest) (*pb.AddEnvironmentReply, error) {
@@ -80,6 +91,10 @@ func (c *EnvironmentController) GetEnvironment() (*pb.EnvironmentReply, error) {
 }
 
 func (c *EnvironmentController) UpdateToEnvironmentStr(_ *pb.Void, r pb.Control_UpdateToEnvironmentStrServer) error {
+	c.init.Do(c.ctx, func(ctx context.Context) error {
+		c.bEnvironment.Start()
+		return nil
+	})
 	return c.bEnvironment.RcvAndDispatchUpdates(c.ctx, r)
 }
 

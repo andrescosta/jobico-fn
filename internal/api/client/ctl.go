@@ -162,7 +162,7 @@ func (c *Ctl) ListenerForEnvironmentUpdates(ctx context.Context) (*broadcaster.L
 }
 
 func (c *Ctl) startListenEnvironmentUpdates(ctx context.Context) error {
-	cb := broadcaster.Start[*pb.UpdateToEnvironmentStrReply](ctx)
+	cb := broadcaster.NewAndStart[*pb.UpdateToEnvironmentStrReply](ctx)
 	c.bcEnvUpdates = cb
 	s, err := c.cli.UpdateToEnvironmentStr(ctx, &pb.Void{})
 	if err != nil {
@@ -184,7 +184,7 @@ func (c *Ctl) ListenerForPackageUpdates(ctx context.Context) (*broadcaster.Liste
 }
 
 func (c *Ctl) startListenerForPackageUpdates(ctx context.Context) error {
-	cb := broadcaster.Start[*pb.UpdateToPackagesStrReply](ctx)
+	cb := broadcaster.NewAndStart[*pb.UpdateToPackagesStrReply](ctx)
 	c.bcJobPackage = cb
 	s, err := c.cli.UpdateToPackagesStr(ctx, &pb.UpdateToPackagesStrRequest{})
 	if err != nil {

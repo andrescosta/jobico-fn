@@ -2,9 +2,12 @@ package controller
 
 import (
 	"context"
+	"errors"
 
+	"github.com/andrescosta/goico/pkg/broadcaster"
 	"github.com/andrescosta/goico/pkg/database"
 	"github.com/andrescosta/goico/pkg/service/grpc/protoutil"
+	"github.com/andrescosta/goico/pkg/syncutil"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/andrescosta/jobico/internal/ctl/data"
 	"github.com/andrescosta/jobico/pkg/grpchelper"
@@ -20,19 +23,27 @@ type PackageController struct {
 	daoCache         *data.DAOS
 	bJobPackage      *grpchelper.GrpcBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message]
 	tenantController *TenantController
+	init             *syncutil.OnceDisposable
 }
 
 func NewPackageController(ctx context.Context, db *database.Database) *PackageController {
 	return &PackageController{
 		ctx:              ctx,
 		daoCache:         data.NewDAOS(db),
-		bJobPackage:      grpchelper.StartBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message](ctx),
 		tenantController: NewTenantController(db),
+		bJobPackage:      grpchelper.NewBroadcaster[*pb.UpdateToPackagesStrReply, proto.Message](ctx),
+		init:             syncutil.NewOnceDisposable(),
 	}
 }
 
 func (c *PackageController) Close() error {
-	return c.bJobPackage.Stop()
+	return c.init.Dispose(c.ctx, func(ctx context.Context) error {
+		err := c.bJobPackage.Stop()
+		if errors.Is(err, broadcaster.ErrStopped) {
+			return nil
+		}
+		return err
+	})
 }
 
 func (c *PackageController) GetPackages(in *pb.PackagesRequest) (*pb.PackagesReply, error) {
@@ -115,7 +126,13 @@ func (c *PackageController) DeletePackage(ctx context.Context, in *pb.DeletePack
 }
 
 func (c *PackageController) UpdateToPackagesStr(_ *pb.UpdateToPackagesStrRequest, r pb.Control_UpdateToPackagesStrServer) error {
+	c.init.Do(c.ctx, c.s)
 	return c.bJobPackage.RcvAndDispatchUpdates(c.ctx, r)
+}
+
+func (c *PackageController) s(ctx context.Context) error {
+	c.bJobPackage.Start()
+	return nil
 }
 
 func (c *PackageController) getPackages(tenant string) ([]*pb.JobPackage, error) {

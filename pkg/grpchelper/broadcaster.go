@@ -21,10 +21,14 @@ type GrpcBroadcaster[T, S proto.Message] struct {
 	broadcaster *broadcaster.Broadcaster[T]
 }
 
-func StartBroadcaster[T, S proto.Message](ctx context.Context) *GrpcBroadcaster[T, S] {
+func NewBroadcaster[T, S proto.Message](ctx context.Context) *GrpcBroadcaster[T, S] {
 	return &GrpcBroadcaster[T, S]{
-		broadcaster: broadcaster.Start[T](ctx),
+		broadcaster: broadcaster.New[T](ctx),
 	}
+}
+
+func (b *GrpcBroadcaster[T, S]) Start() {
+	b.broadcaster.Start()
 }
 
 func (b *GrpcBroadcaster[T, S]) Stop() error {

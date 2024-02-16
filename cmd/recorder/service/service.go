@@ -50,8 +50,8 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithHealthCheckFn(func(_ context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			dir := env.String("recorder.dir.results", "results")
-			dir = env.WorkdirPlus(dir)
+			dir := env.String("recorder.dir", "recorder")
+			dir = env.WorkdirPlus(dir, "results")
 			if err := os.MkdirAll(dir, 0o700); err != nil {
 				return nil, err
 			}

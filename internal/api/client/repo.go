@@ -93,7 +93,7 @@ func (c *Repo) ListenerForRepoUpdates(ctx context.Context) (*broadcaster.Listene
 }
 
 func (c *Repo) startListenRepoUpdates(ctx context.Context) error {
-	bc := broadcaster.Start[*pb.UpdateToFileStrReply](ctx)
+	bc := broadcaster.NewAndStart[*pb.UpdateToFileStrReply](ctx)
 	c.bcRepoUpdates = bc
 	s, err := c.cli.UpdateToFileStr(ctx, &pb.UpdateToFileStrRequest{})
 	if err != nil {
