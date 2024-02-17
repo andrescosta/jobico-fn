@@ -16,7 +16,7 @@ func newUpload() *command {
 	cmdUpload := &command{
 		name:      "upload",
 		usageLine: "cli upload <wasm|json> <tenant> <file id> <file name>",
-		short:     "updload a wasm or json schema file",
+		short:     "upload a wasm or json schema file",
 		long: `
 	The 'upload' command enables the upload of a WebAssembly or JSON schema file to the file Repository. 
 	This file will be referenced by the Job definitions.`,

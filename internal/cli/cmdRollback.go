@@ -17,7 +17,7 @@ func newRollback() *command {
 	cmdRollback := &command{
 		name:      "rollback",
 		usageLine: `cli rollabck < deployment file >.yaml`,
-		short:     "remove a Job definition",
+		short:     "rollback a Job",
 		long: `
 	The rollback command eliminates a Job definition from the platform, halting associated queue executors.`,
 	}
