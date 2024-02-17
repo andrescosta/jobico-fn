@@ -29,7 +29,7 @@ Explore how to work with the Jobico platform by checking out our comprehensive t
 ![alt](docs/img/stack.svg?)
 
 # Architecture
-![alt](docs/img/jobico.svg?)
+![alt](docs/img/architecture.svg?)
 
 ## Components
 
