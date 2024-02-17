@@ -14,7 +14,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type process struct {
+type processor struct {
 	packageID string
 	tenant    string
 	queue     string
@@ -35,7 +35,7 @@ type module struct {
 	wasmModule *wasm.Module
 }
 
-func (p *process) processEvents(ctx context.Context, w *sync.WaitGroup) {
+func (p *processor) processEvents(ctx context.Context, w *sync.WaitGroup) {
 	defer w.Done()
 	logger := zerolog.Ctx(ctx)
 	items, err := p.cli.queue.Dequeue(ctx, p.tenant, p.queue)
@@ -62,7 +62,7 @@ func (p *process) processEvents(ctx context.Context, w *sync.WaitGroup) {
 	}
 }
 
-func (p *process) makeDecisions(ctx context.Context, tenant string, code uint64, resultDef *pb.ResultDef) error {
+func (p *processor) makeDecisions(ctx context.Context, tenant string, code uint64, resultDef *pb.ResultDef) error {
 	r := pb.JobResult{
 		Code: code,
 	}

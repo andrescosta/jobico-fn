@@ -25,6 +25,6 @@ func main() {
 		d.DebugOn()
 	}
 	if err := d.Run(); err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 }

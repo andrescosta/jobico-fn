@@ -25,7 +25,7 @@ type scheduler struct {
 	muStatus   *sync.RWMutex
 	ctx        context.Context
 	ticker     syncutil.Ticker
-	executors  *collection.SyncMap[string, *process]
+	executors  *collection.SyncMap[string, *processor]
 	maxProc    int
 }
 
@@ -38,12 +38,12 @@ func newScheduler(ctx context.Context, ticker syncutil.Ticker, maxProc int) *sch
 		muStatus:   &sync.RWMutex{},
 		ctx:        ctx,
 		ticker:     ticker,
-		executors:  collection.NewSyncMap[string, *process](),
+		executors:  collection.NewSyncMap[string, *processor](),
 		maxProc:    maxProc,
 	}
 }
 
-func (s *scheduler) add(ex *process) {
+func (s *scheduler) add(ex *processor) {
 	s.executors.Store(id(ex.tenant, ex.packageID, ex.queue), ex)
 }
 
@@ -67,13 +67,13 @@ func (s *scheduler) run() {
 			if ok {
 				w := sync.WaitGroup{}
 				running := 0
-				s.executors.Range(func(_ string, ex *process) bool {
+				s.executors.Range(func(_ string, process *processor) bool {
 					if s.ctx.Err() != nil {
 						return false
 					}
 					w.Add(1)
 					running++
-					go ex.processEvents(s.ctx, &w)
+					go process.processEvents(s.ctx, &w)
 					if running == s.maxProc {
 						w.Wait()
 						running = 0
@@ -92,7 +92,7 @@ func (s *scheduler) dispose() error {
 	var err error
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	s.executors.Range(func(_ string, ex *process) bool {
+	s.executors.Range(func(_ string, ex *processor) bool {
 		for _, e := range ex.events {
 			err = errors.Join(e.module.wasmModule.Close(ctx), err)
 		}

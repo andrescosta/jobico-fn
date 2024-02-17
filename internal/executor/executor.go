@@ -162,7 +162,7 @@ func (e *Executor) addExecutors(ctx context.Context, pkg *pb.JobPackage) error {
 			if strings.HasSuffix(q.ID, "_ok") || strings.HasSuffix(q.ID, "_error") {
 				continue
 			}
-			ex := &process{
+			ex := &processor{
 				packageID: pkg.GetID(),
 				tenant:    pkg.Tenant,
 				queue:     q.ID,

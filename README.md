@@ -22,36 +22,75 @@ Jobico is a Go project designed for experimental development, with a focus on ex
 
 Explore how to work with the Jobico platform by checking out our comprehensive tutotial. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the manual.
 
-### [Learn more with our In-Depth Guide](/GUIDE.md)
+### [Learn more with the In-Depth Guide](GUIDE.md)
 
+# Stack
+
+![alt](docs/img/stack.svg?)
 
 # Architecture
 ![alt](docs/img/Jobico.svg?)
 
 ## Components
 
-### Listener
-The **Listener** component serves as the entry point for external events, providing a REST API that can function as a webhook. Its primary responsibilities include receiving events, validating them against pre-defined JSON schemas, and subsequently enqueueing them for further processing. This component acts as the bridge between external sources triggering events and the internal processing pipeline.
-
-### Queue
-The **Queue** component acts as a chronological buffer for events, temporarily storing them until they can be processed by the Job Executors. Events are maintained in the queue in the order they are received, ensuring a sequential flow of processing. This component plays a crucial role in decoupling the event reception from the actual event processing, allowing for scalability and efficient handling of bursts of incoming events.
-
-### Job Executors
-**Job Executors** are responsible for consuming events from the Queue and providing a controlled environment for the execution of WebAssembly (WASM) programs that process these events. This component manages the execution context, ensuring isolation and security for running custom WASM programs written by tenants. It plays a key role in the dynamic and scalable execution of programmed jobs in response to events.
-
 ### Control Service
+
+![alt](docs/img/Executor.svg?)
+
 The **Control Service** is a centralized hub where Job definitions are stored and can be queried by other components in the system. It acts as the authoritative source for managing job configurations, allowing dynamic adjustments to the processing logic without interrupting the overall system operation. This service facilitates coordination and control over the execution of jobs across the entire platform.
 
-### Job Repository
-The **Job Repository** serves as a storage facility for WebAssembly (WASM) programs and JSON schema files. It provides a dedicated API for storing and retrieving these essential files, ensuring accessibility for the Job Executors and enabling tenants to manage their custom program logic efficiently. This component acts as a repository for the building blocks required for event processing.
+#### Job Definition
+
+![alt](docs/img/Definition.svg?)
+
+#### Data
+
+### Listener
+
+![alt](docs/img/Listener.svg?)
+
+The **Listener** service serves as the entry point for external events, providing a REST API that can function as a webhook. Its primary responsibilities include receiving events, validating them against pre-defined JSON schemas, and subsequently enqueueing them for further processing. This component acts as the bridge between external sources triggering events and the internal processing pipeline.
+
+
+### Queue
+
+![alt](docs/img/Queue.svg?)
+
+The **Queue** component acts as a chronological buffer for events, temporarily storing them until they can be processed by the Job Executors. Events are maintained in the queue in the order they are received, ensuring a sequential flow of processing. This component plays a crucial role in decoupling the event reception from the actual event processing, allowing for scalability and efficient handling of bursts of incoming events.
+
+### File
+This queue implementation utilizes the file system to store the information.
+
+### Memory
+This implementation is mainly used during testing and it uses the memory to store the data.
+
+### Job Executors
+
+![alt](docs/img/Executor.svg?)
+
+**Job Executors** are responsible for consuming events from the Queue and providing a controlled environment for the execution of WebAssembly (WASM) programs that process these events. This component manages the execution context, ensuring isolation and security for running custom WASM programs written by tenants. It plays a key role in the dynamic and scalable execution of programmed jobs in response to events.
+
+### File Repository
+The **File Repository** serves as a storage facility for WebAssembly (WASM) programs and JSON schema files. It provides a dedicated API for storing and retrieving these essential files, ensuring accessibility for the Job Executors and enabling tenants to manage their custom program logic efficiently. This component acts as a repository for the building blocks required for event processing.
+
+### Filesystem
+
+### Memory
+
 
 ### Executions Recorder
 The **Executions Recorder** is a service designed to capture and store log information generated by the Job Executors during the execution of jobs. This component acts as a centralized logging system, allowing for post-execution analysis, troubleshooting, and performance monitoring. The recorded information can be queried using both the Command Line Interface (CLI) and Dashboard tools, providing visibility into the historical execution details of jobs.
 
-## Stack
+### Filesystem
 
-![alt](docs/img/stack.svg?)
+### Memory
 
+
+### Streaming Capabilities for Data Updates:
+
+Goico provides streaming capabilities for database updates based on Grpc. This feature enables real-time monitoring and reaction to changes within the embedded database, facilitating dynamic adjustments, and enhancing the responsiveness of Jobico to evolving requirements.
+
+## E2E Testing implementation
 
 ## Goico: The Jobico Framework
 
@@ -67,21 +106,11 @@ Goico simplifies the development of microservices within the Jobico ecosystem. I
 
 #### 2. WASM Runtime Based on WAZERO:
 
-A core strength of Goico lies in its WebAssembly (WASM) runtime, built on the robust foundation of WAZERO. This runtime facilitates the execution of custom logic written in any WASM-supported programming language. 
+Goico enables the utilization of WebAssembly (WASM) runtimes via WAZERO, providing the capability to execute custom logic written in various programming languages compatible with WASM.
 
 #### 3. Key/Value Embedded Database:
 
 Goico integrates an embedded database based on [Pebble](https://github.com/cockroachdb/pebble), offering a key/value store for data management. This embedded database serves as the backbone for storing critical information, supporting the reliable and fast retrieval of data essential for the operation of Jobico.
-
-#### 4. Streaming Capabilities for Data Updates:
-
-Goico provides streaming capabilities for database updates based on Grpc. This feature enables real-time monitoring and reaction to changes within the embedded database, facilitating dynamic adjustments, and enhancing the responsiveness of Jobico to evolving requirements.
-
-## Data
-[TODO]
-
-## Caching and Streaming
-[TODO]
 
 # Management Tools
 

@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
+	"github.com/andrescosta/goico/pkg/context"
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/jobico/internal/cli"
 )
@@ -20,7 +18,7 @@ func main() {
 		log.Fatal(".env files were not loaded")
 	}
 
-	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := context.ForEndSignals()
+	defer cancel()
 	cli.RunCli(ctx, os.Args)
-	defer done()
 }
