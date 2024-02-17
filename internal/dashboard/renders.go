@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/andrescosta/goico/pkg/service/grpc/svcmeta"
 	"github.com/gdamore/tcell/v2"
@@ -29,7 +30,10 @@ func (c *TApp) renderUI(ctx context.Context) *tview.Pages {
 	c.status.SetTextAlign(tview.AlignCenter)
 	helpTxt := "<Esc> - To Exit | <Tab> to switch views | <Arrows> to navigate"
 	if c.debug {
-		helpTxt = fmt.Sprintf("%s %s", helpTxt, "| <Ctrl-D> for debug info | <Ctrl-P> To stop streaming")
+		helpTxt = fmt.Sprintf("%s %s", helpTxt, "| <Ctrl-D> for debug info")
+	}
+	if c.sync {
+		helpTxt = fmt.Sprintf("%s %s", helpTxt, "| <Ctrl-P> To stop syncing")
 	}
 	f := tview.NewFlex().
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
@@ -94,7 +98,8 @@ func (c *TApp) renderUI(ctx context.Context) *tview.Pages {
 			}
 			return nil
 		case tcell.KeyCtrlP:
-			if c.debug {
+			if c.sync {
+				c.showInfo("Streaming stopped", 3*time.Second)
 				c.stopStreamingUpdates()
 			}
 		case tcell.KeyCtrlU:

@@ -339,6 +339,11 @@ func (c *TApp) showErrorStr(e string, ds ...time.Duration) {
 	showText(c, c.status, e, tcell.ColorRed, d)
 }
 
+func (c *TApp) showInfo(e string, ds ...time.Duration) {
+	d := collection.FirstOrDefault(ds, durationError)
+	showText(c, c.status, e, tcell.ColorBlue, d)
+}
+
 func (c *TApp) showError(err error, ds ...time.Duration) {
 	errStr := collection.UnwrapError(err)[0].Error()
 	c.showErrorStr(errStr, collection.FirstOrDefault(ds, durationError))
