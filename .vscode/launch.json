@@ -85,7 +85,6 @@
         "program": "${workspaceFolder}/cmd/cli/main.go",
         "args": [
             "deploy",
-            "-update",
             "C:/Users/Andres/projects/supportj/job1.yml",
         ]
     },

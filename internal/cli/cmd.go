@@ -11,13 +11,14 @@ import (
 type runProc func(context.Context, *command, service.GrpcDialer, []string)
 
 type command struct {
-	run       runProc
-	usageLine string
-	short     string
-	name      string
-	long      string
-	flag      flag.FlagSet
-	commands  []*command
+	run        runProc
+	usageLine  string
+	short      string
+	name       string
+	long       string
+	flag       flag.FlagSet
+	cliCommand *command
+	commands   []*command
 }
 
 func (c *command) LongName() string {

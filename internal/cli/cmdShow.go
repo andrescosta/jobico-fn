@@ -11,20 +11,20 @@ import (
 	"github.com/andrescosta/jobico/internal/api/client"
 )
 
-var cmdShow = &command{
-	name:      "show",
-	usageLine: `cli show <deploy|env> <tenant id> <deploy id>`,
-	short:     "print deployments and environment information",
-	long: ` 
-The 'show' command prints information about Job Definitions deployed on the platform as well as 
-environment informent. It offers details on the configuration, logic, and associated schema 
-of a deployed job.`,
-}
-
-func initShow() {
+func newShow() *command {
+	cmdShow := &command{
+		name:      "show",
+		usageLine: `cli show <deploy|env> <tenant id> <deploy id>`,
+		short:     "print deployments and environment information",
+		long: ` 
+	The 'show' command prints information about Job Definitions deployed on the platform as well as 
+	environment informent. It offers details on the configuration, logic, and associated schema 
+	of a deployed job.`,
+	}
 	cmdShow.flag = *flag.NewFlagSet("show", flag.ContinueOnError)
 	cmdShow.run = runShow
 	cmdShow.flag.Usage = func() {}
+	return cmdShow
 }
 
 func runShow(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {

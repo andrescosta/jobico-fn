@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/execs/wasm"
+	"github.com/andrescosta/goico/pkg/runtimes/wasm"
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/syncutil"
 	"github.com/andrescosta/jobico/internal/api/client"

@@ -12,19 +12,19 @@ import (
 	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
-var cmdUpload = &command{
-	name:      "upload",
-	usageLine: "cli upload <wasm|json> <tenant> <file id> <file name>",
-	short:     "updload a wasm or json schema file",
-	long: `
-The 'upload' command enables the upload of a WebAssembly or JSON schema file to the file Repository. 
-This file will be referenced by the Job definitions.`,
-}
-
-func initUpload() {
+func newUpload() *command {
+	cmdUpload := &command{
+		name:      "upload",
+		usageLine: "cli upload <wasm|json> <tenant> <file id> <file name>",
+		short:     "updload a wasm or json schema file",
+		long: `
+	The 'upload' command enables the upload of a WebAssembly or JSON schema file to the file Repository. 
+	This file will be referenced by the Job definitions.`,
+	}
 	cmdUpload.flag = *flag.NewFlagSet("upload", flag.ContinueOnError)
 	cmdUpload.run = runUpload
 	cmdUpload.flag.Usage = func() {}
+	return cmdUpload
 }
 
 func runUpload(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {

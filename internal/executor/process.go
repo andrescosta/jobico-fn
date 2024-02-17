@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/andrescosta/goico/pkg/env"
-	"github.com/andrescosta/goico/pkg/execs/wasm"
+	"github.com/andrescosta/goico/pkg/runtimes/wasm"
 	pb "github.com/andrescosta/jobico/internal/api/types"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
@@ -49,7 +49,7 @@ func (p *process) processEvents(ctx context.Context, w *sync.WaitGroup) {
 			logger.Warn().Msgf("event %s not supported", event.id)
 			continue
 		}
-		code, result, err := executeWasm(ctx, event.module.wasmModule, event.module.id, item.Data)
+		code, result, err := run(ctx, event.module.wasmModule, event.module.id, item.Data)
 		if err != nil {
 			logger.Err(err).Msg("error executing")
 		}
@@ -100,12 +100,12 @@ func (p *process) makeDecisions(ctx context.Context, tenant string, code uint64,
 	return nil
 }
 
-func executeWasm(ctx context.Context, module *wasm.Module, id uint32, data []byte) (uint64, string, error) {
+func run(ctx context.Context, module *wasm.Module, id uint32, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
 	ctx, cancel := context.WithTimeout(ctx, *env.Duration("wasm.exec.timeout", 2*time.Minute))
 	defer cancel()
-	code, result, err := module.Execute(ctx, id, string(data))
+	code, result, err := module.Run(ctx, id, string(data))
 	if err != nil {
 		return 0, "", errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}

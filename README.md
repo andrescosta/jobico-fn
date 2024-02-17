@@ -233,6 +233,7 @@ test
 | --- | --- |
 |executor.delay||
 |executor.timeout||
+|executor.maxproc||
 
 # Roadmap
 

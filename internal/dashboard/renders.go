@@ -165,7 +165,6 @@ func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
 }
 
 func renderNode(target *node) *tview.TreeNode {
-	// if target.color == tcell.ColorDefault {
 	if len(target.children) > 0 {
 		if !target.expanded {
 			target.text = renderNodeText(iconContracted, target.text)
@@ -174,7 +173,6 @@ func renderNode(target *node) *tview.TreeNode {
 	} else {
 		target.color = tcell.ColorWhite
 	}
-	// }
 	node := tview.NewTreeNode(target.text).
 		SetExpanded(target.expanded).
 		SetReference(target).
@@ -186,7 +184,6 @@ func renderNode(target *node) *tview.TreeNode {
 }
 
 func reRenderNode(target *node, tn *tview.TreeNode) {
-	// if target.color == tcell.ColorDefault {
 	if len(target.children) > 0 {
 		if !target.expanded {
 			target.text = renderNodeText(iconContracted, target.text)
@@ -201,7 +198,6 @@ func reRenderNode(target *node, tn *tview.TreeNode) {
 		target.color = tcell.ColorWhite
 		target.expanded = false
 	}
-	// }
 	tn.SetText(target.text).
 		SetExpanded(target.expanded).
 		SetReference(target).
