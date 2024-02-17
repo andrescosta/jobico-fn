@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
+	"path"
 
 	"github.com/andrescosta/goico/pkg/ioutil"
 	pb "github.com/andrescosta/jobico/internal/api/types"
@@ -18,7 +20,11 @@ type FileLogRecorder struct {
 	writer *lumberjack.Logger
 }
 
-func NewFileLogRecorder(resFilename string) (ExecutionRecorder, error) {
+func NewFileLogRecorder(resFilename string, dir string) (ExecutionRecorder, error) {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, err
+	}
+	resFilename = path.Join(dir, resFilename)
 	writer := &lumberjack.Logger{
 		Filename:   resFilename,
 		MaxBackups: 1,

@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
@@ -52,11 +50,8 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
 			dir := env.String("recorder.dir", "recorder")
 			dir = env.WorkdirPlus(dir, "results")
-			if err := os.MkdirAll(dir, 0o700); err != nil {
-				return nil, err
-			}
-			logFile := filepath.Join(dir, "log.log")
-			return server.New(ctx, logFile, s.option)
+			logFile := "log.log"
+			return server.New(ctx, logFile, dir, s.option)
 		}),
 	)
 	if err != nil {

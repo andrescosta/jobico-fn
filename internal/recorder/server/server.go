@@ -13,8 +13,8 @@ type Server struct {
 	ctx        context.Context
 }
 
-func New(ctx context.Context, resFilename string, o controller.Option) (*Server, error) {
-	c, err := controller.New(resFilename, o)
+func New(ctx context.Context, resFilename string, dir string, o controller.Option) (*Server, error) {
+	c, err := controller.New(resFilename, dir, o)
 	if err != nil {
 		return nil, err
 	}
