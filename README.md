@@ -71,7 +71,7 @@ This implementation is mainly used during testing and it uses the memory to stor
 
 ### File Repository
 
-![alt](docs/img/recorder.svg?)
+![alt](docs/img/repository.svg?)
 
 The **File Repository** serves as a storage facility for WebAssembly (WASM) programs and JSON schema files. It provides a dedicated API for storing and retrieving these essential files, ensuring accessibility for the Job Executors and enabling tenants to manage their custom program logic efficiently. This component acts as a repository for the building blocks required for event processing.
 
