@@ -28,7 +28,6 @@ type platform struct {
 	listener *listener.Service
 	executor *exec.Service
 	recorder *recorder.Service
-	// ticker   *syncutil.Ticker
 }
 
 func (j *platform) dispose() error {
@@ -91,14 +90,13 @@ func newPlatformWithTimeout(ctx context.Context, dur time.Duration) (*platform, 
 		return nil, err
 	}
 
-	// ticker := &syncutil.ChannelTicker{C: make(chan time.Time)}
 	executor, err := exec.New(ctx, exec.WithHTTPConn(service.HTTPConn{
 		ClientBuilder: conn,
 		Listener:      conn,
 	}),
 		exec.WithGrpcDialer(conn),
 		exec.WithOption(
-			executor.Options{})) // Ticker: ticker}))
+			executor.Options{}))
 	if err != nil {
 		return nil, err
 	}
