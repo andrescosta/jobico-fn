@@ -11,25 +11,14 @@ import (
 	"github.com/andrescosta/goico/pkg/syncutil"
 )
 
-var maxExecutors = 10
-
 type status int
 
+const defaultMaxProcess = 10
 const (
 	statusStopped status = iota + 1
 	statusStarting
 	statusStarted
 )
-
-func newScheduller(ctx context.Context, ticker syncutil.Ticker) *scheduler {
-	return &scheduler{
-		currStatus: statusStarting,
-		muStatus:   &sync.RWMutex{},
-		ctx:        ctx,
-		ticker:     ticker,
-		executors:  collection.NewSyncMap[string, *process](),
-	}
-}
 
 type scheduler struct {
 	currStatus status
@@ -37,6 +26,21 @@ type scheduler struct {
 	ctx        context.Context
 	ticker     syncutil.Ticker
 	executors  *collection.SyncMap[string, *process]
+	maxProc    int
+}
+
+func newScheduler(ctx context.Context, ticker syncutil.Ticker, maxProc int) *scheduler {
+	if maxProc == 0 {
+		maxProc = defaultMaxProcess
+	}
+	return &scheduler{
+		currStatus: statusStarting,
+		muStatus:   &sync.RWMutex{},
+		ctx:        ctx,
+		ticker:     ticker,
+		executors:  collection.NewSyncMap[string, *process](),
+		maxProc:    maxProc,
+	}
 }
 
 func (s *scheduler) add(ex *process) {
@@ -70,7 +74,7 @@ func (s *scheduler) run() {
 					w.Add(1)
 					running++
 					go ex.processEvents(s.ctx, &w)
-					if running == maxExecutors {
+					if running == s.maxProc {
 						w.Wait()
 						running = 0
 					}

@@ -34,7 +34,8 @@ type Executor struct {
 }
 
 type Options struct {
-	Ticker syncutil.Ticker
+	Ticker  syncutil.Ticker
+	MaxProc int
 }
 
 func New(ctx context.Context, dialer service.GrpcDialer, option Options) (*Executor, error) {
@@ -71,7 +72,7 @@ func New(ctx context.Context, dialer service.GrpcDialer, option Options) (*Execu
 	if err != nil {
 		return nil, err
 	}
-	scheduller := newScheduller(ctx, ticker)
+	scheduller := newScheduler(ctx, ticker, option.MaxProc)
 	e := &Executor{
 		cli:       cli,
 		scheduler: scheduller,
