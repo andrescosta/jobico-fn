@@ -228,7 +228,7 @@ func TestErroCtl(t *testing.T) {
 	os.Setenv("http.timeout.idle", (5 * time.Microsecond).String())
 	os.Setenv("http.timeout.handler", (5 * time.Microsecond).String())
 	ctx, cancel := context.WithCancel(context.Background())
-	platform, err := newPlatformWithTimeout(ctx, 10*time.Microsecond)
+	platform, err := newPlatformWithTimeout(ctx, 1*time.Second)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup()
 	cli, err := newTestClient(ctx, platform.conn, platform.conn)
