@@ -17,6 +17,9 @@ Jobico is a Go project designed for experimental development, with a focus on ex
 - **Event Definition with JSON Schema**: Tenants can define events through JSON Schema, allowing for structured and dynamic event handling. Incoming requests undergo validation against the specified schema.
 
 - **WASM-Compatible Language Support**: Jobico offers support for custom program creation in any WASM-compatible language, fostering flexibility and diversity in the execution of jobs.
+# Stack
+
+![alt](docs/img/stack.svg?)
 
 # Architecture
 Explore the architecture of Jobico to gain insights into its design principles and components. This section provides an overview of the system's structure and how its various elements interact to deliver powerful capabilities. Delve deeper into the technical details to understand how it operates and supports complex workflows.
