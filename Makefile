@@ -1,6 +1,6 @@
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 
-.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage obs up down stopdocker compose lint vuln build release format local $(FORMAT_FILES)
+.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES)
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -70,19 +70,19 @@ init-release:
 	@$(MKDIR_BIN_CMD) 
 
 ### Docker compose targets.
-compose:
-	docker compose -f .\compose\compose.yml up
+dckr_build:
+	docker compose -f .\compose\compose.yml build
 
-up:
+dckr_up:
 	docker compose -f .\compose\compose.yml up -d
 
-obs:
+dckr_upobs:
 	docker compose -f .\compose\compose.yml --profile obs up -d
 
-down:
+dckr_down:
 	docker compose -f .\compose\compose.yml down 
 
-stopdocker:
+dckr_stop:
 	docker compose -f .\compose\compose.yml stop
 
 
