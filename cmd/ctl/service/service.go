@@ -48,8 +48,9 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithProfilingEnabled(env.Bool("prof.enabled", false)),
 		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			dbDir := env.String("ctl.dbdir", "db")
-			return server.New(ctx, dbDir, s.dbOption)
+			dir := env.String("ctl.dir", "ctl")
+			dir = env.WorkdirPlus(dir, "db")
+			return server.New(ctx, dir, s.dbOption)
 		}),
 	)
 	if err != nil {

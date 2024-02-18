@@ -45,12 +45,26 @@ var (
 	}
 )
 
-func TestMain(_ *testing.M) {
+func TestStartStop(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	setEnvVars()
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := newPlatform(ctx)
+	test.Nil(t, err)
+	svcGroup := test.NewServiceGroup()
+	cli, err := newTestClient(ctx, platform.conn, platform.conn)
+	defer func() {
+		cancel()
+		cleanUp(t, platform, svcGroup, cli)
+	}()
+	test.Nil(t, err)
+	err = svcGroup.Start(platform.ctl, platform.queue) //, platform.recorder, platform.listener, platform.repo, platform.executor)
+	test.Nil(t, err)
 }
 
 func TestOk(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -63,7 +77,8 @@ func TestOk(t *testing.T) {
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.ctl, platform.queue, platform.recorder, platform.listener, platform.repo)
 	test.Nil(t, err)
-	pkg := addPackageAndFiles(t, cli)
+	pkg := newTestPackage()
+	addPackageAndFiles(t, cli, pkg)
 	ps, err := cli.AllPackages()
 	test.Nil(t, err)
 	test.NotEmpty(t, ps)
@@ -74,6 +89,7 @@ func TestOk(t *testing.T) {
 
 func TestStreamingSchemaUpdate(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -86,7 +102,8 @@ func TestStreamingSchemaUpdate(t *testing.T) {
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.ctl, platform.repo, platform.listener, platform.queue, platform.recorder)
 	test.Nil(t, err)
-	pkg := addPackageAndFiles(t, cli)
+	pkg := newTestPackage()
+	addPackageAndFiles(t, cli, pkg)
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.executor)
 	test.Nil(t, err)
@@ -109,6 +126,7 @@ func TestStreamingSchemaUpdate(t *testing.T) {
 
 func TestStreamingDelete(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -123,7 +141,8 @@ func TestStreamingDelete(t *testing.T) {
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.executor)
 	test.Nil(t, err)
-	pkg := addPackageAndFiles(t, cli)
+	pkg := newTestPackage()
+	addPackageAndFiles(t, cli, pkg)
 	url := sendEvtV1AndValidate(t, pkg, cli)
 	err = cli.startRecvCacheEvents()
 	test.Nil(t, err)
@@ -137,6 +156,7 @@ func TestStreamingDelete(t *testing.T) {
 
 func TestEventErrors(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -149,7 +169,8 @@ func TestEventErrors(t *testing.T) {
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.ctl, platform.repo)
 	test.Nil(t, err)
-	pkg := addPackageAndFiles(t, cli)
+	pkg := newTestPackage()
+	addPackageAndFiles(t, cli, pkg)
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.listener, platform.queue)
 	test.Nil(t, err)
@@ -185,7 +206,8 @@ func TestQueueDown(t *testing.T) {
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.ctl, platform.repo, platform.recorder)
 	test.Nil(t, err)
-	pkg := addPackageAndFiles(t, cli)
+	pkg := newTestPackage()
+	addPackageAndFiles(t, cli, pkg)
 	err = svcGroup.Start(platform.listener, platform.queue)
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.executor)
@@ -199,13 +221,14 @@ func TestQueueDown(t *testing.T) {
 
 func TestErroCtl(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	os.Setenv("http.shutdown.timeout", (10 * time.Microsecond).String())
 	os.Setenv("http.timeout.write", (5 * time.Microsecond).String())
 	os.Setenv("http.timeout.read", (5 * time.Microsecond).String())
 	os.Setenv("http.timeout.idle", (5 * time.Microsecond).String())
 	os.Setenv("http.timeout.handler", (5 * time.Microsecond).String())
 	ctx, cancel := context.WithCancel(context.Background())
-	platform, err := newPlatformWithTimeout(ctx, 10*time.Microsecond)
+	platform, err := newPlatformWithTimeout(ctx, 1*time.Second)
 	test.Nil(t, err)
 	svcGroup := test.NewServiceGroup()
 	cli, err := newTestClient(ctx, platform.conn, platform.conn)
@@ -214,7 +237,7 @@ func TestErroCtl(t *testing.T) {
 		cleanUp(t, platform, svcGroup, cli)
 	}()
 	test.Nil(t, err)
-	pkg := newTestPackage(SchemaRefIDs{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	pkg := newPackage(SchemaRefIDs{"sch1", "sch1_ok", "sch1_error"}, "run1")
 	err = svcGroup.Start(platform.repo, platform.listener, platform.queue)
 	test.Nil(t, err)
 	err = sendEvtV1(pkg, cli)
@@ -223,6 +246,7 @@ func TestErroCtl(t *testing.T) {
 
 func TestErrorInitQueue(t *testing.T) {
 	defer goleak.VerifyNone(t)
+	setEnvVars()
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -235,7 +259,7 @@ func TestErrorInitQueue(t *testing.T) {
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.repo, platform.ctl)
 	test.Nil(t, err)
-	pkg := newTestPackage(SchemaRefIDs{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	pkg := newPackage(SchemaRefIDs{"sch1", "sch1_ok", "sch1_error"}, "run1")
 	err = svcGroup.Start(platform.listener)
 	test.Nil(t, err)
 	u := fmt.Sprintf(sendEventURL, pkg.Tenant, pkg.Jobs[0].Event.ID)
@@ -247,7 +271,8 @@ func TestErrorInitQueue(t *testing.T) {
 
 func TestErrorRepo(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	os.Setenv("dial.timeout", (40 * time.Millisecond).String())
+	setEnvVars()
+	os.Setenv("dial.timeout", (1 * time.Second).String())
 	ctx, cancel := context.WithCancel(context.Background())
 	platform, err := newPlatform(ctx)
 	test.Nil(t, err)
@@ -260,7 +285,8 @@ func TestErrorRepo(t *testing.T) {
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.ctl)
 	test.Nil(t, err)
-	pkg := addPackage(t, cli)
+	pkg := newPackage(SchemaRefIDs{"sch1", "sch1_ok", "sch1_error"}, "run1")
+	addPackage(t, cli, pkg)
 	err = svcGroup.Start(platform.queue)
 	test.Nil(t, err)
 	err = svcGroup.Start(platform.listener)
@@ -296,13 +322,12 @@ func cleanUp(t *testing.T, platform *platform, svcGroup *test.ServiceGroup, cli 
 	}
 }
 
-func addPackageAndFiles(t *testing.T, cli *testClient) *pb.JobPackage {
-	pkg := addPackage(t, cli)
+func addPackageAndFiles(t *testing.T, cli *testClient, pkg *pb.JobPackage) {
 	err := cli.uploadSchemas(pkg, files)
 	test.Nil(t, err)
 	err = cli.uploadRuntimes(pkg, files)
 	test.Nil(t, err)
-	return pkg
+	addPackage(t, cli, pkg)
 }
 
 func sendEvtV1AndValidate(t *testing.T, pkg *pb.JobPackage, cli *testClient) *url.URL {
@@ -325,8 +350,7 @@ func sendEvtV1(pkg *pb.JobPackage, cli *testClient) error {
 	return err
 }
 
-func addPackage(t *testing.T, cli *testClient) *pb.JobPackage {
-	pkg := newTestPackage(SchemaRefIDs{"sch1", "sch1_ok", "sch1_error"}, "run1")
+func addPackage(t *testing.T, cli *testClient, pkg *pb.JobPackage) *pb.JobPackage {
 	err := cli.addTenant(pkg.Tenant)
 	test.Nil(t, err)
 	err = cli.addPackage(pkg)

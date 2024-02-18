@@ -15,11 +15,11 @@ type node struct {
 	// true if this node has children and does not allow expansion
 	expanded bool
 	entity   any
-	selected func(context.Context, *TApp, *tview.TreeNode)
+	selected func(context.Context, *Dashboard, *tview.TreeNode)
 	// the handler recv the node getting the focus
-	focus func(context.Context, *TApp, *tview.TreeNode)
+	focus func(context.Context, *Dashboard, *tview.TreeNode)
 	// the handler recv the node loosing the focus and the one getting it
-	blur         func(context.Context, *TApp, *tview.TreeNode, *tview.TreeNode)
+	blur         func(context.Context, *Dashboard, *tview.TreeNode, *tview.TreeNode)
 	children     []*node
 	rootNodeType RootNodeType
 	color        tcell.Color
@@ -55,7 +55,7 @@ var rootNode = func(e *pb.Environment, j []*pb.JobPackage, f []*pb.TenantFiles) 
 					{
 						text:     "<< start >>",
 						selected: onSelectedGettingJobResults,
-						focus:    func(_ context.Context, c *TApp, _ *tview.TreeNode) { switchToPageIfExists(c.mainView, "results") },
+						focus:    func(_ context.Context, c *Dashboard, _ *tview.TreeNode) { switchToPageIfExists(c.mainView, "results") },
 					},
 				},
 			},

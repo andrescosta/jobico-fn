@@ -48,7 +48,10 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithHealthCheckFn(func(_ context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			return server.New(ctx, ".\\log.log", s.option)
+			dir := env.String("recorder.dir", "recorder")
+			dir = env.WorkdirPlus(dir, "results")
+			logFile := "log.log"
+			return server.New(ctx, logFile, dir, s.option)
 		}),
 	)
 	if err != nil {

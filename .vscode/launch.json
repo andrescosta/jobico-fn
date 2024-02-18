@@ -47,6 +47,17 @@
         "program": "${workspaceFolder}/cmd/executor/executor.go"
     },
     {
+        "name": "Launch recorder",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/cmd/recorder/recorder.go",
+        "args": [
+            "--env:basedir=../../bin",
+            "--env:workdir=../../work",
+        ]
+    },
+    {
         "name": "Launch listener",
         "type": "go",
         "request": "launch",
@@ -74,7 +85,6 @@
         "program": "${workspaceFolder}/cmd/cli/main.go",
         "args": [
             "deploy",
-            "-update",
             "C:/Users/Andres/projects/supportj/job1.yml",
         ]
     },
@@ -139,7 +149,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/cmd/dashboard/main.go",
+        "program": "${workspaceFolder}/cmd/dashboard/dashboard.go",
         "console": "integratedTerminal",
         "args": [
             "-sync",

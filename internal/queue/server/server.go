@@ -1,4 +1,4 @@
-package queue
+package server
 
 import (
 	"context"
@@ -13,7 +13,7 @@ type Server struct {
 	controller *controller.Controller
 }
 
-func NewServer(ctx context.Context, d service.GrpcDialer, o controller.Option) (*Server, error) {
+func New(ctx context.Context, d service.GrpcDialer, o controller.Option) (*Server, error) {
 	c, err := controller.New(ctx, d, o)
 	if err != nil {
 		return nil, err

@@ -5,16 +5,16 @@ import (
 	"encoding/gob"
 	"errors"
 	"os"
+	"path/filepath"
 	"sync"
 
-	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/ioutil"
 )
 
 const (
 	preffix = "qdata"
 	suffix  = ".q"
-	dir     = "data"
+	dataDir = "data"
 )
 
 type FileQueue[T any] struct {
@@ -22,9 +22,12 @@ type FileQueue[T any] struct {
 	mutex     sync.Mutex
 }
 
-func NewFileQueue[T any](id string) *FileQueue[T] {
-	directory := queueDirectory(dir, id)
-	return &FileQueue[T]{directory: directory}
+func NewFileQueue[T any](dir string, id string) (*FileQueue[T], error) {
+	directory := queueDirectory(dir, dataDir, id)
+	if err := os.MkdirAll(directory, 0o700); err != nil {
+		return nil, err
+	}
+	return &FileQueue[T]{directory: directory}, nil
 }
 
 func (f *FileQueue[T]) Add(data T) error {
@@ -87,6 +90,6 @@ func (f *FileQueue[T]) writeData(data T) error {
 	return nil
 }
 
-func queueDirectory(directory string, id string) string {
-	return env.WorkdirPlus(directory, id)
+func queueDirectory(baseDir string, dataDir string, id string) string {
+	return filepath.Join(baseDir, dataDir, id)
 }

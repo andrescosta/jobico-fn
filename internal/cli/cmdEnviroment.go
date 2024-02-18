@@ -13,20 +13,19 @@ import (
 	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
-var cmdEnv = &command{
-	name:      "env",
-	usageLine: `cli env <file>`,
-	short:     "upload environment information",
-	long: `
-Uploads environment information. This option is reserved for future usage.`,
-}
-var cmdEnvflagUpdate *bool
-
-func initEnv() {
+func newEnv() *command {
+	cmdEnv := &command{
+		name:      "env",
+		usageLine: `cli env <file>`,
+		short:     "upload environment information",
+		long: `
+	Uploads environment information. This option is reserved for future usage.`,
+	}
 	cmdEnv.flag = *flag.NewFlagSet("env1", flag.ContinueOnError)
-	cmdEnvflagUpdate = cmdEnv.flag.Bool("update", false, "override deployment")
+	_ = cmdEnv.flag.Bool("update", false, "override deployment")
 	cmdEnv.run = runEnv
 	cmdEnv.flag.Usage = func() {}
+	return cmdEnv
 }
 
 func runEnv(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {
@@ -55,7 +54,8 @@ func runEnv(ctx context.Context, cmd *command, d service.GrpcDialer, args []stri
 		printError(os.Stdout, cmd, err)
 		return
 	}
-	if environ != nil && !*cmdEnvflagUpdate {
+	update, _ := cmd.flag.Lookup("update").Value.(flag.Getter).Get().(bool)
+	if environ != nil && !update {
 		fmt.Println("environment exists. use -update command to override.")
 		return
 	}

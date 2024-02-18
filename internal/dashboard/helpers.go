@@ -29,7 +29,7 @@ func switchToPageIfExists(t *tview.Pages, page string) bool {
 	return false
 }
 
-func trySwitchToPage(name string, pages *tview.Pages, app *TApp, c func() (tview.Primitive, error)) {
+func trySwitchToPage(name string, pages *tview.Pages, app *Dashboard, c func() (tview.Primitive, error)) {
 	if !switchToPageIfExists(pages, name) {
 		page, err := c()
 		if err != nil {
@@ -45,11 +45,11 @@ func trySwitchToPage(name string, pages *tview.Pages, app *TApp, c func() (tview
 	}
 }
 
-func switchToEmptyPage(app *TApp) {
+func switchToEmptyPage(app *Dashboard) {
 	app.mainView.SwitchToPage(emptyPage)
 }
 
-func showText(app *TApp, status *tview.TextView, text string, color tcell.Color, d time.Duration) {
+func showText(app *Dashboard, status *tview.TextView, text string, color tcell.Color, d time.Duration) {
 	status.SetTextColor(color)
 	status.SetText(text)
 	c := time.NewTimer(d)
@@ -65,7 +65,7 @@ func showText(app *TApp, status *tview.TextView, text string, color tcell.Color,
 func disableTreeNode(tn *tview.TreeNode) {
 	tn.SetColor(tcell.ColorGray)
 	n := tn.GetReference().(*node)
-	n.selected = func(_ context.Context, _ *TApp, _ *tview.TreeNode) {}
+	n.selected = func(_ context.Context, _ *Dashboard, _ *tview.TreeNode) {}
 }
 
 func newModal(p tview.Primitive, width, height int) tview.Primitive {

@@ -13,18 +13,18 @@ import (
 	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
-var cmdRollback = &command{
-	name:      "rollback",
-	usageLine: `cli rollabck < deployment file >.yaml`,
-	short:     "remove a Job definition",
-	long: `
-The rollback command eliminates a Job definition from the platform, halting associated queue executors.`,
-}
-
-func initRollback() {
+func newRollback() *command {
+	cmdRollback := &command{
+		name:      "rollback",
+		usageLine: `cli rollabck < deployment file >.yaml`,
+		short:     "rollback a Job",
+		long: `
+	The rollback command eliminates a Job definition from the platform, halting associated queue executors.`,
+	}
 	cmdRollback.flag = *flag.NewFlagSet("rollback", flag.ContinueOnError)
 	cmdRollback.run = runRollback
 	cmdRollback.flag.Usage = func() {}
+	return cmdRollback
 }
 
 func runRollback(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {

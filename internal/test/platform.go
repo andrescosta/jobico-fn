@@ -31,12 +31,22 @@ type platform struct {
 }
 
 func (j *platform) dispose() error {
-	j.ctl.Dispose()
-	j.queue.Dispose()
-	j.recorder.Dispose()
+	if j.ctl != nil {
+		j.ctl.Dispose()
+	}
+	if j.queue != nil {
+		j.queue.Dispose()
+	}
+	if j.recorder != nil {
+		j.recorder.Dispose()
+	}
 	var err error
-	err = errors.Join(j.listener.Dispose(), err)
-	err = errors.Join(j.executor.Dispose(), err)
+	if j.listener != nil {
+		err = errors.Join(j.listener.Dispose(), err)
+	}
+	if j.executor != nil {
+		err = errors.Join(j.executor.Dispose(), err)
+	}
 	return err
 }
 
@@ -44,8 +54,8 @@ func newPlatform(ctx context.Context) (*platform, error) {
 	return newPlatformWithTimeout(ctx, *env.Duration("dial.timeout"))
 }
 
-func newPlatformWithTimeout(ctx context.Context, time time.Duration) (*platform, error) {
-	conn := service.NewBufConnWithTimeout(time)
+func newPlatformWithTimeout(ctx context.Context, dur time.Duration) (*platform, error) {
+	conn := service.NewBufConnWithTimeout(dur)
 	ctl, err := ctl.New(ctx,
 		ctl.WithGrpcConn(service.GrpcConn{
 			Listener: conn,
@@ -86,7 +96,7 @@ func newPlatformWithTimeout(ctx context.Context, time time.Duration) (*platform,
 	}),
 		exec.WithGrpcDialer(conn),
 		exec.WithOption(
-			executor.Options{ManualWakeup: false}))
+			executor.Options{}))
 	if err != nil {
 		return nil, err
 	}

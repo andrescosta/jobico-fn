@@ -84,7 +84,7 @@ func (f *FileRepo) Add(tenant string, name string, fileType int32, bytes []byte)
 
 func addFile(name string, bytes []byte, dirs ...string) error {
 	full := filepath.Join(dirs...)
-	if err := os.MkdirAll(full, os.ModeExclusive); err != nil {
+	if err := os.MkdirAll(full, 0o700); err != nil {
 		return err
 	}
 	fulPath := filepath.Join(full, name)
@@ -95,7 +95,7 @@ func addFile(name string, bytes []byte, dirs ...string) error {
 	if e {
 		return ErrFileExists
 	}
-	if err := os.WriteFile(fulPath, bytes, os.ModeExclusive); err != nil {
+	if err := os.WriteFile(fulPath, bytes, 0o600); err != nil {
 		return err
 	}
 	return nil

@@ -40,24 +40,18 @@ func NewCtl(ctx context.Context, d service.GrpcDialer) (*Ctl, error) {
 }
 
 func (c *Ctl) Close() error {
-	errs := make([]error, 0)
+	var err error
 	if c.bcEnvUpdates != nil {
-		err := c.bcEnvUpdates.Stop()
-		if err != nil {
-			errs = append(errs, err)
-		}
+		err = errors.Join(c.bcEnvUpdates.Stop(), err)
 	}
 	if c.bcJobPackage != nil {
-		err := c.bcJobPackage.Stop()
-		if err != nil {
-			errs = append(errs, err)
-		}
+		err = errors.Join(c.bcJobPackage.Stop(), err)
 	}
-	err := c.conn.Close()
+	err = errors.Join(c.conn.Close(), err)
 	if err != nil {
-		errs = append(errs, err)
+		err = errors.Join(errors.New("error closing ctl client"), err)
 	}
-	return errors.Join(errs...)
+	return err
 }
 
 func (c *Ctl) Environment(ctx context.Context) (*pb.Environment, error) {
@@ -168,7 +162,7 @@ func (c *Ctl) ListenerForEnvironmentUpdates(ctx context.Context) (*broadcaster.L
 }
 
 func (c *Ctl) startListenEnvironmentUpdates(ctx context.Context) error {
-	cb := broadcaster.Start[*pb.UpdateToEnvironmentStrReply](ctx)
+	cb := broadcaster.NewAndStart[*pb.UpdateToEnvironmentStrReply](ctx)
 	c.bcEnvUpdates = cb
 	s, err := c.cli.UpdateToEnvironmentStr(ctx, &pb.Void{})
 	if err != nil {
@@ -190,7 +184,7 @@ func (c *Ctl) ListenerForPackageUpdates(ctx context.Context) (*broadcaster.Liste
 }
 
 func (c *Ctl) startListenerForPackageUpdates(ctx context.Context) error {
-	cb := broadcaster.Start[*pb.UpdateToPackagesStrReply](ctx)
+	cb := broadcaster.NewAndStart[*pb.UpdateToPackagesStrReply](ctx)
 	c.bcJobPackage = cb
 	s, err := c.cli.UpdateToPackagesStr(ctx, &pb.UpdateToPackagesStrRequest{})
 	if err != nil {

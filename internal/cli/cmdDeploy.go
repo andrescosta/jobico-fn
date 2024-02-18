@@ -13,21 +13,20 @@ import (
 	pb "github.com/andrescosta/jobico/internal/api/types"
 )
 
-var cmdDeploy = &command{
-	name:      "deploy",
-	usageLine: `cli deploy [-update] < deployment file >.yaml`,
-	short:     "deploy a Job",
-	long: `
-The 'deploy' command is employed to add a job definition to the Jobico platform.
-If the '-update' flag is provided and the job has already been deployed, the command will redeploy it.`,
-}
-var cmdDeployflagUpdate *bool
-
-func initDeploy() {
+func newDeploy() *command {
+	cmdDeploy := &command{
+		name:      "deploy",
+		usageLine: `cli deploy [-update] < deployment file >.yaml`,
+		short:     "deploy a Job",
+		long: `
+	The 'deploy' command is employed to add a job definition to the Jobico platform.
+	If the '-update' flag is provided and the job has already been deployed, the command will redeploy it.`,
+	}
 	cmdDeploy.flag = *flag.NewFlagSet("deploy", flag.ContinueOnError)
-	cmdDeployflagUpdate = cmdDeploy.flag.Bool("update", false, "override a deployment")
+	_ = cmdDeploy.flag.Bool("update", false, "override a deployment")
 	cmdDeploy.run = runDeploy
 	cmdDeploy.flag.Usage = func() {}
+	return cmdDeploy
 }
 
 func runDeploy(ctx context.Context, cmd *command, d service.GrpcDialer, args []string) {
@@ -61,7 +60,8 @@ func runDeploy(ctx context.Context, cmd *command, d service.GrpcDialer, args []s
 		return
 	}
 	isUpdate := len(p) >= 1
-	if isUpdate && !*cmdDeployflagUpdate {
+	update, _ := cmd.flag.Lookup("update").Value.(flag.Getter).Get().(bool)
+	if isUpdate && !update {
 		fmt.Printf("package %s exists. use -update command to override.\n", f.ID)
 		return
 	}

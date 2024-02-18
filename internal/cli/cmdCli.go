@@ -7,47 +7,39 @@ import (
 	"github.com/andrescosta/goico/pkg/service"
 )
 
-func initCliCommand() *command {
-	initHelp()
-	initDeploy()
-	initRecorder()
-	initUpload()
-	initShow()
-	initEnv()
-	initRollback()
+func newCli() *command {
+	cliCommand := &command{
+		name:      "cli",
+		usageLine: "cli",
+		long:      "Cli is the command line admin tool.",
+	}
 	cliCommand.commands = []*command{
-		cmdHelp,
-		cmdUpload,
-		cmdDeploy,
-		cmdRollback,
-		cmdRecorder,
-		cmdShow,
-		cmdEnv,
+		newHelp(cliCommand),
+		newUpload(),
+		newDeploy(),
+		newRollback(),
+		newRecorder(),
+		newShow(),
+		newEnv(),
 	}
 	cliCommand.run = runCli
 	return cliCommand
 }
 
-var cliCommand = &command{
-	name:      "cli",
-	usageLine: "cli",
-	long:      "Cli is the command line admin tool.",
-}
-
-func runCli(ctx context.Context, _ *command, d service.GrpcDialer, _ []string) {
+func runCli(ctx context.Context, cliCommand *command, dialer service.GrpcDialer, _ []string) {
 	if len(os.Args) < 2 {
 		printUsage(os.Stdout, cliCommand)
 		return
 	}
 	cmdFound := false
-	for _, c := range cliCommand.commands {
-		if c.Name() == os.Args[1] {
+	for _, command := range cliCommand.commands {
+		if command.Name() == os.Args[1] {
 			cmdFound = true
-			if err := c.flag.Parse(os.Args[2:]); err != nil {
-				printHelp(os.Stdout, c)
+			if err := command.flag.Parse(os.Args[2:]); err != nil {
+				printHelp(os.Stdout, command)
 				return
 			}
-			c.run(ctx, c, d, c.flag.Args())
+			command.run(ctx, command, dialer, command.flag.Args())
 		}
 	}
 	if !cmdFound {

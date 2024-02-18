@@ -34,9 +34,9 @@ x-obs-depends_on: &obs-depends_on
   #   condition: service_started
 
 x-svc-log: &svc-log
-  log.level: 0
-  log.console.enabled: true
-  log.file.enabled: true
+  log.level: 1
+  log.console.enabled: false
+  log.file.enabled: false
 
 x-env: &env
   queue.host: queue:50051

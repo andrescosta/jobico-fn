@@ -59,13 +59,17 @@ func newCache(ctx context.Context, dialer service.GrpcDialer, listener service.G
 }
 
 func (j *EventDefCache) close() error {
-	return j.init.Dispose(context.Background(), func(_ context.Context) error {
+	err := j.init.Dispose(context.Background(), func(_ context.Context) error {
 		var err error
 		err = errors.Join(err, j.controlClient.Close())
 		err = errors.Join(err, j.repoClient.Close())
 		err = errors.Join(err, j.eventCache.Close())
+		if err != nil {
+			err = errors.Join(errors.New("error closing cache client"), err)
+		}
 		return err
 	})
+	return err
 }
 
 func (j *EventDefCache) populate(ctx context.Context) error {

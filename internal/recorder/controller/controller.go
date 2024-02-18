@@ -17,13 +17,13 @@ type Option struct {
 	InMemory bool
 }
 
-func New(path string, o Option) (*Recorder, error) {
+func New(resFilename string, dir string, o Option) (*Recorder, error) {
 	var r recorder.ExecutionRecorder
 	if o.InMemory {
 		r = recorder.NewMemrecorder()
 	} else {
 		var err error
-		r, err = recorder.NewFileLogRecorder(path)
+		r, err = recorder.NewFileLogRecorder(resFilename, dir)
 		if err != nil {
 			return nil, err
 		}

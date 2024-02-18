@@ -7,8 +7,8 @@ import (
 	"github.com/andrescosta/goico/pkg/service"
 	"github.com/andrescosta/goico/pkg/service/grpc"
 	pb "github.com/andrescosta/jobico/internal/api/types"
-	"github.com/andrescosta/jobico/internal/queue"
 	"github.com/andrescosta/jobico/internal/queue/controller"
+	"github.com/andrescosta/jobico/internal/queue/server"
 )
 
 const name = "queue"
@@ -31,12 +31,13 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 			},
 		},
 	}
-	for _, op := range ops {
-		op(s)
-	}
 	_, _, err := env.Load(s.Name)
 	if err != nil {
 		return nil, err
+	}
+	s.option.Dir = env.WorkdirPlus(env.String("queue.dir", "queue"))
+	for _, op := range ops {
+		op(s)
 	}
 	svc, err := grpc.New(
 		grpc.WithListener(s.Listener),
@@ -48,7 +49,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		grpc.WithPProfAddr(env.StringOrNil("pprof.addr")),
 		grpc.WithHealthCheckFn(func(_ context.Context) error { return nil }),
 		grpc.WithNewServiceFn(func(ctx context.Context) (any, error) {
-			return queue.NewServer(ctx, s.Dialer, s.option)
+			return server.New(ctx, s.Dialer, s.option)
 		}),
 	)
 	if err != nil {

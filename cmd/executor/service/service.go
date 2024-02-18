@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/andrescosta/goico/pkg/env"
 	"github.com/andrescosta/goico/pkg/service"
@@ -16,9 +17,10 @@ type Setter func(*Service)
 
 type Service struct {
 	process.Container
-	vm     *executor.VM
-	dialer service.GrpcDialer
-	option executor.Options
+	delay    time.Duration
+	executor *executor.Executor
+	dialer   service.GrpcDialer
+	option   executor.Options
 }
 
 func New(ctx context.Context, ops ...Setter) (*Service, error) {
@@ -28,6 +30,7 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		Container: process.Container{
 			Name: name,
 		},
+		delay: 0,
 	}
 	for _, op := range ops {
 		op(s)
@@ -36,11 +39,14 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	vm, err := executor.NewVM(ctx, s.dialer, s.option)
+	s.delay = *env.Duration("executor.delay", 0)
+	s.option.MaxProc = env.Int("executor.maxproc", 0)
+	executor, err := executor.New(ctx, s.dialer, s.option)
 	if err != nil {
 		return nil, err
 	}
-	s.vm = vm
+	s.executor = executor
+	empty := make(map[string]string)
 	svc, err := process.New(
 		process.WithSidecarListener(s.ListenerOrDefault()),
 		process.WithContext(ctx),
@@ -48,14 +54,13 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 		process.WithAddr(s.AddrOrPanic()),
 		process.WithProfilingEnabled(env.Bool("prof.enabled", false)),
 		process.WithHealthCheckFN(func(_ context.Context) (map[string]string, error) {
-			status := make(map[string]string)
-			if !vm.IsUp() {
-				return status, errors.New("error in executor")
+			if !executor.IsUp() {
+				return empty, errors.New("error in executor")
 			}
-			return status, nil
+			return empty, nil
 		}),
 		process.WithStarter(func(ctx context.Context) error {
-			return vm.StartExecutors(ctx)
+			return executor.Start(ctx)
 		}),
 	)
 	if err != nil {
@@ -66,11 +71,11 @@ func New(ctx context.Context, ops ...Setter) (*Service, error) {
 }
 
 func (s *Service) Start() error {
-	return s.Svc.Serve()
+	return s.Svc.ServeWithDelay(s.delay)
 }
 
 func (s *Service) Dispose() error {
-	return s.vm.Close(s.Svc.Base.Ctx)
+	return s.executor.Close(s.Svc.Base.Ctx)
 }
 
 func WithGrpcDialer(d service.GrpcDialer) Setter {

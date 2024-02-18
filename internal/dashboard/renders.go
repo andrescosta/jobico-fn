@@ -1,9 +1,7 @@
 package dashboard
 
 import (
-	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/andrescosta/goico/pkg/service/grpc/svcmeta"
@@ -17,155 +15,7 @@ var iconPreffixNodesMap = map[bool]string{
 	false: iconContracted,
 }
 
-func (c *TApp) renderUI(ctx context.Context) *tview.Pages {
-	// sets the main pages
-	pages := tview.NewPages()
-	c.mainView = tview.NewPages()
-	c.mainView.SetBorderPadding(0, 0, 0, 0)
-	c.mainView.SetBorder(true)
-	c.mainView.AddPage(emptyPage, buildTextView(""), true, true)
-	menu := c.renderSideMenu(ctx)
-	c.status = newTextView("")
-	c.status.SetTextAlign(tview.AlignCenter)
-	helpTxt := "<Esc> - To Exit | <Tab> to switch views | <Arrows> to navigate"
-	if c.debug {
-		helpTxt = fmt.Sprintf("%s %s", helpTxt, "| <Ctrl-D> for debug info | <Ctrl-P> To stop streaming")
-	}
-	f := tview.NewFlex().
-		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(c.status, 0, 1, false).
-			AddItem(nil, 0, 1, false).
-			AddItem(newTextView(helpTxt), 0, 1, false), 0, 1, false)
-	grid := tview.NewGrid().
-		SetRows(3, 0, 3).
-		SetColumns(30, 30).
-		SetBorders(true).
-		AddItem(newTextView("Jobico Dashboard"), 0, 0, 1, 4, 0, 0, false).
-		AddItem(f, 2, 0, 1, 4, 0, 0, false)
-	// Layout for screens narrower than 100 cells (menu and side bar are hidden).
-	grid.AddItem(menu, 1, 0, 1, 1, 0, 0, true).
-		AddItem(c.mainView, 1, 1, 1, 3, 0, 0, false)
-	// Layout for screens wider than 100 cells.
-	grid.AddItem(menu, 1, 0, 1, 0, 0, 40, true).
-		AddItem(c.mainView, 1, 1, 0, 0, 0, 160, false)
-	quitModal := tview.NewModal().SetText("Do you want to quit the application?").
-		AddButtons([]string{"Quit", "Cancel"}).
-		SetDoneFunc(func(_ int, buttonLabel string) {
-			if buttonLabel == "Quit" {
-				c.app.Stop()
-			} else {
-				pages.HidePage(quitPageModal)
-				c.app.SetFocus(menu)
-			}
-		})
-	c.debugTextView = buildTextView("")
-	c.debugTextView.SetWordWrap(true)
-	c.debugTextView.SetWrap(true)
-	fmt.Fprintf(c.debugTextView, "Debug information for process: %d\n", os.Getppid())
-	c.debugTextView.SetBorder(true)
-	pages.AddPage(mainPage, grid, true, true)
-	pages.AddPage(debugPage, c.debugTextView, true, false)
-	// It is important that the last page is always the quit page, so
-	// it can appears on top of the others without the need to hide them
-	pages.AddPage(quitPageModal, newModal(
-		quitModal, 40, 10), true, false)
-	c.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		fp, _ := pages.GetFrontPage()
-		//exhaustive:ignore
-		switch event.Key() {
-		case tcell.KeyTAB:
-			if fp == mainPage && !quitModal.HasFocus() {
-				if menu.HasFocus() {
-					c.app.SetFocus(c.mainView)
-				} else {
-					c.app.SetFocus(menu)
-				}
-			}
-			return nil
-		case tcell.KeyEscape, tcell.KeyCtrlC:
-			pages.ShowPage(quitPageModal)
-			return nil
-		case tcell.KeyCtrlD:
-			if fp == debugPage {
-				pages.SwitchToPage(mainPage)
-				c.app.SetFocus(menu)
-			} else {
-				pages.SwitchToPage(debugPage)
-			}
-			return nil
-		case tcell.KeyCtrlP:
-			if c.debug {
-				c.stopStreamingUpdates()
-			}
-		case tcell.KeyCtrlU:
-			if c.debug {
-				c.execProtected(func() { panic("testing panic") })
-			}
-		default:
-			return event
-		}
-		return event
-	})
-	return pages
-}
-
-func (c *TApp) renderSideMenu(ctx context.Context) *tview.TreeView {
-	e, err := c.controlCli.Environment(ctx)
-	if err != nil {
-		panic(err)
-	}
-	ep, err := c.controlCli.AllPackages(ctx)
-	if err != nil {
-		panic(err)
-	}
-	fs, err := c.repoCli.AllFilenames(ctx)
-	if err != nil {
-		panic(err)
-	}
-	r := renderNode(rootNode(e, ep, fs))
-	c.rootTreeNode = r
-	menu := tview.NewTreeView()
-	menu.SetRoot(r)
-	menu.SetCurrentNode(r)
-	menu.SetBorder(true)
-	menu.SetSelectedFunc(func(n *tview.TreeNode) {
-		original := n.GetReference().(*node)
-		if len(original.children) > 0 {
-			if !original.expanded {
-				if n.IsExpanded() {
-					c.refreshRootNode(ctx, n)
-				}
-				iconNodeExpanded := iconPreffixNodesMap[n.IsExpanded()]
-				iconNodeClosed := iconPreffixNodesMap[!n.IsExpanded()]
-				ns, e := strings.CutPrefix(n.GetText(), iconNodeExpanded)
-				if e {
-					n.SetText(iconNodeClosed + ns)
-					n.SetExpanded(!n.IsExpanded())
-				}
-			}
-		} else if original.selected != nil {
-			c.execProtected(func() { original.selected(ctx, c, n) })
-		}
-	})
-	// This function simulates the focus and blur event handlers for the tree's nodes
-	menu.SetChangedFunc(func(n *tview.TreeNode) {
-		if c.lastNode != nil {
-			nl := c.lastNode.GetReference().(*node)
-			if nl.blur != nil {
-				c.execProtected(func() { nl.blur(ctx, c, c.lastNode, n) })
-			}
-		}
-		ref := n.GetReference().(*node)
-		if ref.focus != nil {
-			c.execProtected(func() { ref.focus(ctx, c, n) })
-		}
-		c.lastNode = n
-	})
-	return menu
-}
-
 func renderNode(target *node) *tview.TreeNode {
-	// if target.color == tcell.ColorDefault {
 	if len(target.children) > 0 {
 		if !target.expanded {
 			target.text = renderNodeText(iconContracted, target.text)
@@ -174,7 +24,6 @@ func renderNode(target *node) *tview.TreeNode {
 	} else {
 		target.color = tcell.ColorWhite
 	}
-	// }
 	node := tview.NewTreeNode(target.text).
 		SetExpanded(target.expanded).
 		SetReference(target).
@@ -186,7 +35,6 @@ func renderNode(target *node) *tview.TreeNode {
 }
 
 func reRenderNode(target *node, tn *tview.TreeNode) {
-	// if target.color == tcell.ColorDefault {
 	if len(target.children) > 0 {
 		if !target.expanded {
 			target.text = renderNodeText(iconContracted, target.text)
@@ -201,7 +49,6 @@ func reRenderNode(target *node, tn *tview.TreeNode) {
 		target.color = tcell.ColorWhite
 		target.expanded = false
 	}
-	// }
 	tn.SetText(target.text).
 		SetExpanded(target.expanded).
 		SetReference(target).
