@@ -20,7 +20,7 @@ Jobico is an open-source platform designed for defining and processing jobs as a
 
 - **WASM-Compatible Language Support**: Implement processing logic in any language that compiles to WebAssembly, promoting platform independence..
 
-# Stack
+# Software Stack
 
 ![alt](docs/img/stack.svg?)
 
@@ -29,17 +29,11 @@ Explore the architecture of Jobico to gain insights into its design principles a
 
 ### For a comprehensive overview of Jobico's architecture, [click here](ARCHITECTURE.md)
 
-# Platform Setup and Administration Guide
-
-Explore how to work with the Jobico platform by checking out our comprehensive tutotial. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the manual.
-
-### [Learn more with the In-Depth Guide](GUIDE.md)
-
-## Getting Started with Jobico
+# Getting Started with Jobico
 
 This guide provides instructions for compiling, starting, testing, and running.
 
-### Local Go Environment
+## Local Go Environment
 
 If you have [Go installed](https://go.dev/doc/install) on your machine, you can compile Jobico directly from the source code:
 
@@ -56,7 +50,7 @@ git clone https://github.com/andrescosta/jobico.git
 cd jobico
 make dckr_build
 ```
-### Service Management
+## Service Management
 
 1. Windows
 
@@ -85,7 +79,7 @@ make dckr_up
 make dckr_stop
 ```
 
-### Running Tests with K6
+## Running Tests with K6
 After compiling and starting the services locally, you can run a set of basic test cases using K6:
 
 ``` bash
@@ -100,6 +94,12 @@ And for a more comprensive set, run:
 ./k6.exe run eventsandstream.js
 ```
 ### For testing details on Jobico, [click here](TESTING.md)
+
+# Platform Setup and Administration Guide
+
+Explore how to work with the Jobico platform by checking out our comprehensive tutotial. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the manual.
+
+### [Learn more with the In-Depth Guide](GUIDE.md)
 
 # Operating Jobico: Managing Your Deployment
 

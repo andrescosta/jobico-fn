@@ -1,4 +1,4 @@
-<mxfile host="Electron" modified="2024-02-20T17:22:33.967Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/23.1.5 Chrome/120.0.6099.109 Electron/28.1.0 Safari/537.36" etag="4-eFYH5nn2DbaGjubsKq" version="23.1.5" type="device" pages="14">
+<mxfile host="Electron" modified="2024-02-20T19:26:51.847Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/23.1.5 Chrome/120.0.6099.109 Electron/28.1.0 Safari/537.36" etag="i7FhPNhB8CduvdZnQRKS" version="23.1.5" type="device" pages="14">
   <diagram name="Architecture" id="WZk79Mis1js5u0iVaJR2">
     <mxGraphModel dx="1221" dy="765" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -1003,7 +1003,7 @@
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="V0mKBPlaCY6fnrmlGuh1-7" value="" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="70" y="310" width="870" height="490" as="geometry" />
+          <mxGeometry x="70" y="310" width="840" height="490" as="geometry" />
         </mxCell>
         <mxCell id="V0mKBPlaCY6fnrmlGuh1-1" value="" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontFamily=Lucida Console;fontSize=9;strokeWidth=1;" vertex="1" parent="1">
           <mxGeometry x="420" y="330" width="440" height="120" as="geometry" />
@@ -1087,10 +1087,10 @@
         <mxCell id="A7CjYDedi4uQJRg_4osv-15" value="grpc.bufconn" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontStyle=1;fontSize=13;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
           <mxGeometry x="380" y="490" width="520" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="A7CjYDedi4uQJRg_4osv-26" value="Platform" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#314354;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#ffffff;fillColor=#647687;" vertex="1" parent="1">
+        <mxCell id="A7CjYDedi4uQJRg_4osv-26" value="test.Platform" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#314354;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#ffffff;fillColor=#647687;" vertex="1" parent="1">
           <mxGeometry x="380" y="680" width="70" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="V0mKBPlaCY6fnrmlGuh1-2" value="Client" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#314354;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#ffffff;fillColor=#647687;" vertex="1" parent="1">
+        <mxCell id="V0mKBPlaCY6fnrmlGuh1-2" value="test.Client" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#314354;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#ffffff;fillColor=#647687;" vertex="1" parent="1">
           <mxGeometry x="420" y="330" width="70" height="20" as="geometry" />
         </mxCell>
         <mxCell id="V0mKBPlaCY6fnrmlGuh1-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.001;entryY=0.587;entryDx=0;entryDy=0;entryPerimeter=0;strokeColor=#56517e;align=center;verticalAlign=middle;fontFamily=Courier New;fontSize=10;fontColor=default;fontStyle=0;labelBackgroundColor=none;endArrow=classic;endFill=1;fillColor=#d0cee2;" edge="1" parent="1" source="qw4eQa9WwEYmzxlSg5dm-1" target="V0mKBPlaCY6fnrmlGuh1-1">
@@ -1167,7 +1167,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="V0mKBPlaCY6fnrmlGuh1-12" value="Service Group" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="V0mKBPlaCY6fnrmlGuh1-12" value="goico.ServiceGroup" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" vertex="1" parent="1">
           <mxGeometry x="385" y="736" width="510" height="40" as="geometry" />
         </mxCell>
         <mxCell id="N1uUHCqCo5gbl-ZWMEJA-1" value="Dial to" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Courier New;fontSize=10;fontColor=default;fontStyle=1;labelBackgroundColor=none;" vertex="1" parent="1">

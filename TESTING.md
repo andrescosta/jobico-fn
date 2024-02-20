@@ -23,18 +23,18 @@ Execute Jobico test cases directly from the command line with ease. Follow these
 ```bash
 cd jobico
 
-# Start Jovico using a bash shell
+# from Linux
 ./scripts/startall.sh
-## ./scripts/startall.ps1 in PowerShell
-## make dckr_up for Docker
+## ./scripts/startall.ps1 from PowerShell
+## make dckr_up from Docker
 
 # no coverage report
 make test
 
-# with a coverage report
+# with coverage report
 make test_coverage
 
-# with an HTML coverage report
+# with HTML coverage report
 make test_html
 ```
 
@@ -44,8 +44,6 @@ Harness the power of performance testing with Jobico's K6 implementation. This s
 
 ## Execution
 ```bash
-cd jobico
-
 # Generate the K6 executable
 make k6
 
@@ -95,5 +93,4 @@ The following environment variables control this integration:
 | obs.metrics.runtime | Enable or disable runtime's metrics. |
 
 
-### More information on Telemetry and Profiling configuration can be found in this [guide](OPERATING.md)
-
+### More information on configuring Jobico can be found in this [guide](OPERATING.md)
