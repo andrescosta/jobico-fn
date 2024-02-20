@@ -1,4 +1,4 @@
-<mxfile host="Electron" modified="2024-02-20T19:40:32.706Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/23.1.5 Chrome/120.0.6099.109 Electron/28.1.0 Safari/537.36" etag="3SM1rf_0IjpItic8RbHm" version="23.1.5" type="device" pages="14">
+<mxfile host="Electron" modified="2024-02-20T19:43:37.638Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/23.1.5 Chrome/120.0.6099.109 Electron/28.1.0 Safari/537.36" etag="08uextuKF-Mhp265h6IW" version="23.1.5" type="device" pages="14">
   <diagram name="Architecture" id="WZk79Mis1js5u0iVaJR2">
     <mxGraphModel dx="1221" dy="765" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -146,10 +146,10 @@
         <mxCell id="Z-eusJhZaDZSSoR5X35K-2" value="Observability" style="rounded=0;whiteSpace=wrap;html=1;align=left;fillColor=#647687;fontColor=#ffffff;strokeColor=#314354;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="670" y="220" width="70" height="19" as="geometry" />
         </mxCell>
-        <mxCell id="Z-eusJhZaDZSSoR5X35K-3" value="Jaeger" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4D9DB0;strokeColor=#82D3DC;fontColor=#FFFFFF;align=center;verticalAlign=middle;fontFamily=Lucida Console;fontSize=10;" vertex="1" parent="1">
+        <mxCell id="Z-eusJhZaDZSSoR5X35K-3" value="Jaeger" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=center;verticalAlign=middle;fontFamily=Lucida Console;fontSize=10;fontColor=#333333;" vertex="1" parent="1">
           <mxGeometry x="700" y="257" width="89" height="47" as="geometry" />
         </mxCell>
-        <mxCell id="Z-eusJhZaDZSSoR5X35K-4" value="Prometheus" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4D9DB0;strokeColor=#82D3DC;fontColor=#FFFFFF;align=center;verticalAlign=middle;fontFamily=Lucida Console;fontSize=10;" vertex="1" parent="1">
+        <mxCell id="Z-eusJhZaDZSSoR5X35K-4" value="Prometheus" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=center;verticalAlign=middle;fontFamily=Lucida Console;fontSize=10;fontColor=#333333;" vertex="1" parent="1">
           <mxGeometry x="700" y="328" width="89" height="47" as="geometry" />
         </mxCell>
       </root>
