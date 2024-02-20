@@ -84,4 +84,4 @@ Goico enables the utilization of WebAssembly (WASM) runtimes via WAZERO, providi
 Goico integrates an embedded database based on [Pebble](https://github.com/cockroachdb/pebble), offering a key/value store for data management. This embedded database serves as the backbone for storing critical information, supporting the reliable and fast retrieval of data essential for the operation of Jobico.
 
 
-### For additional details about Jobico, [click here](https://github.com/andrescosta/goico).
+#### For additional details [click here](https://github.com/andrescosta/goico).
