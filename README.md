@@ -72,8 +72,8 @@ make dckr_up
 make dckr_stop
 ```
 
-## Running Tests with K6
-After compiling and starting the services locally, you can run a set of basic end to end test cases:
+## Running Tests
+After compiling and starting the services locally, you can run a set of end to end test cases:
 
 ``` bash
 make test
