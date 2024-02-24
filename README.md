@@ -27,7 +27,7 @@ Jobico is an open-source platform designed for defining and processing jobs as a
 # Architecture
 Explore the architecture of Jobico to gain insights into its design principles and components. This section provides an overview of the system's structure and how its various elements interact to deliver powerful capabilities. plex workflows.
 
-### For a comprehensive overview of Jobico's architecture, [click here](ARCHITECTURE.md)
+[Learn More about Jobico's architecture](ARCHITECTURE.md)
 
 # Getting Started with Jobico
 
@@ -73,15 +73,10 @@ make dckr_stop
 ```
 
 ## Running Tests with K6
-After compiling and starting the services locally, you can run a set of basic test cases using K6:
+After compiling and starting the services locally, you can run a set of basic end to end test cases:
 
 ``` bash
-make k6
-cd perf
-./k6.exe run events.js
-
-# And for a more comprensive set, run:
-./k6.exe run eventsandstream.js
+make test
 ```
 
 [Learn more how testing works in Jobico](TESTING.md)
@@ -98,7 +93,6 @@ Explore key aspects of managing and maintaining your Jobico deployment. From mon
 
 [Learn More about Operating Jobico](OPERATING.md)
 
-
 # Roadmap
 
 The roadmap can be accessed or queried at this location:
@@ -107,9 +101,9 @@ https://github.com/users/andrescosta/projects/3/views/1
 
 
 ### Short Term
-- Complete demo of a Jobicolet
+- More complex Jobicolet examples
 - Extend the capabilities of the Testing framework
-- Errors management
+- Improve error management
 
 ### Mid term
 - Improvements to the Wasm runtime
