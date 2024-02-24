@@ -120,6 +120,10 @@ func newTestPackage() *pb.JobPackage {
 	return newPackage(SchemaRefIDs{"sch1", "sch1_ok", "sch1_error"}, "run1")
 }
 
+func newErrorTestPackage() *pb.JobPackage {
+	return newPackage(SchemaRefIDs{"sch1", "sch1_ok", "sch1_error"}, "runerror1")
+}
+
 func newPackage(schemaRefIDs SchemaRefIDs, runtimeRef string) *pb.JobPackage {
 	p := pb.JobPackage{
 		ID:     "job_id_1",

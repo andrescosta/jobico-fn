@@ -4,9 +4,9 @@
 
 ## Introduction
 
-Welcome to Jobico – An Experimental, Multi-Tenancy asynchronous computing Platform!
+Jobico: Multitenant Job Processing with WebAssembly
 
-Jobico is a Go project designed for experimental development, with a focus on exploring asynchronous computing using WebAssembly (WASM) in a multi-tenancy environment. It prioritizes flexibility and customization, allowing tenants to define events, validate incoming data using JSON Schema, and execute custom programs in any WASM-compatible language.
+Jobico is an open-source platform designed for defining and processing jobs as a collection of events. Its core features revolve around multi-tenancy and language-agnostic execution via WebAssembly, making it suitable for various use cases requiring scalability and flexibility.
 
 ## Key Characteristics
 
@@ -14,29 +14,26 @@ Jobico is a Go project designed for experimental development, with a focus on ex
 
 - **Multi-Tenancy Focus**: Jobico's architecture is specifically designed to facilitate multi-tenancy, enabling the simultaneous operation of multiple isolated tenants on the platform.
 
+- **Event-driven processing** : Break down jobs into smaller events for easier orchestration and control flow management.
+
 - **Event Definition with JSON Schema**: Tenants can define events through JSON Schema, allowing for structured and dynamic event handling. Incoming requests undergo validation against the specified schema.
 
-- **WASM-Compatible Language Support**: Jobico offers support for custom program creation in any WASM-compatible language, fostering flexibility and diversity in the execution of jobs.
-# Stack
+- **WASM-Compatible Language Support**: Implement processing logic in any language that compiles to WebAssembly, promoting platform independence..
+
+# Software Stack
 
 ![alt](docs/img/stack.svg?)
 
 # Architecture
-Explore the architecture of Jobico to gain insights into its design principles and components. This section provides an overview of the system's structure and how its various elements interact to deliver powerful capabilities. Delve deeper into the technical details to understand how it operates and supports complex workflows.
+Explore the architecture of Jobico to gain insights into its design principles and components. This section provides an overview of the system's structure and how its various elements interact to deliver powerful capabilities. plex workflows.
 
-### For a comprehensive overview of Jobico's architecture, [click here](ARCHITECTURE.md)
+[Learn More about Jobico's architecture](ARCHITECTURE.md)
 
-# Platform Setup and Administration Guide
+# Getting Started with Jobico
 
-Explore how to work with the Jobico platform by checking out our comprehensive tutotial. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the manual.
+This guide provides instructions for compiling, starting, testing, and running.
 
-### [Learn more with the In-Depth Guide](GUIDE.md)
-
-## Getting Started with Jobico
-
-This guide provides instructions for compiling, starting, testing, and running [Project Name].
-
-### Local Go Environment
+## Local Go Environment
 
 If you have [Go installed](https://go.dev/doc/install) on your machine, you can compile Jobico directly from the source code:
 
@@ -53,56 +50,48 @@ git clone https://github.com/andrescosta/jobico.git
 cd jobico
 make dckr_build
 ```
-### Service Management
+## Service Management
 
-1. Windows
-
-```powershell
-scripts/startall.ps1
-```
-```powershell
-scripts/stopall.ps1
-```
-
-2. Linux
-
+1. Local
 ```bash
+# Starting the services
 scripts/startall.sh
-```
-```bash
+#powershell: startall.ps1
+
+# Stopping the services
 scripts/stopall.sh
+#powershell: stopall.ps1
 ```
 
-3. Docker
-
+2. Docker
 ``` bash
+# Starting the environment
 make dckr_up
-```
-``` bash
+
+# Stopping the environment
 make dckr_stop
 ```
 
-### Running Tests with K6
-After starting the platform locally, you can run a set of basic test cases using K6:
+## Running Tests
+After compiling and starting the services locally, you can run a set of end to end test cases:
 
 ``` bash
-make k6
-cd perf
-./k6.exe run events.js
+make test
 ```
 
-And for a more comprensive set of test cases, run:
+[Learn more how testing works in Jobico](TESTING.md)
 
-```bash
-./k6.exe run eventsandstream.js
-```
- 
+# Platform Setup and Administration Guide
+
+Explore how to work with the Jobico platform by checking out our comprehensive tutotial. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the manual.
+
+[Learn more with the In-Depth Guide](GUIDE.md)
+
 # Operating Jobico: Managing Your Deployment
 
 Explore key aspects of managing and maintaining your Jobico deployment. From monitoring job execution to configuring environment variables and performing health checks, this section covers essential topics to ensure the smooth operation of your Jobico environment.
 
 [Learn More about Operating Jobico](OPERATING.md)
-
 
 # Roadmap
 
@@ -112,9 +101,9 @@ https://github.com/users/andrescosta/projects/3/views/1
 
 
 ### Short Term
-- Complete demo of a Jobicolet
+- More complex Jobicolet examples
 - Extend the capabilities of the Testing framework
-- Errors management
+- Improve error management
 
 ### Mid term
 - Improvements to the Wasm runtime

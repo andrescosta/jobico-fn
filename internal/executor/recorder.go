@@ -15,7 +15,7 @@ type recorder struct {
 	event  string
 }
 
-func (r *recorder) sendLog(ctx context.Context, _ uint32, lvl uint32, msg string) error {
+func (r *recorder) sendLog(ctx context.Context, lvl uint32, msg string) error {
 	now := time.Now()
 	host, err := os.Hostname()
 	if err != nil {

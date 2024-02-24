@@ -31,11 +31,15 @@ var (
 	//go:embed testdata/echo.wasm
 	wasmEcho []byte
 
+	//go:embed testdata/error.wasm
+	wasmError []byte
+
 	files = map[string][]byte{
 		"sch1":       schemaV1,
 		"sch1_ok":    schemaV1Ok,
 		"sch1_error": schemaV1Error,
 		"run1":       wasmEcho,
+		"runerror1":  wasmError,
 	}
 
 	//go:embed testdata/schema_updated.json
@@ -85,6 +89,31 @@ func TestOk(t *testing.T) {
 	err = svcGroup.Start(platform.executor)
 	test.Nil(t, err)
 	_ = sendEvtV1AndValidate(t, pkg, cli)
+}
+
+func TestWasmError(t *testing.T) {
+	defer goleak.VerifyNone(t)
+	setEnvVars()
+	ctx, cancel := context.WithCancel(context.Background())
+	platform, err := newPlatform(ctx)
+	test.Nil(t, err)
+	svcGroup := test.NewServiceGroup()
+	cli, err := newTestClient(ctx, platform.conn, platform.conn)
+	defer func() {
+		cancel()
+		cleanUp(t, platform, svcGroup, cli)
+	}()
+	test.Nil(t, err)
+	err = svcGroup.Start(platform.ctl, platform.queue, platform.recorder, platform.listener, platform.repo)
+	test.Nil(t, err)
+	pkg := newErrorTestPackage()
+	addPackageAndFiles(t, cli, pkg)
+	ps, err := cli.AllPackages()
+	test.Nil(t, err)
+	test.NotEmpty(t, ps)
+	err = svcGroup.Start(platform.executor)
+	test.Nil(t, err)
+	sendEvtV1AndValidateError(t, pkg, cli)
 }
 
 func TestStreamingSchemaUpdate(t *testing.T) {
@@ -340,6 +369,15 @@ func sendEvtV1AndValidate(t *testing.T, pkg *pb.JobPackage, cli *testClient) *ur
 	return url
 }
 
+func sendEvtV1AndValidateError(t *testing.T, pkg *pb.JobPackage, cli *testClient) {
+	u := fmt.Sprintf(sendEventURL, pkg.Tenant, pkg.Jobs[0].Event.ID)
+	url, err := url.Parse(u)
+	test.Nil(t, err)
+	evt, err := cli.sendEventV1(url)
+	test.Nil(t, err)
+	chkExecError(t, pkg, &evt, cli)
+}
+
 func sendEvtV1(pkg *pb.JobPackage, cli *testClient) error {
 	u := fmt.Sprintf(sendEventURL, pkg.Tenant, pkg.Jobs[0].Event.ID)
 	url, err := url.Parse(u)
@@ -371,6 +409,19 @@ func chkExecOk(t *testing.T, pkg *pb.JobPackage, evt *eventTenantV1, cli *testCl
 	valLog(t, results)
 }
 
+func chkExecError(t *testing.T, pkg *pb.JobPackage, evt *eventTenantV1, cli *testClient) {
+	res, err := cli.dequeue(pkg.Tenant, "queue_id_1_error")
+	test.Nil(t, err)
+	test.NotEmpty(t, res)
+	results, err := cli.getJobExecutions(pkg, 2)
+	test.Nil(t, err)
+	test.Len(t, results, 2)
+	if evt != nil {
+		valResForEvtV1Error(t, evt, results)
+	}
+	valLogError(t, results)
+}
+
 func valLog(t *testing.T, rs []Result) {
 	var result *Result
 	for _, r := range rs {
@@ -380,12 +431,36 @@ func valLog(t *testing.T, rs []Result) {
 			break
 		}
 	}
-	if result == nil {
-		t.Error("Log result type nor present")
-		return
-	}
-	test.Equals(t, result.Code, 6)
+	test.NotNil(t, result)
+	test.Equals(t, result.Code, 6) // 6- Level info
 	test.NotEmpty(t, result.ResultString)
+}
+
+func valLogError(t *testing.T, rs []Result) {
+	var result *Result
+	for _, r := range rs {
+		if r.TypeResult == strings.ToLower(pb.JobResult_Log.String()) {
+			rr := r
+			result = &rr
+			break
+		}
+	}
+	test.NotNil(t, result)
+	test.Equals(t, result.Code, 3) // 3- Level error
+	test.NotEmpty(t, result.ResultString)
+}
+
+func valResForEvtV1Error(t *testing.T, evt *eventTenantV1, rs []Result) {
+	var result *Result
+	for _, r := range rs {
+		if r.TypeResult == strings.ToLower(pb.JobResult_Result.String()) {
+			rr := r
+			result = &rr
+			break
+		}
+	}
+	test.NotNil(t, result)
+	test.Equals(t, result.Code, 500)
 }
 
 func valResForEvtV1(t *testing.T, evt *eventTenantV1, rs []Result) {

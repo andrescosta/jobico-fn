@@ -124,7 +124,6 @@ func (e *Executor) init(ctx context.Context) error {
 
 func (e *Executor) addExecutors(ctx context.Context, pkg *pb.JobPackage) error {
 	events := make(map[string]*event)
-	var id uint32
 	for _, job := range pkg.Jobs {
 		runtime := getRuntime(job.Event.Runtime, pkg.Runtimes)
 		if runtime != nil {
@@ -152,10 +151,8 @@ func (e *Executor) addExecutors(ctx context.Context, pkg *pb.JobPackage) error {
 				return err
 			}
 			module := module{
-				id:         id,
 				wasmModule: wasmModule,
 			}
-			id = id + 1
 			event.module = &module
 		}
 		for _, q := range pkg.Queues {
