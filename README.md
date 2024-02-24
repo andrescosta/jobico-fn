@@ -93,7 +93,7 @@ And for a more comprensive set, run:
 ```bash
 ./k6.exe run eventsandstream.js
 ```
-### For testing details on Jobico, [click here](TESTING.md)
+[Learn more how testing works in Jobico](TESTING.md)
 
 # Platform Setup and Administration Guide
 
