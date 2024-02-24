@@ -53,7 +53,7 @@ name: Customer Event Processing Definitions
 - **Example:**
 
   ```yaml
-  tenant: pritty-tenant
+  tenant: my-tenant-1
   ```
 
 #### `queues`
@@ -136,7 +136,7 @@ These attributes collectively form a comprehensive YAML file, capturing the esse
 ```yaml
 name: Customer Event Processing Definitions
 id: customer-proc-jobs
-tenant: pritty-tenant
+tenant: my-tenant-1
 queues:
   - id: queue-default
     name: Default to all events
@@ -172,18 +172,104 @@ A **Jobicolet** is a specialized WebAssembly (WASM) program designed to process 
 
 2. **Event Processing:**
    - The primary function of a Jobicolet is to process events. It takes as input the event data, performs the specified logic defined within the WASM module, and produces a result based on the defined processing rules.
-
 3. **Result Generation:**
+   - A Jobicolet receives a string parameter containing the JSON payload sent by the external service to Jobico via the listener endpoint.
+4. **Result Generation:**
    - Upon processing an event, a Jobicolet generates a result. The nature of the result depends on the specific logic implemented in the WASM module. It could be a computation outcome, a transformed dataset, or any other relevant output. However, it's important to note that a Jobicolet can only return one of the following values as output:
 
-     * 0 for successful execution,
-     * A non-zero value for an error, and
+     * A numeric return value:
+       - 0 indicates successful execution .
+       - Non-zero value signifies an error.
      * A string.
 
     These are the only values that a Jobicolet can produce as output.
-
-4. **Language Agnostic:**
+5. **Language Agnostic:**
    - Jobicolets are language-agnostic in the sense that they can be written in any programming language that supports compilation to WebAssembly. This feature provides developers with the freedom to choose a language that aligns with their expertise and the requirements of their event processing tasks.
+
+## Development
+
+### SDK
+The Jobicolet SDK, currently available for Go and Rust, offers essential functionality for developing Jobicolets. While it currently focuses on providing log information, additional features are in development.
+
+### Logging
+
+#### Levels
+| Level | Description |
+| --- | --- |
+| 0 | Debug |
+| 1 | Info |
+| 2 | Warning |
+| 3 | Error |
+| 4 | Fatal Error |
+| 5 | Panic |
+| 6 | Disabled |
+
+#### Methods
+
+```
+Log (Level, Message)
+```
+
+#### Examples
+
+***Go***
+```go
+	sdk.Log(sdk.Info, "info")
+```
+
+***Rust***
+```rust
+	jobicolet::log(1, "info");
+```
+
+## Jobicolet Examples: Structure Overview
+
+### Go
+
+```go
+package main
+
+import (
+  // The SDK package must be included as part of the Jobicolet.
+	"github.com/andrescosta/jobicolet-sdk-go/pkg/sdk"
+)
+
+// main is required if Tinygo is used.
+func main() {}
+
+// The _init method is executed during the initialization process.
+// The OnEvent handler must be set up with the name of event handler.
+func _init() {
+	sdk.OnEvent = myhandler
+}
+
+// This is the event handler. It gets a string as input and returns a code and string.
+func myhandler(data string) (uint64, string) {
+	sdk.Log(sdk.InfoLevel, "Processing event")
+	return sdk.NoError, "Hello, from a Go script!"
+}
+```
+
+### Rust
+
+```rust
+// The SDK crate must be included as part of the Jobicolet.
+extern crate jobicolet;
+
+#[cfg_attr(all(target_arch = "wasm32"), export_name = "init")]
+#[no_mangle]
+// The _init method is executed during the initialization process.
+// The ON_EVENT handler must be set up with the name of event handler.
+pub unsafe extern "C" fn _init() {
+    jobicolet::ON_EVENT = Some(mytest)
+}
+
+// This is the event handler. It gets a string as input and returns a code and string.
+fn mytest(data:&String)->(u64, String){
+    jobicolet::log(1, "Processing event");
+    return (0, ["Hello, from a rusty script!"].concat())
+}
+```
 
 # Tools
 
@@ -302,19 +388,14 @@ Executing this command launches the Dashboard GUI, initiating an interactive env
      git clone https://github.com/andrescosta/jobico
      ```
 
-2. **Navigate to the `/compose` directory:**
-
-    ```bash
-    cd compose
-    ```
-
 2. **Run Docker Compose:**
 
     ```bash
-    docker compose up
+    de jobico
+    make dckr_up
     ```
 
-    This command will start the Docker Compose stack based on the configuration defined in the `compose.yml` file.
+    This command will start the Docker Compose stack based on the configuration defined in the `compose/compose.yml` file.
 
 3. **Verify Listener on Port 8080:**
 
@@ -333,10 +414,11 @@ Executing this command launches the Dashboard GUI, initiating an interactive env
     When you are done testing, you can stop the Docker Compose stack using:
 
     ```bash
-    docker compose down
+    make dckr_down
+    #make dckr_stop 'for just stop it
     ```
 
-    This will stop and remove the containers defined in the `compose.yml` file.
+    This will stop and remove the containers defined in the `compose/compose.yml` file.
 
 #### Open Telemetry
 
@@ -344,16 +426,10 @@ Executing this command launches the Dashboard GUI, initiating an interactive env
 A Docker Compose file with the OpenTelemetry stack enabled is provided. You can initiate it by executing the following command:
 
 ```bash
-docker compose -f compose-otel.yml --profile obs up
+make dckr_upobs
 ```
 
-To shut it down, use the following command:
-
-```bash
-docker compose -f compose-otel.yml --profile obs down
-```
-
-The Prometheus console is reachable at: http://localhost:9090/, while the Jaeger console can be accessed at: http://localhost:16686/search
+The Prometheus console is reachable at: http://localhost:9090/, while the Jaeger console can be accessed at: http://localhost:16686/
 
 ## Jobicolet Development 
 

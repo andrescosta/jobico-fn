@@ -1,23 +1,36 @@
-# Monitoring using OpenTelemetry
-
-[TODO]
-
 # Configuration
 
-## Enviroment variables
+In Jobico, various features and behaviors are controlled through OS environment variables. This comprehensive section provides an in-depth exploration of the configuration options available, allowing users to customize Jobico to suit their specific requirements and preferences. This configuration variables can be set not only using standard OS mechanisms but also through command line parameters and .env
+
+![alt](docs/img/config.svg)
 
 ## .env files
 
-https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use
+The loading of .env files follows the following principles: 
 
-### Command line
+| File | Description |
+| --- | --- |
+|.env.[environment].local| Local overrides of environment variables. |
+|.env.local| Local overrides.|
+|.env.[environment]| Variables specific to each environment. |
+|.env| Variables shared by all environments |
 
-The configuration variables con be provided during the startup of the service as command line argument using the following format:
+The current environment is determined by the value of the **APP_ENV** variable, which can take on the following values:
+- development
+- production
+- test
+
+These rules were defined with the help of https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use
+
+## Command line
+
+Configuration variables can also be supplied during service startup as command line arguments, following this format:
 
 ```bash
---env:[variable]=[value]
+[command] --env:[variable]=[value]
 ```
-# Configuration
+
+## List of configuration variables
 
 ### General
 | Parameter | Description |
@@ -29,6 +42,8 @@ The configuration variables con be provided during the startup of the service as
 | [svc].host | Host port of the service. |
 | [svc].dir| Name of the service's data directory. |
 | dial.timeout | Timeout duration for dialing connections.|
+| grpc.healthcheck.freq | Frequency duration for validating the service's health. |
+| metadata.enabled | Enable or disable service metadata. |
 
 ### Profiling
 | Parameter | Description |
@@ -36,14 +51,25 @@ The configuration variables con be provided during the startup of the service as
 | prof.enabled | Enable or disable pprof profiler service. |
 | pprof.addr | Address for the pprof profiler. |
 
-### Observability
+### Service specifics
+
+#### Executor
 | Parameter | Description |
 | --- | --- |
-| metadata.enabled | Enable or disable service metadata. |
-| grpc.healthcheck.freq | Frequency duration for validating the service's health. |
+|executor.timeout| Time the executor waits before fetching new events from the queue. |
+|executor.maxproc| Number of processes to run in parallel when processing new events. |
 
+# Observability
 
-#### OpenTelemetry
+The observability stack in Jobico is implemented on top the OpenTelemetry client libraries and the Zerolog framework. It enables comprehensive monitoring and tracing capabilities. Currently, metrics are sent to Prometheus, while traces are routed to Jaeger. Additionally, the roadmap includes plans to extend functionality by integrating with a log aggregation service like Toki, ensuring holistic visibility into system performance and behavior.
+
+![alt](docs/img/observability.svg)
+
+## Environment Variables Overview
+
+The observability stack in Jobico is managed through a set of configuration variables. Just like other capabilities, these variables allow fine-grained control over the behavior and functionality of the observability features.
+
+### Metrics and traces
 | Parameter | Description |
 | --- | --- |
 | obs.enabled | Enable or disable the observability stack. |
@@ -53,7 +79,7 @@ The configuration variables con be provided during the startup of the service as
 | obs.metrics.host | Enable or disable host's metrics. |
 | obs.metrics.runtime | Enable or disable runtime's metrics. |
 
-#### Logging
+### Logging
 | Parameter | Description |
 | --- | --- |
 | log.level | [Log's level.](https://github.com/rs/zerolog#leveled-logging)  |
@@ -66,10 +92,3 @@ The configuration variables con be provided during the startup of the service as
 | log.file.max.backups | It is the maximum number of old log files to retain. |
 | log.file.max.age | It is the maximum number of days to retain old log files. |
 
-### Service specifics
-
-#### Executor
-| Parameter | Description |
-| --- | --- |
-|executor.timeout| Time the executor waits before fetching new events from the queue. |
-|executor.maxproc| Number of processes to run in parallel when processing new events. |

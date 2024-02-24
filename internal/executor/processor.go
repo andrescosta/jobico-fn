@@ -31,7 +31,6 @@ type event struct {
 }
 
 type module struct {
-	id         uint32
 	wasmModule *wasm.Module
 }
 
@@ -49,7 +48,7 @@ func (p *processor) processEvents(ctx context.Context, w *sync.WaitGroup) {
 			logger.Warn().Msgf("event %s not supported", event.id)
 			continue
 		}
-		code, result, err := run(ctx, event.module.wasmModule, event.module.id, item.Data)
+		code, result, err := run(ctx, event.module.wasmModule, item.Data)
 		if err != nil {
 			logger.Err(err).Msg("error executing")
 		}
@@ -100,12 +99,12 @@ func (p *processor) makeDecisions(ctx context.Context, tenant string, code uint6
 	return nil
 }
 
-func run(ctx context.Context, module *wasm.Module, id uint32, data []byte) (uint64, string, error) {
+func run(ctx context.Context, module *wasm.Module, data []byte) (uint64, string, error) {
 	mod := "goenv"
 	logger := zerolog.Ctx(ctx)
 	ctx, cancel := context.WithTimeout(ctx, *env.Duration("wasm.exec.timeout", 2*time.Minute))
 	defer cancel()
-	code, result, err := module.Run(ctx, id, string(data))
+	code, result, err := module.Run(ctx, string(data))
 	if err != nil {
 		return 0, "", errors.Join(err, fmt.Errorf("error in module %s", mod))
 	}
