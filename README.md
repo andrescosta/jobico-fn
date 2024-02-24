@@ -99,7 +99,7 @@ And for a more comprensive set, run:
 
 Explore how to work with the Jobico platform by checking out our comprehensive tutotial. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the manual.
 
-### [Learn more with the In-Depth Guide](GUIDE.md)
+[Learn more with the In-Depth Guide](GUIDE.md)
 
 # Operating Jobico: Managing Your Deployment
 
