@@ -81,4 +81,4 @@ The following environment variables control the profiling capabilities:
 
 Jobico supports integration with Prometheus and Jaeger for monitoring and tracing capabilities.
 
-[Learn how to configure the observability stack](OPERATING.md)
+[Learn how to configure the observability stack](OPERATING.md#observability)
