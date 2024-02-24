@@ -52,30 +52,23 @@ make dckr_build
 ```
 ## Service Management
 
-1. Windows
-
-```powershell
-scripts/startall.ps1
-```
-```powershell
-scripts/stopall.ps1
-```
-
-2. Linux
-
+1. Local
 ```bash
+# Starting the services
 scripts/startall.sh
-```
-```bash
+#powershell: startall.ps1
+
+# Stopping the services
 scripts/stopall.sh
+#powershell: stopall.ps1
 ```
 
-3. Docker
-
+2. Docker
 ``` bash
+# Starting the environment
 make dckr_up
-```
-``` bash
+
+# Stopping the environment
 make dckr_stop
 ```
 
@@ -86,13 +79,11 @@ After compiling and starting the services locally, you can run a set of basic te
 make k6
 cd perf
 ./k6.exe run events.js
-```
 
-And for a more comprensive set, run:
-
-```bash
+# And for a more comprensive set, run:
 ./k6.exe run eventsandstream.js
 ```
+
 [Learn more how testing works in Jobico](TESTING.md)
 
 # Platform Setup and Administration Guide

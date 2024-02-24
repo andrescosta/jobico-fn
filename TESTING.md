@@ -44,13 +44,13 @@ Harness the power of performance testing with Jobico's K6 implementation. This s
 
 ## Execution
 ```bash
-# Generate the K6 executable
+# Generate the K6 executable.
 make k6
 
-# Execute scenario 1
+# Execute a simple scenario.
 make perf1
 
-# Execute scenario 2
+# Execute a more complex scenario that involves streaming.
 make perf2
 ```
 
@@ -81,16 +81,4 @@ The following environment variables control the profiling capabilities:
 
 Jobico supports integration with Prometheus and Jaeger for monitoring and tracing capabilities.
 
-The following environment variables control this integration:
-
-| Parameter | Description |
-| --- | --- |
-| obs.enabled | Enable or disable the observability stack. |
-| obs.exporter.trace.grpc.host | Grpc's otel expoter host address. |
-| obs.exporter.metrics.http.host | HTTP's otel expoter host address. |
-| obs.exporter.metrics.host.path | HTTP's otel expoter path. |
-| obs.metrics.host | Enable or disable host's metrics. |
-| obs.metrics.runtime | Enable or disable runtime's metrics. |
-
-
-### More information on configuring Jobico can be found in this [guide](OPERATING.md)
+[Learn how to configure the observability stack](OPERATING.md)
