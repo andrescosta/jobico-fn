@@ -15,9 +15,9 @@ type GrpcConn struct {
 	listener service.GrpcListener
 }
 type HTTPConn struct {
-	httpListener    service.HTTPListener
-	httpTransporter service.HTTPTranporter
-	clientBuilder   service.HTTPClientBuilder
+	listener      service.HTTPListener
+	transporter   service.HTTPTranporter
+	clientBuilder service.HTTPClientBuilder
 }
 
 func (g GrpcConn) Dial(ctx context.Context, addr string) (*rpc.ClientConn, error) {
@@ -25,20 +25,52 @@ func (g GrpcConn) Dial(ctx context.Context, addr string) (*rpc.ClientConn, error
 }
 
 func (g GrpcConn) Listen(addr string) (net.Listener, error) {
-	return g.listener.Listen(addr)
+	listener, err := g.listener.Listen(addr)
+	if err != nil {
+		return nil, err
+	}
+	return &HTTPListener{
+		listener: listener,
+	}, nil
 }
 
 func (h HTTPConn) Listen(addr string) (net.Listener, error) {
-	return h.httpListener.Listen(addr)
+	listener, err := h.listener.Listen(addr)
+	if err != nil {
+		return nil, err
+	}
+	return &HTTPListener{
+		listener: listener,
+	}, nil
 }
 
 func (h HTTPConn) Tranport(addr string) (*http.Transport, error) {
-	return h.httpTransporter.Tranport(addr)
+	return h.transporter.Tranport(addr)
 }
 
 func (h HTTPConn) NewHTTPClient(addr string) (*http.Client, error) {
 	return h.clientBuilder.NewHTTPClient(addr)
 }
+
+type HTTPListener struct {
+	listener net.Listener
+}
+
+func (l *HTTPListener) Accept() (net.Conn, error) { return l.listener.Accept() }
+
+func (l *HTTPListener) Close() error { return l.listener.Close() }
+
+func (l *HTTPListener) Addr() net.Addr { return l.listener.Addr() }
+
+type GrpcListener struct {
+	listener net.Listener
+}
+
+func (l *GrpcListener) Accept() (net.Conn, error) { return l.listener.Accept() }
+
+func (l *GrpcListener) Close() error { return l.listener.Close() }
+
+func (l *GrpcListener) Addr() net.Addr { return l.listener.Addr() }
 
 type Conn struct {
 	conn net.Conn

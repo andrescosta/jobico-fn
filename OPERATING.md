@@ -2,7 +2,7 @@
 
 In Jobico, various features and behaviors are controlled through OS environment variables. This comprehensive section provides an in-depth exploration of the configuration options available, allowing users to customize Jobico to suit their specific requirements and preferences. This configuration variables can be set not only using standard OS mechanisms but also through command line parameters and .env
 
-![alt](docs/img/config.svg)
+![alt](docs/img/config.svg?)
 
 ## .env files
 
@@ -42,7 +42,6 @@ Configuration variables can also be supplied during service startup as command l
 | [svc].host | Host port of the service. |
 | [svc].dir| Name of the service's data directory. |
 | dial.timeout | Timeout duration for dialing connections.|
-| grpc.healthcheck.freq | Frequency duration for validating the service's health. |
 | metadata.enabled | Enable or disable service metadata. |
 
 ### Profiling
@@ -92,3 +91,22 @@ The observability stack in Jobico is managed through a set of configuration vari
 | log.file.max.backups | It is the maximum number of old log files to retain. |
 | log.file.max.age | It is the maximum number of days to retain old log files. |
 
+# Health Check
+
+Jobico services exposes an API to check its internal health. This API will return the status code 200 if everything is correct or 500 if there is an error.
+
+![alt](docs/img/healthchk.svg?)
+
+Additionally, the HTTP health interfaces will return the follogin information in JSON format:
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+|Status| string | OK - If everything is normal. ERROR - If there is a problem with the service. |
+|StartedAt| string | When the service as started. |
+|Error| string | More details en case Status equal to ERROR|
+
+## Configuration
+
+| Parameter | Description |
+| --- | --- |
+| grpc.healthcheck.freq | Frequency duration for validating the service's health. |
