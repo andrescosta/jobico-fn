@@ -38,7 +38,7 @@ export const options = {
       executor: 'constant-vus',
       env: { WORKFLOW: 'sending_events' },
       vus: 10,
-      duration: '20s',
+      duration: '60s',
     },
     tenant_adding_pkg: {
       executor: 'per-vu-iterations',
@@ -47,7 +47,7 @@ export const options = {
       startTime: '1s',
       vus: 3,
       iterations: 5,
-      maxDuration: '10s',
+      maxDuration: '20s',
     },
   },
 };

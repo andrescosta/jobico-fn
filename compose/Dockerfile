@@ -9,7 +9,6 @@ RUN go mod download
 COPY ./cmd ./cmd
 COPY ./internal ./internal
 COPY ./pkg ./pkg
-COPY ./api ./api
 RUN go build -o ./bin/ -trimpath ./cmd/...
 
 FROM  debian:12-slim as ctl

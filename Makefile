@@ -1,6 +1,8 @@
+TARGETS ?= ctl listener repo recorder queue
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
+OUTBINS = $(foreach bin,$(TARGETS),bin/$(bin))
 
-.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES)
+.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES) $(TARGETS) dockerbuild
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -84,5 +86,22 @@ dckr_down:
 
 dckr_stop:
 	docker compose -f .\compose\compose.yml stop
+
+### Kind
+
+dockerbuild: $(TARGETS)
+
+$(TARGETS):
+	@docker build -f compose/Dockerfile --target $@ -t jobico/$@ . 
+	@kind load docker-image jobico/$@:latest
+	@kubectl apply -f .\k8s\config\$@.yaml
+
+kindcluster:
+	@kind create cluster --config .\k8s\config\cluster.yaml
+
+kind: kindcluster dockerbuild
+
+kinddel: 
+	kind delete cluster
 
 

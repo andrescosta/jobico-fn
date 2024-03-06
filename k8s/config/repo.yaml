@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jobico
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: repo-sfs
+  namespace: jobico
+  labels:
+    app: repo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: repo
+  template:
+    metadata:
+      labels:
+        app: repo
+    spec:
+      containers:
+        - name: repo
+          image: jobico/repo:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 50053
+              hostPort: 50053
+              protocol: TCP
+          volumeMounts:
+            - name: repo-data
+              mountPath: /usr/share/jobico/repo
+          env:
+          - name: repo.addr
+            value: "localhost:50053"
+          - name: prof.enabled
+            value: "false"
+          - name: pprof.addr
+            value: "localhost:7575"
+          - name: log.level
+            value: "1"
+          - name: log.console.enabled
+            value: "false"
+          - name: log.file.enabled
+            value: "false"
+          - name: obs.enabled
+            value: "false"
+          - name: workdir
+            value: "/usr/share/jobico/repo"
+  volumeClaimTemplates:
+    - metadata:
+        name: repo-data
+        namespace: jobico
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: repo-svc
+  namespace: jobico
+spec:
+  selector:
+    app: repo
+  ports:
+    - name: "50053"
+      port: 50053
+  type: ClusterIP
