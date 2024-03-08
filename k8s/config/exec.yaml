@@ -1,35 +1,53 @@
-apiVersion: apps/v1
-kind: StatefulSet
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: ctl
+  name: exec
   namespace: jobico
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ctl
   template:
     metadata:
       labels:
-        app: ctl
+        app: exec
     spec:
+      restartPolicy: Never
       containers:
-      - name: ctl
-        image: jobico/ctl:latest
+      - name: exec
+        image: jobico/exec:latest
         imagePullPolicy: Never
         ports:
-        - containerPort: 50052
-          hostPort: 50052
-          protocol: TCP
-        volumeMounts:
-        - name: ctl-data
-          mountPath: /usr/share/jobico/ctl
+          - containerPort: 8585
+            hostPort: 8585
+            protocol: TCP
         env:
-        - name: ctl.addr
+        - name: executor.addr
           valueFrom:
             configMapKeyRef:
               name: jobico-config
-              key: ctl.addr
+              key: executor.addr
+              optional: false
+        - name: queue.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: queue.host
+              optional: false
+        - name: ctl.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: ctl.host
+              optional: false
+        - name: repo.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: repo.host
+              optional: false
+        - name: recorder.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: recorder.host
               optional: false
         - name: prof.enabled
           valueFrom:
@@ -97,58 +115,44 @@ spec:
               name: jobico-config
               key: jobs.metrics.runtime
               optional: true        
-        - name: workdir
-          value: "/usr/share/jobico/ctl"
-  volumeClaimTemplates:
-    - metadata:
-        name: ctl-data
-        namespace: jobico
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 1Gi
+        - name: executor.delay
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: executor.delay
+              optional: true        
+        - name: max.queue.errors
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: max.queue.errors
+              optional: true        
+        - name: executor.timeout
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: executor.timeout
+              optional: true        
+        - name: metadata.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: metadata.enabled
+              optional: true        
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: ctl
-  name: ctl
+    app: exec
+  name: exec
   namespace: jobico
 spec:
   selector:
-    app: ctl
+    app: exec
   ports:
-  - port: 50052
-    protocol: TCP
+    - port: 8585
+      protocol: TCP
   type: ClusterIP
 
 ---
-
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-  name: ctl-ingress
-  namespace: jobico
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - ctl
-      secretName: ctl-cert
-  rules:
-    - host: ctl
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: ctl
-                port:
-                  number: 50052

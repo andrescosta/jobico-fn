@@ -1,8 +1,9 @@
-TARGETS ?= ctl listener repo recorder queue
+TARGETS ?= ctl listener repo recorder queue exec
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 OUTBINS = $(foreach bin,$(TARGETS),bin/$(bin))
+YAMLS = $(foreach target,$(TARGETS),$(target).yaml)
 
-.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES) $(TARGETS) dockerbuild
+.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES) $(TARGETS) dockerbuild deploy
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -12,12 +13,14 @@ MKDIR_REPO_CMD = mkdir -p reports
 MKDIR_BIN_CMD = mkdir -p bin
 BUILD_CMD = ./build/build.sh
 ENV_CMD = ./build/env.sh
+DO_SLEEP = sleep 10
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
 	MKDIR_BIN_CMD = pwsh -noprofile -command "new-item bin -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
 	BUILD_CMD = pwsh -noprofile -command ".\build\build.ps1"
 	ENV_CMD = pwsh -noprofile -command ".\build\env.ps1"
+	DO_SLEEP = pwsh -noprofile -command "Start-Sleep 5"
 endif
 endif
 
@@ -89,19 +92,46 @@ dckr_stop:
 
 ### Kind
 
+jobico: kind deploy 
+
+kind: kindcluster nginx 
+
+kinddel: 
+	kind delete cluster
+
+kindcluster:
+	@kind create cluster --config .\k8s\config\cluster.yaml
+
+nginx:
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+
+deploy: dockerbuild deployyamls
+
 dockerbuild: $(TARGETS)
 
 $(TARGETS):
 	@docker build -f compose/Dockerfile --target $@ -t jobico/$@ . 
 	@kind load docker-image jobico/$@:latest
-	@kubectl apply -f .\k8s\config\$@.yaml
 
-kindcluster:
-	@kind create cluster --config .\k8s\config\cluster.yaml
+deployyamls: $(YAMLS)
 
-kind: kindcluster dockerbuild
+$(YAMLS): configs
+	@kubectl apply -f .\k8s\config\$@
 
-kinddel: 
-	kind delete cluster
+configs: namespace certs
+	@kubectl apply -f .\k8s\config\configmap.yaml
 
+namespace:
+	@kubectl apply -f .\k8s\config\namespace.yaml
 
+certs:
+	@kubectl delete secret ctl-cert --namespace=jobico --ignore-not-found=true 
+	@kubectl create secret tls ctl-cert --key .\k8s\certs\ctl.key --cert .\k8s\certs\ctl.crt --namespace=jobico
+	@kubectl delete secret repo-cert --namespace=jobico --ignore-not-found=true
+	@kubectl create secret tls repo-cert --key .\k8s\certs\repo.key --cert .\k8s\certs\repo.crt --namespace=jobico
+	@kubectl delete secret recorder-cert --namespace=jobico  --ignore-not-found=true
+	@kubectl create secret tls recorder-cert --key .\k8s\certs\recorder.key --cert .\k8s\certs\recorder.crt --namespace=jobico
+	@kubectl delete secret listener-cert --namespace=jobico  --ignore-not-found=true
+	@kubectl create secret tls listener-cert --key .\k8s\certs\listener.key --cert .\k8s\certs\listener.crt --namespace=jobico
+	@kubectl delete secret queue-cert --namespace=jobico  --ignore-not-found=true
+	@kubectl create secret tls queue-cert --key .\k8s\certs\queue.key --cert .\k8s\certs\queue.crt --namespace=jobico

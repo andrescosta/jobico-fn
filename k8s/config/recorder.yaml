@@ -1,14 +1,7 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: jobico
-
----
-
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: recorder-sfs
+  name: recorder
   namespace: jobico
 spec:
   replicas: 1
@@ -33,21 +26,83 @@ spec:
             mountPath: /usr/share/jobico/recorder
         env:
         - name: recorder.addr
-          value: "localhost:50054"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: recorder.addr
+              optional: false
         - name: recorder.dir.results
-          value: "res"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: recorder.dir.results
+              optional: false
         - name: prof.enabled
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: prof.enabled
+              optional: true
         - name: pprof.addr
-          value: "localhost:7575"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: pprof.addr
+              optional: true
         - name: log.level
-          value: "1"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.level
+              optional: true
         - name: log.console.enabled
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.console.enabled
+              optional: true
         - name: log.file.enabled
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.file.enabled
+              optional: true
         - name: obs.enabled
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.enabled
+              optional: true
+        - name: obs.exporter.trace.grpc.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.trace.grpc.host
+              optional: true
+        - name: obs.exporter.metrics.http.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.http.host
+              optional: true
+        - name: obs.exporter.metrics.host.path
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.host.path
+              optional: true
+        - name: jobs.metrics.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.metrics.host
+              optional: true
+        - name: jobs.metrics.runtime
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: jobs.metrics.runtime
+              optional: true        
         - name: workdir
           value: "/usr/share/jobico/recorder"
   volumeClaimTemplates:
@@ -65,7 +120,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: recorder-svc
+  labels:
+    app: recorder
+  name: recorder
   namespace: jobico
 spec:
   selector:
@@ -74,3 +131,31 @@ spec:
     - name: "50054"
       port: 50054
   type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+  name: recorder-ingress
+  namespace: jobico
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - recorder
+      secretName: recorder-cert
+  rules:
+    - host: recorder
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: recorder
+                port:
+                  number: 50054

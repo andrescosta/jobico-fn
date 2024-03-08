@@ -1,29 +1,7 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: jobico
-
----
-
-apiVersion: v1
-data:
-  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlEUFRDQ0FpV2dBd0lCQWdJVVVsaDVQSW5ISHBHSEdBUWFpekZoNzFja2kwNHdEUVlKS29aSWh2Y05BUUVMDQpCUUF3SkRFUU1BNEdBMVVFQXd3SGRHOWtiM2RsWWpFUU1BNEdBMVVFQ2d3SGRHOWtiM2RsWWpBZUZ3MHlNekV3DQpNVGt5TURNeE1qbGFGdzB5TkRFd01UZ3lNRE14TWpsYU1DUXhFREFPQmdOVkJBTU1CM1J2Wkc5M1pXSXhFREFPDQpCZ05WQkFvTUIzUnZaRzkzWldJd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURrDQo4SEZKR1laUitDTlNBR3JXSElFZHY4TCs3Y1VTTVpDNnExVjdWRmlTaU5RR1UxVTdCL0xqb3hqWTJrblArNkEvDQo1RVJBMXJobXdLdFFTNjlHVVhOdjk4alZUZ3NZUEg0NmVQVHBzWWNsT1Q5emJBb1JHRklLaVVPMUlFQ01pREsxDQpWaEJaZWUxK3NNN2lSblBueG1udmNqQ21Ha09xaUNKMzY4eFk3Q0lDYjVPcWl3SGM2Y2RXeE9CSmNyWW5XUnNuDQp3LzdqM1RtLzRSdytDeEVBeExDY2ZSSmtJLzQ3Sk83RnlhUG04ZXk2b1ZWRG9WdjZqejFhN2JqMmw1cHJKRlV5DQoxbTZwVE9hVlBXZEQ4dlBGcUpDdUxvMmNYN2RlRlhQM1ExTDBHeitIWnlQem1xMGJ3ck5ocHVId0FyendwNnFpDQpPdTEzY3RXUkROOGE1YytWNmxTNUFnTUJBQUdqWnpCbE1CMEdBMVVkRGdRV0JCU3VEMzNlbHZEQ2ZIRkFad0owDQp3ZjZwOWlpbXp6QWZCZ05WSFNNRUdEQVdnQlN1RDMzZWx2RENmSEZBWndKMHdmNnA5aWltenpBUEJnTlZIUk1CDQpBZjhFQlRBREFRSC9NQklHQTFVZEVRUUxNQW1DQjNSdlpHOTNaV0l3RFFZSktvWklodmNOQVFFTEJRQURnZ0VCDQpBRzdGWVVCQXRqYU1PQmZLeEROdXc0SWNhRnc3REN5cW5rVGE3WjZsZ0QrVTNORkZhY2hyM0dyWlVva2VDRzZ3DQpJZCtRYTYxWTJiQjc3UXQyTSs4Sk1HTUo2cEpWOW1BS2lZUDFkaGdkM0RMRTA2R3NxSnYrY1d0c0ZmTEs1dUlIDQphZWpzcHdQVzZrS2VRZ3I5R1pEY3RxY3RoRGZEVEdpVEFIYVNOL0VkU0pZWXJNSys3NWdkakhZOXZqK1N5cEtrDQovOGc4RnRLUE8xUHJtQjlNUEJsY09ucW8wSXFCb0c3OHE1MGlJMEUrVnp2RkV4NlowVlRCbnM5cW9QUnFKbndQDQpEQkhBeWRHbVdMbWRaZFVpWWpRZVlCQkpENm1tOUhjZlNoQ3plS05MN0tqWlErcWRLNERtMGxFYTdRdGh5SnpiDQo5VzBPcnVuYjVTcHJCZkJ2V0pZTEFMOD0NCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0NCg==
-  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tDQpNSUlFdkFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLWXdnZ1NpQWdFQUFvSUJBUURrOEhGSkdZWlIrQ05TDQpBR3JXSElFZHY4TCs3Y1VTTVpDNnExVjdWRmlTaU5RR1UxVTdCL0xqb3hqWTJrblArNkEvNUVSQTFyaG13S3RRDQpTNjlHVVhOdjk4alZUZ3NZUEg0NmVQVHBzWWNsT1Q5emJBb1JHRklLaVVPMUlFQ01pREsxVmhCWmVlMStzTTdpDQpSblBueG1udmNqQ21Ha09xaUNKMzY4eFk3Q0lDYjVPcWl3SGM2Y2RXeE9CSmNyWW5XUnNudy83ajNUbS80UncrDQpDeEVBeExDY2ZSSmtJLzQ3Sk83RnlhUG04ZXk2b1ZWRG9WdjZqejFhN2JqMmw1cHJKRlV5MW02cFRPYVZQV2REDQo4dlBGcUpDdUxvMmNYN2RlRlhQM1ExTDBHeitIWnlQem1xMGJ3ck5ocHVId0FyendwNnFpT3UxM2N0V1JETjhhDQo1YytWNmxTNUFnTUJBQUVDZ2dFQUFqYWNsM3R5bnBabFZjaC9sVURFWTljMjdzRHFpQ1AvUHpxUXhaaHhSeit0DQpjamo0cE5xVGFoNDRuWldkVjMrVUp2YnVUUEoxdUVOeXUyZzJZeU1CakV0blgwd3NIc05SRFRFTU9MbmhNeVo1DQp3Rm1QRWJ5M2VyYnVURldnekdwQTlWZjgrT2UzeXRESjRHTlhSRlVRQUFlK1UzaVZsSTRId2NFd1B4RkRjOFE1DQpqMk81aVRsT2FTSnZSSkpjN3l3U1o1VjZtNUZJWEVyTzRPUUtHeE1XVFpjRWlabCt0NVlkLzdhdHJCMTEzVHVqDQpXcHNweTJpVFcySTh5RHR1YVd3Z3hoaXRITkNQaEVtTFY3b0ppQk5QMGdjRHNSV1dDVS9QTUFwanN1QkNrdlV2DQpXRGF4Vy9sU1VpdjAwTFZlQkxrWjRSb0JRc2Mrc2lEWG5jK1d2anVadndLQmdRRHpKR1dNUU8vZHlONm5RRS9uDQp2aGV5bTFOMU8yNkt1UjNMTGR4MkRmZnk1Qkh5OWhzenhodWo2cVp3TU1ZMTc5eEp0aGxhcVVPT2xRV0hJaUtvDQpJaFVlZmQ3TzMxZG1EYXp1YmlpU2J1UUtLSkhDb2VZMWE1VGl2Z1F5Q2JyM3dzcWFTWVd4V3hLRlhxMWhuVWZqDQpjV3N1aDFxbXFRSFRndWUxaDZ2QUd1cjVZd0tCZ1FEeEM4VUU4TDZuN2tjdlA5NlVDQ3JLRjB0NG1oMG5XbDdMDQpkem9mTlJUSEVTRmFSRlpmdCtVOWlJR2ZBRkViSmNqTTRwcTFUeVVrcWhPU2FKakg0YWdFU3lndHkyc3FnckR2DQpkT2c1STZJRmwxbnViVkFRU2U4a0Iyd0JlY1U4QXNjU0wzcG9SdDBHWEVDYnlnME1UL0daWktrcE4wN0FjdzNYDQpOQ3lsd3E2aU13S0JnQzhlNWFNNXpvSy85QTZiMHlDSllaUldyK1R2WUt2MzFrTlRIdit1RTFoNlJOUStSK1ZQDQp4bm1NOXphVTdVVDB1RTk4d0FzbTlKWEVZYTdmdWJHMThUdllqdjZ1b0FTQ0wvcUJWTkdVTmhPVjZ6RzZLS0EvDQp1am43TTFyek1jM2tiVmxiV0ZLWDRNNENIRDNudWsvazRpM0JRNXM2ODhTbkFQcllVVHZJdTdNYkFvR0FaVk5hDQpQWXBweXJQS0xwMTlsZUtkQWhpcXZBYWtySzg3Vy9KQmQyN2J6aFp3Vzc2UVJHcE1MZ0tjNGxiQ3dWT3Z4aGlYDQppaEc3L2w2VUhaNWtZdG1EeEZKSGtJQ0xDdktuSi9HUDBMMGUxWlRhMC9RVmpOTlhlR0M2VVNCNy9ZNzVXYmFsDQprUUlBMVRTZ1lCeWVRWWUxZXBLcTNVMkhpRFNWSTlxbHpnUTVYcXNDZ1lBbDV2VCtZNGdBM1laYUx3Z1N1Kzl1DQphSEpEWFVyZS9FcStNQXBFcHh5U0w4bVRCUGx0VDdNMUJVSUZMUHFXalZIY2pzZ0M5a0JBeFFXTUxEM0pBcXZRDQpaWHJBOHdJWWNoZ0NQdUlDbVJnWTVsYXo1MDBGTFJoZDIzdjR1R3NHRlJJODNUa2tBUDlMcUJSZWsrZ2NZdE5mDQp6d1dWNERXU09seDFmcWdZcXJwVGpRPT0NCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0NCg==
-kind: Secret
-metadata:
-  creationTimestamp: "2023-10-19T20:31:02Z"
-  name: listener-cert
-  namespace: jobico
-  resourceVersion: "6509"
-  uid: 6d06fc6a-f4a5-4c72-84e2-0ca31f0a66a1
-type: kubernetes.io/tls
-
----
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: listener-deployment
+  name: listener
   namespace: jobico
 spec:
   replicas: 1
@@ -46,37 +24,109 @@ spec:
             protocol: TCP
         env:
         - name: listener.addr
-          value: "localhost:8080"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: listener.addr
+              optional: false
         - name: queue.host
-          value: "queue:50051"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: queue.host
+              optional: false
         - name: ctl.host
-          value: "ctl:50052"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: ctl.host
+              optional: false
         - name: repo.host
-          value: "repo:50053"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: repo.host
+              optional: false
         - name: prof.enabled
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: prof.enabled
+              optional: true
         - name: pprof.addr
-          value: "localhost:7575"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: pprof.addr
+              optional: true
         - name: log.level
-          value: "1"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.level
+              optional: true
         - name: log.console.enabled
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.console.enabled
+              optional: true
         - name: log.file.enabled
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.file.enabled
+              optional: true
         - name: obs.enabled
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.enabled
+              optional: true
+        - name: obs.exporter.trace.grpc.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.trace.grpc.host
+              optional: true
+        - name: obs.exporter.metrics.http.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.http.host
+              optional: true
+        - name: obs.exporter.metrics.host.path
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.host.path
+              optional: true
+        - name: jobs.metrics.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.metrics.host
+              optional: true
+        - name: jobs.metrics.runtime
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: jobs.metrics.runtime
+              optional: true        
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: listener-svc
+  labels:
+    app: listener
+  name: listener
   namespace: jobico
 spec:
   selector:
     app: listener
   ports:
-    - name: "8080"
-      port: 8080
+    - port: 8080
+      protocol: TCP
   type: ClusterIP
 
 ---
@@ -84,14 +134,16 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
   name: listener-ingress
   namespace: jobico
 spec:
   ingressClassName: nginx
   tls:
-    - hosts:
-        - listener
-      secretName: listener-cert
+  - secretName: listener-cert
+    hosts:
+      - listener
   rules:
     - host: listener
       http:
@@ -100,6 +152,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: listener-svc
+                name: listener
                 port:
                   number: 8080
