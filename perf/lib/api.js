@@ -17,10 +17,10 @@ export function Api(hostCtl, hostListener, hostRepo) {
 
 Api.prototype.Connect = function () {
   this.clientCtl.connect(this.hostCtl, {
-    plaintext: true
+    plaintext: false
   });
   this.clientRepo.connect(this.hostRepo, {
-    plaintext: true
+    plaintext: false
   });
 }
 
@@ -107,7 +107,7 @@ Api.prototype.InvokeAddPackage = function (pkg) {
 
 
 Api.prototype.SendEvent = function (tenant, evt, evtBody) {
-  const url = 'http://' + this.hostListener + '/events/' + tenant + '/' + evt;
+  const url = 'https://' + this.hostListener + '/events/' + tenant + '/' + evt;
 
   const response = http.post(url, JSON.stringify(evtBody), {
     headers: { 'Content-Type': 'application/json' },

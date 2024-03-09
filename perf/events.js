@@ -1,8 +1,8 @@
 import { Test } from './lib/test.js'
 
-const HOST_CTL = 'localhost:50052'
-const HOST_REPO = 'localhost:50053'
-const HOST_LISTENER = 'localhost:8080'
+const HOST_CTL = 'ctl:443'
+const HOST_REPO = 'repo:443'
+const HOST_LISTENER = 'listener'
 const TENANT = 'tenant_1'
 const test = new Test(TENANT, HOST_CTL, HOST_LISTENER, HOST_REPO)
 test.LoadFileBin('../internal/test/testdata/echo.wasm')

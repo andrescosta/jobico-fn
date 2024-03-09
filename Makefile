@@ -3,7 +3,7 @@ FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 OUTBINS = $(foreach bin,$(TARGETS),bin/$(bin))
 YAMLS = $(foreach target,$(TARGETS),$(target).yaml)
 
-.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES) $(TARGETS) dockerbuild deploy
+.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES) $(TARGETS) $(YAMLS) x509 configs dockerbuild deploy
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -13,6 +13,7 @@ MKDIR_REPO_CMD = mkdir -p reports
 MKDIR_BIN_CMD = mkdir -p bin
 BUILD_CMD = ./build/build.sh
 ENV_CMD = ./build/env.sh
+X509 = ./hacks/c.sh
 DO_SLEEP = sleep 10
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
@@ -21,6 +22,7 @@ ifneq ($(MSYSTEM), MSYS)
 	BUILD_CMD = pwsh -noprofile -command ".\build\build.ps1"
 	ENV_CMD = pwsh -noprofile -command ".\build\env.ps1"
 	DO_SLEEP = pwsh -noprofile -command "Start-Sleep 5"
+	X509 = pwsh -noprofile -command "./hacks/c.ps1"
 endif
 endif
 
@@ -92,18 +94,14 @@ dckr_stop:
 
 ### Kind
 
-jobico: kind deploy 
-
-kind: kindcluster nginx 
+kind: kindcluster deploy
 
 kinddel: 
 	kind delete cluster
 
 kindcluster:
 	@kind create cluster --config .\k8s\config\cluster.yaml
-
-nginx:
-	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+	@kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 
 deploy: dockerbuild deployyamls
 
@@ -113,19 +111,15 @@ $(TARGETS):
 	@docker build -f compose/Dockerfile --target $@ -t jobico/$@ . 
 	@kind load docker-image jobico/$@:latest
 
-deployyamls: $(YAMLS)
+deployyamls: configs $(YAMLS)
 
-$(YAMLS): configs
+$(YAMLS): 
 	@kubectl apply -f .\k8s\config\$@
 
-configs: namespace certs
-	@kubectl apply -f .\k8s\config\configmap.yaml
-
-namespace:
+configs: 
 	@kubectl apply -f .\k8s\config\namespace.yaml
-
-certs:
-	@kubectl delete secret ctl-cert --namespace=jobico --ignore-not-found=true 
+	@kubectl apply -f .\k8s\config\configmap.yaml
+	@kubectl delete secret ctl-cert --namespace=jobico --ignore-not-found=true
 	@kubectl create secret tls ctl-cert --key .\k8s\certs\ctl.key --cert .\k8s\certs\ctl.crt --namespace=jobico
 	@kubectl delete secret repo-cert --namespace=jobico --ignore-not-found=true
 	@kubectl create secret tls repo-cert --key .\k8s\certs\repo.key --cert .\k8s\certs\repo.crt --namespace=jobico
@@ -135,3 +129,6 @@ certs:
 	@kubectl create secret tls listener-cert --key .\k8s\certs\listener.key --cert .\k8s\certs\listener.crt --namespace=jobico
 	@kubectl delete secret queue-cert --namespace=jobico  --ignore-not-found=true
 	@kubectl create secret tls queue-cert --key .\k8s\certs\queue.key --cert .\k8s\certs\queue.crt --namespace=jobico
+
+x509:
+	@$(X509)

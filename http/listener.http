@@ -6,8 +6,8 @@ Content-Type: application/json
 {
     "data": [
        {
-            "firstName": "Andres",
-            "lastName": "C"
+            "firstName": "Benita",
+            "lastName": "Costa"
         }
     ]
 }
