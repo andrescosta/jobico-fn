@@ -1,9 +1,10 @@
-TARGETS ?= ctl listener repo recorder queue exec
+TARGETS ?= ctl listener repo recorder queue exec 
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 OUTBINS = $(foreach bin,$(TARGETS),bin/$(bin))
 YAMLS = $(foreach target,$(TARGETS),$(target).yaml)
+SUPPORTYAMLS ?= jaeger.yaml prometheus.yaml
 
-.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES) $(TARGETS) $(YAMLS) x509 configs dockerbuild deploy
+.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES) $(TARGETS) $(YAMLS) x509 configs dockerbuild deploy rollback
 
 APP?=application
 REGISTRY?=gcr.io/images
@@ -94,7 +95,7 @@ dckr_stop:
 
 ### Kind
 
-kind: kindcluster deploy
+kind: kindcluster dockerbuild deploy
 
 kinddel: 
 	kind delete cluster
@@ -103,17 +104,22 @@ kindcluster:
 	@kind create cluster --config .\k8s\config\cluster.yaml
 	@kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 
-deploy: dockerbuild deployyamls
-
 dockerbuild: $(TARGETS)
 
 $(TARGETS):
 	@docker build -f compose/Dockerfile --target $@ -t jobico/$@ . 
 	@kind load docker-image jobico/$@:latest
 
-deployyamls: configs $(YAMLS)
+deploy: configs $(SUPPORTYAMLS) $(YAMLS)
 
-$(YAMLS): 
+rollback:
+	kubectl delete namespace jobico
+
+
+$(YAMLS):
+	@kubectl apply -f .\k8s\config\$@
+
+$(SUPPORTYAMLS):
 	@kubectl apply -f .\k8s\config\$@
 
 configs: 
@@ -129,6 +135,10 @@ configs:
 	@kubectl create secret tls listener-cert --key .\k8s\certs\listener.key --cert .\k8s\certs\listener.crt --namespace=jobico
 	@kubectl delete secret queue-cert --namespace=jobico  --ignore-not-found=true
 	@kubectl create secret tls queue-cert --key .\k8s\certs\queue.key --cert .\k8s\certs\queue.crt --namespace=jobico
+	@kubectl delete secret jaeger-cert --namespace=jobico --ignore-not-found=true
+	@kubectl create secret tls jaeger-cert --key .\k8s\certs\jaeger.key --cert .\k8s\certs\jaeger.crt --namespace=jobico
+	@kubectl delete secret prometheus-cert --namespace=jobico --ignore-not-found=true
+	@kubectl create secret tls prometheus-cert --key .\k8s\certs\prometheus.key --cert .\k8s\certs\prometheus.crt --namespace=jobico
 
 x509:
 	@$(X509)

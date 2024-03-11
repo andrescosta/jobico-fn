@@ -4,3 +4,5 @@ openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\recorder.key -out .\k8s\certs\recorder.crt -subj "/CN=recorder/O=recorder"
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\listener.key -out .\k8s\certs\listener.crt -subj "/CN=listener/O=listener"
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\queue.key -out .\k8s\certs\queue.crt -subj "/CN=queue/O=queue"
+openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\jaeger.key -out .\k8s\certs\jaeger.crt -subj "/CN=jaeger/O=jaeger/" -addext "subjectAltName=DNS:jaeger"
+openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\prometheus.key -out .\k8s\certs\prometheus.crt -subj "/CN=prometheus/O=prometheus"

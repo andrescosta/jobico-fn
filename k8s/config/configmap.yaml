@@ -31,9 +31,9 @@ data:
   ## repo configs
   repo.dir: "./files"
   ## Obs configs
-  obs.enabled: "false"
-  obs.exporter.trace.grpc.host: "localhost:4317"
-  obs.exporter.metrics.http.host: "localhost:9090"
+  obs.enabled: "true"
+  obs.exporter.trace.grpc.host: "jaeger:4317"
+  obs.exporter.metrics.http.host: "prometheus:9090"
   obs.exporter.metrics.host.path: "/api/v1/otlp/v1/metrics"
   obs.metrics.host: "true"
   obs.metrics.runtime: "true"
