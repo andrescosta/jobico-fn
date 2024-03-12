@@ -107,6 +107,15 @@ Explore key aspects of managing and maintaining your Jobico deployment. From mon
 
 # Kubernetes
 
+Prerequisites
+ Docker or Podman
+ Kind
+ Kubectl
+ make
+
+ make kind
+
+ 
 
 # Roadmap
 

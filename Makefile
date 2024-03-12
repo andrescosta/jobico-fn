@@ -149,7 +149,7 @@ certs: $(TARGETS:%=certs/%)
 certs/%: SVC=$*
 certs/%:
 	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
-	@kubectl create secret tls $(SVC)-cert --key .\k8s\certs\$(SVC).key --cert ./k8s/certs/$(SVC).crt --namespace=jobico
+	@kubectl create secret tls $(SVC)-cert --key ./k8s/certs/$(SVC).key --cert ./k8s/certs/$(SVC).crt --namespace=jobico
 
 supportcerts: $(SUPPORT_TARGETS:%=supportcerts/%)
 supportcerts/%: SVC=$*
