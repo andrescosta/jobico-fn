@@ -7,9 +7,11 @@ MKDIR_REPO_CMD = mkdir -p reports
 MKDIR_BIN_CMD = mkdir -p bin
 BUILD_CMD = ./build/build.sh
 ENV_CMD = ./build/env.sh
+LINT_INSTALL_CMD = curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.56.1
 X509 = ./hacks/c.sh
 X509Install = ./hacks/u.sh
 DO_SLEEP = sleep 10
+GO_TEST_CMD = CGO_ENABLED=1 go test
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
@@ -19,8 +21,17 @@ ifneq ($(MSYSTEM), MSYS)
 	DO_SLEEP = pwsh -noprofile -command "Start-Sleep 10"
 	X509 = pwsh -noprofile -command "./hacks/c.ps1"
 	X509Install = pwsh -noprofile -command "./hacks/u.ps1"
+	LINT_INSTALL_CMD = winget install golangci-lint
+	GO_TEST_CMD = go test
 endif
 endif
+
+## Dependencies
+
+dep:
+	go install mvdan.cc/gofumpt@latest
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+	@$(LINT_INSTALL_CMD)
 
 ## Release
 .PHONY: init-release
@@ -57,10 +68,10 @@ init-coverage:
 	@$(MKDIR_REPO_CMD) 
 
 test:
-	go test -count=1 -race -timeout 60s ./internal/test 
+	@$(GO_TEST_CMD) -count=1 -race -timeout 60s ./internal/test 
 
 test_coverage: init-coverage
-	go test ./... -coverprofile=./reports/coverage.out
+	@$(GO_TEST_CMD)  ./... -coverprofile=./reports/coverage.out
 
 test_html: test_coverage
 	go tool cover -html=./reports/coverage.out

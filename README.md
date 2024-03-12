@@ -111,6 +111,8 @@ go install mvdan.cc/gofumpt@latest
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.56.1
  go install golang.org/x/vuln/cmd/govulncheck@latest
 
+update host file
+
 for testing and linux: sudo apt install gcc
 CGO_ENABLED=1
 
