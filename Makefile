@@ -1,14 +1,7 @@
 TARGETS ?= ctl listener repo recorder queue exec 
+SUPPORT_TARGETS ?= jaeger prometheus
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 OUTBINS = $(foreach bin,$(TARGETS),bin/$(bin))
-YAMLS = $(foreach target,$(TARGETS),$(target).yaml)
-SUPPORTYAMLS ?= jaeger.yaml prometheus.yaml
-
-.PHONY: newbin perf1 perf2 k6 go-build test test_coverage test_html checks hadolint init-coverage dckr_build dckr_up dckr_upobs dckr_down dckr_stop lint vuln build release format local $(FORMAT_FILES) $(TARGETS) $(YAMLS) x509 configs dockerbuild deploy rollback
-
-APP?=application
-REGISTRY?=gcr.io/images
-COMMIT_SHA=$(shell git rev-parse --short HEAD)
 
 MKDIR_REPO_CMD = mkdir -p reports 
 MKDIR_BIN_CMD = mkdir -p bin
@@ -27,11 +20,40 @@ ifneq ($(MSYSTEM), MSYS)
 endif
 endif
 
+## Release
+.PHONY: init-release
+init-release:
+	@$(MKDIR_BIN_CMD) 
+
+release: format checks test env build 
+
+build: init-release
+	@$(BUILD_CMD)
+
+env: init-release
+	@$(ENV_CMD)
+
+## Local environment
+
+local: env build
+
+### Validations
+.PHONY: lint vuln
+
+checks: lint vuln 
+
 lint:
 	@golangci-lint run ./...
 
-hadolint:
-	@cat ./compose/Dockerfile | docker run --rm -i hadolint/hadolint
+vuln:
+	@govulncheck ./...
+
+## Tests
+.PHONY: init-coverage test
+
+init-coverage:
+	@$(MKDIR_REPO_CMD) 
+
 test:
 	go test -count=1 -race -timeout 60s ./internal/test 
 
@@ -41,43 +63,33 @@ test_coverage: init-coverage
 test_html: test_coverage
 	go tool cover -html=./reports/coverage.out
 
-vuln:
-	@govulncheck ./...
-
-build: init-release
-	@$(BUILD_CMD)
-
-env: init-release
-	@$(ENV_CMD)
+## Performance
+.PHONY: k6 perf1 perf2
 
 k6: 
 	go install go.k6.io/xk6/cmd/xk6@latest
 	xk6 build --with github.com/szkiba/xk6-yaml@latest --output perf/k6.exe
 
-perf1:
+perf1: 
 	perf/k6.exe run perf/events.js
 
-perf2:
+perf2: 
 	perf/k6.exe run perf/eventsandstream.js
+
+## Format
+.PHONY: $(FORMAT_FILES)  
 
 format: $(FORMAT_FILES)  
 
 $(FORMAT_FILES):
 	@gofumpt -w $@
 
-release: checks test env build 
+## Docker compose targets.
+.PONY: hadolint dckr_build dckr_up dckr_upobs dckr_down dckr_stop
 
-checks: format lint vuln 
+hadolint:
+	@cat ./compose/Dockerfile | docker run --rm -i hadolint/hadolint
 
-local: env build
-
-init-coverage:
-	@$(MKDIR_REPO_CMD) 
-
-init-release:
-	@$(MKDIR_BIN_CMD) 
-
-### Docker compose targets.
 dckr_build:
 	docker compose -f .\compose\compose.yml build
 
@@ -93,9 +105,12 @@ dckr_down:
 dckr_stop:
 	docker compose -f .\compose\compose.yml stop
 
-### Kind
+## kubernetes targets 
 
-kind: kindcluster dockerbuild deploy
+### Kind cluster
+.PHONY: kinddel kindcluster waitnginx
+
+kind: kindcluster dockerimages waitnginx deploy
 
 kinddel: 
 	kind delete cluster
@@ -108,77 +123,50 @@ waitnginx:
 	@$(DO_SLEEP) 
 	@kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
 
-dockerbuild: $(TARGETS)
-
-$(TARGETS):
-	@docker build -f compose/Dockerfile --target $@ -t jobico/$@ . 
-	@kind load docker-image jobico/$@:latest
-
-deploy: configs $(SUPPORTYAMLS) $(YAMLS)
-
-rollback:
-	kubectl delete namespace jobico
-
-
-$(YAMLS):
-	@kubectl apply -f .\k8s\config\$@
-
-$(SUPPORTYAMLS):
-	@kubectl apply -f .\k8s\config\$@
-
-configs: 
-	@kubectl apply -f .\k8s\config\namespace.yaml
-	@kubectl apply -f .\k8s\config\configmap.yaml
-	@kubectl delete secret ctl-cert --namespace=jobico --ignore-not-found=true
-	@kubectl create secret tls ctl-cert --key .\k8s\certs\ctl.key --cert .\k8s\certs\ctl.crt --namespace=jobico
-	@kubectl delete secret repo-cert --namespace=jobico --ignore-not-found=true
-	@kubectl create secret tls repo-cert --key .\k8s\certs\repo.key --cert .\k8s\certs\repo.crt --namespace=jobico
-	@kubectl delete secret recorder-cert --namespace=jobico  --ignore-not-found=true
-	@kubectl create secret tls recorder-cert --key .\k8s\certs\recorder.key --cert .\k8s\certs\recorder.crt --namespace=jobico
-	@kubectl delete secret listener-cert --namespace=jobico  --ignore-not-found=true
-	@kubectl create secret tls listener-cert --key .\k8s\certs\listener.key --cert .\k8s\certs\listener.crt --namespace=jobico
-	@kubectl delete secret queue-cert --namespace=jobico  --ignore-not-found=true
-	@kubectl create secret tls queue-cert --key .\k8s\certs\queue.key --cert .\k8s\certs\queue.crt --namespace=jobico
-	@kubectl delete secret jaeger-cert --namespace=jobico --ignore-not-found=true
-	@kubectl create secret tls jaeger-cert --key .\k8s\certs\jaeger.key --cert .\k8s\certs\jaeger.crt --namespace=jobico
-	@kubectl delete secret prometheus-cert --namespace=jobico --ignore-not-found=true
-	@kubectl create secret tls prometheus-cert --key .\k8s\certs\prometheus.key --cert .\k8s\certs\prometheus.crt --namespace=jobico
-
-x509:
-	@$(X509)
-
-
-.PHONY: manifests
-manifests: $(TARGETS:%=manifests/%)
-manifests/%: SVC=$*
-manifests/%:
-	@kubectl apply -f .\k8s\config\$(SVC).yaml
-
-.PHONY: supportmanifests
-supportmanifests: $(SUPPORT_TARGETS:%=supportmanifests/%)
-supportmanifests/%: SVC=$*
-supportmanifests/%:
-	@kubectl apply -f .\k8s\config\$(SVC).yaml
-
-.PHONY: certs
-certs: $(TARGETS:%=certs/%)
-certs/%: SVC=$*
-certs/%:
-	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
-	@kubectl create secret tls $(SVC)-cert --key .\k8s\certs\$(SVC).key --cert .\k8s\certs\$(SVC).crt --namespace=jobico
-
-.PHONY: dockerimages
+### Container images
 dockerimages: $(TARGETS:%=dockerimages/%)
 dockerimages/%: SVC=$*
 dockerimages/%:
 	@docker build -f compose/Dockerfile --target $(SVC) -t jobico/$(SVC) . 
 	@kind load docker-image jobico/$(SVC):latest
 
+### K8s manifests
 .PHONY: base
+
+deploy: base certs supportcerts supportmanifests manifests
+
 base:
 	@kubectl apply -f .\k8s\config\namespace.yaml
 	@kubectl apply -f .\k8s\config\configmap.yaml
 
-newkind: kindcluster dockerimages waitnginx newdeploy
+certs: $(TARGETS:%=certs/%)
+certs/%: SVC=$*
+certs/%:
+	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
+	@kubectl create secret tls $(SVC)-cert --key .\k8s\certs\$(SVC).key --cert .\k8s\certs\$(SVC).crt --namespace=jobico
 
-newdeploy: base certs supportmanifests manifests
+supportcerts: $(SUPPORT_TARGETS:%=supportcerts/%)
+supportcerts/%: SVC=$*
+supportcerts/%:
+	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
+	@kubectl create secret tls $(SVC)-cert --key .\k8s\certs\$(SVC).key --cert .\k8s\certs\$(SVC).crt --namespace=jobico
+
+supportmanifests: $(SUPPORT_TARGETS:%=supportmanifests/%)
+supportmanifests/%: SVC=$*
+supportmanifests/%:
+	@kubectl apply -f .\k8s\config\$(SVC).yaml
+
+manifests: $(TARGETS:%=manifests/%)
+manifests/%: SVC=$*
+manifests/%:
+	@kubectl apply -f .\k8s\config\$(SVC).yaml
+
+rollback: $(TARGETS:%=rollback/%)
+rollback/%: SVC=$*
+rollback/%:
+	@kubectl delete -f .\k8s\config\$(SVC).yaml
+
+## Hacks
+.PHONY: x509
+x509:
+	@$(X509)
