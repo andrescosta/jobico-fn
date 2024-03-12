@@ -22,7 +22,7 @@ ifneq ($(MSYSTEM), MSYS)
 	MKDIR_BIN_CMD = pwsh -noprofile -command "new-item bin -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
 	BUILD_CMD = pwsh -noprofile -command ".\build\build.ps1"
 	ENV_CMD = pwsh -noprofile -command ".\build\env.ps1"
-	DO_SLEEP = pwsh -noprofile -command "Start-Sleep 5"
+	DO_SLEEP = pwsh -noprofile -command "Start-Sleep 10"
 	X509 = pwsh -noprofile -command "./hacks/c.ps1"
 endif
 endif
@@ -104,6 +104,10 @@ kindcluster:
 	@kind create cluster --config .\k8s\config\cluster.yaml
 	@kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 
+waitnginx:
+	@$(DO_SLEEP) 
+	@kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+
 dockerbuild: $(TARGETS)
 
 $(TARGETS):
@@ -142,3 +146,39 @@ configs:
 
 x509:
 	@$(X509)
+
+
+.PHONY: manifests
+manifests: $(TARGETS:%=manifests/%)
+manifests/%: SVC=$*
+manifests/%:
+	@kubectl apply -f .\k8s\config\$(SVC).yaml
+
+.PHONY: supportmanifests
+supportmanifests: $(SUPPORT_TARGETS:%=supportmanifests/%)
+supportmanifests/%: SVC=$*
+supportmanifests/%:
+	@kubectl apply -f .\k8s\config\$(SVC).yaml
+
+.PHONY: certs
+certs: $(TARGETS:%=certs/%)
+certs/%: SVC=$*
+certs/%:
+	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
+	@kubectl create secret tls $(SVC)-cert --key .\k8s\certs\$(SVC).key --cert .\k8s\certs\$(SVC).crt --namespace=jobico
+
+.PHONY: dockerimages
+dockerimages: $(TARGETS:%=dockerimages/%)
+dockerimages/%: SVC=$*
+dockerimages/%:
+	@docker build -f compose/Dockerfile --target $(SVC) -t jobico/$(SVC) . 
+	@kind load docker-image jobico/$(SVC):latest
+
+.PHONY: base
+base:
+	@kubectl apply -f .\k8s\config\namespace.yaml
+	@kubectl apply -f .\k8s\config\configmap.yaml
+
+newkind: kindcluster dockerimages waitnginx newdeploy
+
+newdeploy: base certs supportmanifests manifests
