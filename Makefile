@@ -122,7 +122,7 @@ kinddel:
 	kind delete cluster
 
 kindcluster:
-	@kind create cluster --config .\k8s\config\cluster.yaml
+	@kind create cluster --config ./k8s/config/cluster.yaml
 	@kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 
 waitnginx:
