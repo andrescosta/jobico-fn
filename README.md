@@ -107,15 +107,26 @@ Explore key aspects of managing and maintaining your Jobico deployment. From mon
 
 # Kubernetes
 
+go install mvdan.cc/gofumpt@latest
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.56.1
+ go install golang.org/x/vuln/cmd/govulncheck@latest
+
+for testing and linux: sudo apt install gcc
+CGO_ENABLED=1
+
 Prerequisites
- Docker or Podman
- Kind
- Kubectl
- make
 
- make kind
+Docker or Podman
+Kind
+Kubectl
+make
 
- creates and upload certificates
+Creates and install certificates
+make x509
+
+Start and deploy the cluster
+make kind
+
 
 # Roadmap
 
