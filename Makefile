@@ -142,35 +142,35 @@ dockerimages/%:
 deploy: base certs supportcerts supportmanifests manifests
 
 base:
-	@kubectl apply -f .\k8s\config\namespace.yaml
-	@kubectl apply -f .\k8s\config\configmap.yaml
+	@kubectl apply -f ./k8s/config/namespace.yaml
+	@kubectl apply -f ./k8s/config/configmap.yaml
 
 certs: $(TARGETS:%=certs/%)
 certs/%: SVC=$*
 certs/%:
 	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
-	@kubectl create secret tls $(SVC)-cert --key .\k8s\certs\$(SVC).key --cert .\k8s\certs\$(SVC).crt --namespace=jobico
+	@kubectl create secret tls $(SVC)-cert --key .\k8s\certs\$(SVC).key --cert ./k8s/certs/$(SVC).crt --namespace=jobico
 
 supportcerts: $(SUPPORT_TARGETS:%=supportcerts/%)
 supportcerts/%: SVC=$*
 supportcerts/%:
 	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
-	@kubectl create secret tls $(SVC)-cert --key .\k8s\certs\$(SVC).key --cert .\k8s\certs\$(SVC).crt --namespace=jobico
+	@kubectl create secret tls $(SVC)-cert --key ./k8s/certs/$(SVC).key --cert ./k8s/certs/$(SVC).crt --namespace=jobico
 
 supportmanifests: $(SUPPORT_TARGETS:%=supportmanifests/%)
 supportmanifests/%: SVC=$*
 supportmanifests/%:
-	@kubectl apply -f .\k8s\config\$(SVC).yaml
+	@kubectl apply -f ./k8s/config/$(SVC).yaml
 
 manifests: $(TARGETS:%=manifests/%)
 manifests/%: SVC=$*
 manifests/%:
-	@kubectl apply -f .\k8s\config\$(SVC).yaml
+	@kubectl apply -f ./k8s/config/$(SVC).yaml
 
 rollback: $(TARGETS:%=rollback/%)
 rollback/%: SVC=$*
 rollback/%:
-	@kubectl delete -f .\k8s\config\$(SVC).yaml
+	@kubectl delete -f ./k8s/config/$(SVC).yaml
 
 ## Hacks
 .PHONY: x509
