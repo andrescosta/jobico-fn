@@ -48,7 +48,7 @@ Alternatively, you can compile using [Docker](https://docs.docker.com/engine):
 ``` bash
 git clone https://github.com/andrescosta/jobico.git
 cd jobico
-make dckr_build
+make docker-build
 ```
 ## Service Management
 
@@ -56,27 +56,39 @@ make dckr_build
 ```bash
 # Starting the services
 scripts/startall.sh
-#powershell: startall.ps1
+#powershell: scripts\startall.ps1
 
 # Stopping the services
 scripts/stopall.sh
-#powershell: stopall.ps1
+#powershell: scripts\stopall.ps1
 ```
 
 2. Docker
 ``` bash
 # Starting the environment
-make dckr_up
+make docker-up
 
 # Stopping the environment
-make dckr_stop
+make docker-stop
 ```
 
 ## Running Tests
-After compiling and starting the services locally, you can run a set of end to end test cases:
+After compiling and starting the services locally, you can run a set of happy path scenarios:
+
+1. Install k6
 
 ``` bash
-make test
+make k6
+```
+
+2. Run the test cases
+   
+``` bash
+make perf1/local
+```
+
+``` bash
+make perf2/local
 ```
 
 [Learn more how testing works in Jobico](TESTING.md)
@@ -92,6 +104,9 @@ Explore how to work with the Jobico platform by checking out our comprehensive t
 Explore key aspects of managing and maintaining your Jobico deployment. From monitoring job execution to configuring environment variables and performing health checks, this section covers essential topics to ensure the smooth operation of your Jobico environment.
 
 [Learn More about Operating Jobico](OPERATING.md)
+
+# Kubernetes
+
 
 # Roadmap
 

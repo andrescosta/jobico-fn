@@ -1,10 +1,7 @@
 import { Test } from './lib/test.js'
+import * as config from './configs.js'
 
-const HOST_CTL = 'ctl:443'
-const HOST_REPO = 'repo:443'
-const HOST_LISTENER = 'listener'
-const TENANT = 'tenant_1'
-const test = new Test(TENANT, HOST_CTL, HOST_LISTENER, HOST_REPO)
+const test = new Test(config.TENANT, config.HOST_CTL, config.HOST_LISTENER, config.HOST_REPO, config.TLS)
 test.LoadFileBin('../internal/test/testdata/echo.wasm')
 test.LoadFileBin('../internal/test/testdata/schema.json')
 test.LoadFile('../internal/test/testdata/job.yml')

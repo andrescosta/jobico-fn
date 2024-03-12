@@ -64,17 +64,23 @@ test_html: test_coverage
 	go tool cover -html=./reports/coverage.out
 
 ## Performance
-.PHONY: k6 perf1 perf2
+.PHONY: k6 perf1/docker perf2/docker perf1/k8s perf2/k8s
 
 k6: 
 	go install go.k6.io/xk6/cmd/xk6@latest
 	xk6 build --with github.com/szkiba/xk6-yaml@latest --output perf/k6.exe
 
-perf1: 
-	perf/k6.exe run perf/events.js
+perf1/local: 
+	perf/k6.exe run -e HOST_CTL=ctl:50052 -e HOST_REPO=repo:50053 -e HOST_LISTENER=http://listener:8080 -e TLS=false -e TENANT=tenant_1 perf/events.js
 
-perf2: 
-	perf/k6.exe run perf/eventsandstream.js
+perf2/local: 
+	perf/k6.exe run -e HOST_CTL=ctl:50052 -e HOST_REPO=repo:50053 -e HOST_LISTENER=http://listener:8080 -e TLS=false -e TENANT=tenant_1 perf/eventsandstream.js
+
+perf1/k8s: 
+	perf/k6.exe run -e HOST_CTL=ctl:443 -e HOST_REPO=repo:443 -e HOST_LISTENER=https://listener -e TLS=true -e TENANT=tenant_1 perf/events.js
+
+perf2/k8s: 
+	perf/k6.exe run -e HOST_CTL=ctl:443 -e HOST_REPO=repo:443 -e HOST_LISTENER=https://listener -e TLS=true -e TENANT=tenant_1 perf/eventsandstream.js
 
 ## Format
 .PHONY: $(FORMAT_FILES)  
@@ -85,24 +91,24 @@ $(FORMAT_FILES):
 	@gofumpt -w $@
 
 ## Docker compose targets.
-.PONY: hadolint dckr_build dckr_up dckr_upobs dckr_down dckr_stop
+.PONY: hadolint docker-build docker-up docker-up-obs docker-down docker-stop
 
 hadolint:
 	@cat ./compose/Dockerfile | docker run --rm -i hadolint/hadolint
 
-dckr_build:
+docker-build:
 	docker compose -f .\compose\compose.yml build
 
-dckr_up:
+docker-up:
 	docker compose -f .\compose\compose.yml up -d
 
-dckr_upobs:
+docker-up-obs:
 	docker compose -f .\compose\compose.yml --profile obs up -d
 
-dckr_down:
+docker-down:
 	docker compose -f .\compose\compose.yml down 
 
-dckr_stop:
+docker-stop:
 	docker compose -f .\compose\compose.yml stop
 
 ## kubernetes targets 

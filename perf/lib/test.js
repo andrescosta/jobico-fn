@@ -3,8 +3,8 @@ import { Api } from './api.js'
 import grpc from 'k6/net/grpc';
 import { randomString, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
-export function Test(tenant, hostCtl, hostListener, hostRepo) {
-    this.api = new Api(hostCtl, hostListener, hostRepo)
+export function Test(tenant, hostCtl, hostListener, hostRepo, tls) {
+    this.api = new Api(hostCtl, hostListener, hostRepo, tls)
     this.tenant = tenant
 }
 
