@@ -115,7 +115,7 @@ Prerequisites
 
  make kind
 
- 
+ creates and upload certificates
 
 # Roadmap
 

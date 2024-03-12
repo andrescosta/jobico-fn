@@ -8,6 +8,7 @@ MKDIR_BIN_CMD = mkdir -p bin
 BUILD_CMD = ./build/build.sh
 ENV_CMD = ./build/env.sh
 X509 = ./hacks/c.sh
+X509Install = ./hacks/u.sh
 DO_SLEEP = sleep 10
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
@@ -17,6 +18,7 @@ ifneq ($(MSYSTEM), MSYS)
 	ENV_CMD = pwsh -noprofile -command ".\build\env.ps1"
 	DO_SLEEP = pwsh -noprofile -command "Start-Sleep 10"
 	X509 = pwsh -noprofile -command "./hacks/c.ps1"
+	X509Install = pwsh -noprofile -command "./hacks/u.ps1"
 endif
 endif
 
@@ -176,3 +178,5 @@ rollback/%:
 .PHONY: x509
 x509:
 	@$(X509)
+	@$(X509Install)
+	
