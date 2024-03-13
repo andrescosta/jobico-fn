@@ -12,6 +12,7 @@ X509 = ./hacks/c.sh
 X509Install = ./hacks/u.sh
 DO_SLEEP = sleep 10
 GO_TEST_CMD = CGO_ENABLED=1 go test
+
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
@@ -27,6 +28,7 @@ endif
 endif
 
 ## Dependencies
+.PHONY: dep
 
 dep:
 	go install mvdan.cc/gofumpt@latest
@@ -70,10 +72,10 @@ init-coverage:
 test:
 	@$(GO_TEST_CMD) -count=1 -race -timeout 60s ./internal/test 
 
-test_coverage: init-coverage
+test-coverage: init-coverage
 	@$(GO_TEST_CMD)  ./... -coverprofile=./reports/coverage.out
 
-test_html: test_coverage
+test-html: test_coverage
 	go tool cover -html=./reports/coverage.out
 
 ## Performance
@@ -83,16 +85,16 @@ k6:
 	go install go.k6.io/xk6/cmd/xk6@latest
 	xk6 build --with github.com/szkiba/xk6-yaml@latest --output perf/k6.exe
 
-perf1/local: 
+perf1-local: 
 	perf/k6.exe run -e HOST_CTL=ctl:50052 -e HOST_REPO=repo:50053 -e HOST_LISTENER=http://listener:8080 -e TLS=false -e TENANT=tenant_1 perf/events.js
 
-perf2/local: 
+perf2-local: 
 	perf/k6.exe run -e HOST_CTL=ctl:50052 -e HOST_REPO=repo:50053 -e HOST_LISTENER=http://listener:8080 -e TLS=false -e TENANT=tenant_1 perf/eventsandstream.js
 
-perf1/k8s: 
+perf1-k8s: 
 	perf/k6.exe run -e HOST_CTL=ctl:443 -e HOST_REPO=repo:443 -e HOST_LISTENER=https://listener -e TLS=true -e TENANT=tenant_1 perf/events.js
 
-perf2/k8s: 
+perf2-k8s: 
 	perf/k6.exe run -e HOST_CTL=ctl:443 -e HOST_REPO=repo:443 -e HOST_LISTENER=https://listener -e TLS=true -e TENANT=tenant_1 perf/eventsandstream.js
 
 ## Format
@@ -127,27 +129,34 @@ docker-stop:
 ## kubernetes targets 
 
 ### Kind cluster
-.PHONY: kinddel kindcluster waitnginx
+.PHONY: kind-delete kind-cluster wait-ingress ingress
 
-kind: kindcluster dockerimages waitnginx deploy
+kind: kind-cluster ingress docker-images load-images wait-ingress deploy
 
-kinddel: 
+kind-delete:
 	kind delete cluster
 
-kindcluster:
+kind-cluster:
 	@kind create cluster --config ./k8s/config/cluster.yaml
+
+ingress:
 	@kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 
-waitnginx:
+wait-ingress:
 	@$(DO_SLEEP) 
 	@kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
 
-### Container images
-dockerimages: $(TARGETS:%=dockerimages/%)
-dockerimages/%: SVC=$*
-dockerimages/%:
-	@docker build -f compose/Dockerfile --target $(SVC) -t jobico/$(SVC) . 
+load-images: $(TARGETS:%=load-images/%)
+load-images/%: SVC=$*
+load-images/%:
 	@kind load docker-image jobico/$(SVC):latest
+
+### Container images
+
+docker-images: $(TARGETS:%=docker-images/%)
+docker-images/%: SVC=$*
+docker-images/%:
+	@docker build -f compose/Dockerfile --target $(SVC) -t jobico/$(SVC) . 
 
 ### K8s manifests
 .PHONY: base
@@ -180,9 +189,16 @@ manifests/%: SVC=$*
 manifests/%:
 	@kubectl apply -f ./k8s/config/$(SVC).yaml
 
-rollback: $(TARGETS:%=rollback/%)
-rollback/%: SVC=$*
-rollback/%:
+rollback: rollback-manifests rollback-support-manifests
+
+rollback-manifests: $(TARGETS:%=rollback-manifests/%)
+rollback-manifests/%: SVC=$*
+rollback-manifests/%:
+	@kubectl delete -f ./k8s/config/$(SVC).yaml
+
+rollback-support-manifests: $(SUPPORT_TARGETS:%=rollback-support-manifests/%)
+rollback-support-manifests/%: SVC=$*
+rollback-support-manifests/%:
 	@kubectl delete -f ./k8s/config/$(SVC).yaml
 
 ## Hacks
@@ -190,4 +206,3 @@ rollback/%:
 x509:
 	@$(X509)
 	@$(X509Install)
-	
