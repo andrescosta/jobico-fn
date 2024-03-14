@@ -231,3 +231,4 @@ remove-certs-linux: $(TARGETS:%=remove-certs-linux/%) $(SUPPORT_TARGETS:%=remove
 	@sudo update-ca-certificates
 remove-certs-linux/%: SVC=$*
 remove-certs-linux/%:
+	@sudo rm /etc/ssl/certs/$(SVC).pem 
