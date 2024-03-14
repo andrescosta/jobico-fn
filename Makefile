@@ -1,5 +1,5 @@
-TARGETS ?= ctl listener repo recorder queue exec 
-SUPPORT_TARGETS ?= jaeger prometheus
+TARGETS = ctl listener repo recorder queue exec 
+SUPPORT_TARGETS = jaeger prometheus
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 OUTBINS = $(foreach bin,$(TARGETS),bin/$(bin))
 

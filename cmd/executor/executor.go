@@ -6,6 +6,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/context"
 	"github.com/andrescosta/jobico/cmd/executor/service"
+	_ "github.com/tprasadtp/go-autotune"
 )
 
 func main() {
