@@ -150,9 +150,9 @@ To run Jobico locally using Kind, ensure you have the following dependencies ins
    make create-certs
    # Adds the certificates to the local storage
    make upload-certs-linux # Adds the certificates to the local store.
-   #windows: make upload-certs-windows (this command must be executed as admin)
+   #windows: make add-certs-windows (Warning: this command run as the admin user(opens the UAC dialog) and requires the user to accepts the changes.
    
-   # 2- Creates a cluster and deploy the application
+   # 2- Creates the cluster and deploy the application
    make kind
    
    # 3- Local Test
@@ -160,6 +160,9 @@ To run Jobico locally using Kind, ensure you have the following dependencies ins
    make k6
    ## Runs a basic scenario locally
    make perf1-k8s
+
+   # 4- Deletes the  cluster
+   make kind-delete
 ```
 
 # Roadmap

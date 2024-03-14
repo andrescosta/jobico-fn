@@ -132,15 +132,15 @@ docker-stop:
 ## kubernetes targets 
 
 ### Kind cluster
-.PHONY: kind-delete kind-cluster wait-ingress ingress
+.PHONY: kind-delete kind-cluster wait-ingress ingress kind-get-images
 
-kind: kind-cluster ingress docker-images load-images wait-ingress deploy
-
-kind-delete:
-	kind delete cluster
+kind: kind-cluster ingress docker-images load-images wait-ingress deploy-all
 
 kind-cluster:
-	@kind create cluster --config ./k8s/config/cluster.yaml
+	@kind create cluster -n jobico --config ./k8s/config/cluster.yaml
+
+kind-delete:
+	kind delete cluster -n jobico
 
 ingress:
 	@kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
@@ -152,7 +152,10 @@ wait-ingress:
 load-images: $(TARGETS:%=load-images/%)
 load-images/%: SVC=$*
 load-images/%:
-	@kind load docker-image jobico/$(SVC):latest
+	@kind load docker-image jobico/$(SVC):latest -n jobico
+
+kind-get-images:
+	docker exec -it jobico-control-plane crictl images
 
 ### Container images
 
@@ -164,32 +167,28 @@ docker-images/%:
 ### K8s manifests
 .PHONY: base create-certs-dir
 
-deploy: base certs supportcerts supportmanifests manifests
+deploy-all: base kube-create-certs apply-supportmanifests apply-manifests
+
+deploy: base manifests
 
 base:
 	@kubectl apply -f ./k8s/config/namespace.yaml
 	@kubectl apply -f ./k8s/config/configmap.yaml
 
-certs: $(TARGETS:%=certs/%)
-certs/%: SVC=$*
-certs/%:
+kube-create-certs: $(TARGETS:%=kube-create-certs/%) $(SUPPORT_TARGETS:%=kube-create-certs/%)
+kube-create-certs/%: SVC=$*
+kube-create-certs/%:
 	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
 	@kubectl create secret tls $(SVC)-cert --key ./k8s/certs/$(SVC).key --cert ./k8s/certs/$(SVC).crt --namespace=jobico
 
-supportcerts: $(SUPPORT_TARGETS:%=supportcerts/%)
-supportcerts/%: SVC=$*
-supportcerts/%:
-	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
-	@kubectl create secret tls $(SVC)-cert --key ./k8s/certs/$(SVC).key --cert ./k8s/certs/$(SVC).crt --namespace=jobico
-
-supportmanifests: $(SUPPORT_TARGETS:%=supportmanifests/%)
-supportmanifests/%: SVC=$*
-supportmanifests/%:
+apply-supportmanifests: $(SUPPORT_TARGETS:%=apply-supportmanifests/%)
+apply-supportmanifests/%: SVC=$*
+apply-supportmanifests/%:
 	@kubectl apply -f ./k8s/config/$(SVC).yaml
 
-manifests: $(TARGETS:%=manifests/%)
-manifests/%: SVC=$*
-manifests/%:
+apply-manifests: $(TARGETS:%=apply-manifests/%)
+apply-manifests/%: SVC=$*
+apply-manifests/%:
 	@kubectl apply -f ./k8s/config/$(SVC).yaml
 
 rollback: rollback-manifests rollback-support-manifests
@@ -204,7 +203,8 @@ rollback-support-manifests/%: SVC=$*
 rollback-support-manifests/%:
 	@kubectl delete -f ./k8s/config/$(SVC).yaml
 
-create-certs: create-certs-dir $(TARGETS:%=create-certs/%)
+
+create-certs: create-certs-dir $(TARGETS:%=create-certs/%) $(SUPPORT_TARGETS:%=create-certs/%)
 create-certs/%: SVC=$*
 create-certs/%:
 	@$(CERTS_CMD)
@@ -212,12 +212,17 @@ create-certs/%:
 create-certs-dir:
 	@$(CERTS_DIR_CMD)
 
-upload-certs-linux:
+# Certificates management for the local store
+add-certs-linux:
 	sudo cp ./k8s/certs/*.crt /usr/local/share/ca-certificates
 	sudo update-ca-certificates
 
-# This target must be run as "admin" on windows
-upload-certs-windows/%: upload-certs-windows $(TARGETS:%=upload-certs-windows/%)
-upload-certs-windows/%: SVC=$*
-upload-certs-windows/%:
-	certutil -enterprise -f -v -AddStore "Root" .\k8s\certs\$(SVC)
+add-certs-windows: $(TARGETS:%=add-certs-windows/%) $(SUPPORT_TARGETS:%=add-certs-windows/%)
+add-certs-windows/%: SVC=$*
+add-certs-windows/%:
+	@pwsh -noprofile -command "Start-Process -FilePath \"pwsh\" -ArgumentList \"-noprofile\", \"-command\", 'certutil -enterprise -f -v -AddStore \"Root\" .\k8s\certs\$(SVC).crt' -Verb RunAs"
+
+remove-certs-windows: $(TARGETS:%=remove-certs-windows/%) $(SUPPORT_TARGETS:%=remove-certs-windows/%)
+remove-certs-windows/%: SVC=$*
+remove-certs-windows/%:
+	@pwsh -noprofile -command "Start-Process -FilePath \"pwsh\" -ArgumentList \"-noprofile\", \"-command\", 'certutil -enterprise -f -v -DelStore \"Root\" $(SVC)' -Verb RunAs"

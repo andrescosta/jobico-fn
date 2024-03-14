@@ -61,6 +61,7 @@ require (
 	github.com/tetratelabs/wazero v1.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
 	github.com/tklauser/numcpus v0.7.0 // indirect
+	github.com/tprasadtp/go-autotune v0.0.0-20240308193311-1a1576f2de62 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
