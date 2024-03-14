@@ -12,7 +12,7 @@ X509 = ./hacks/cert/create.sh
 X509Install = ./hacks/cert/add.sh
 DO_SLEEP = sleep 10
 GO_TEST_CMD = CGO_ENABLED=1 go test
-CERTS_DIR_CMD = mkdir -p .\k8s\certs
+CERTS_DIR_CMD = mkdir -p ./k8s/certs
 CERTS_CMD = openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\$(SVC).key -out .\k8s\certs\$(SVC).crt -subj "/CN=$(SVC)/O=$(SVC)" -addext "subjectAltName = DNS:$(SVC)"
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
@@ -214,8 +214,8 @@ create-certs-dir:
 
 # Certificates management for the local store
 add-certs-linux:
-	sudo cp ./k8s/certs/*.crt /usr/local/share/ca-certificates
-	sudo update-ca-certificates
+	@sudo cp ./k8s/certs/*.crt /usr/local/share/ca-certificates
+	@sudo update-ca-certificates
 
 add-certs-windows: $(TARGETS:%=add-certs-windows/%) $(SUPPORT_TARGETS:%=add-certs-windows/%)
 add-certs-windows/%: SVC=$*
@@ -231,5 +231,5 @@ remove-certs-linux: $(TARGETS:%=remove-certs-linux/%) $(SUPPORT_TARGETS:%=remove
 	@sudo update-ca-certificates
 remove-certs-linux/%: SVC=$*
 remove-certs-linux/%:
-	sudo rm /etc/ssl/certs/$(SVC).pem
-	sudo rm /usr/local/share/ca-certificates/$(SVC).crt
+	@sudo rm /etc/ssl/certs/$(SVC).pem
+	@sudo rm /usr/local/share/ca-certificates/$(SVC).crt
