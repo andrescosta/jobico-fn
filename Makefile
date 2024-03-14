@@ -13,7 +13,7 @@ X509Install = ./hacks/cert/add.sh
 DO_SLEEP = sleep 10
 GO_TEST_CMD = CGO_ENABLED=1 go test
 CERTS_DIR_CMD = mkdir -p ./k8s/certs
-CERTS_CMD = openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout ./k8s/certs\$(SVC).key -out ./k8s/certs\$(SVC).crt -subj "/CN=$(SVC)/O=$(SVC)" -addext "subjectAltName = DNS:$(SVC)"
+CERTS_CMD = openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout ./k8s/certs/$(SVC).key -out ./k8s/certs/$(SVC).crt -subj "/CN=$(SVC)/O=$(SVC)" -addext "subjectAltName = DNS:$(SVC)"
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
