@@ -72,6 +72,12 @@ make docker-up
 make docker-stop
 ```
 
+## Release
+
+Requirements
+
+for testinginstall gcc
+
 ## Running Tests
 After compiling and starting the services locally, you can run a set of happy path scenarios:
 
@@ -107,28 +113,54 @@ Explore key aspects of managing and maintaining your Jobico deployment. From mon
 
 # Kubernetes
 
-go install mvdan.cc/gofumpt@latest
-curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.56.1
- go install golang.org/x/vuln/cmd/govulncheck@latest
+Running Jobico in Kubernetes marks the initial phase of a more ambitious project to develop a highly available WebAssembly-based serverless platform. This project includes implementing a quorum-replicated data store, enhancing caching components, fortifying GRPC communication for robustness, and exploring a deeper integration by creating a K8s operator. 
 
-update host file
+## Getting started
 
-for testing and linux: sudo apt install gcc
-CGO_ENABLED=1
+### Kind
 
-Prerequisites
+To run Jobico locally using Kind, ensure you have the following dependencies installed:
 
-Docker or Podman
-Kind
-Kubectl
-make
+- [Docker](https://docs.docker.com/engine/install/)
+- [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+- [Make](https://www.gnu.org/software/make/)
 
-Creates and install certificates
-make x509
 
-Start and deploy the cluster
-make kind
+**Update the 'host' file:**
 
+1- Add the following entries:
+
+```
+   127.0.0.1 ctl
+   127.0.0.1 recorder
+   127.0.0.1 repo
+   127.0.0.1 listener
+   127.0.0.1 queue
+   127.0.0.1 prometheus
+   127.0.0.1 jaeger
+```
+2- Create a cluster and test
+
+```bash
+   git clone https://github.com/andrescosta/jobico
+   cd jobico
+
+   # 1- Self signed certificates
+   ## Creates the certifcates at k8s/certs
+   make create-certs
+   # Adds the certificates to the local storage
+   make upload-certs-linux # Adds the certificates to the local store.
+   #windows: make upload-certs-windows (this command must be executed as admin)
+   
+   # 2- Creates a cluster and deploy the application
+   make kind
+   
+   # 3- Local Test
+   ## Builds k6 in perf/
+   make k6
+   ## Runs a basic scenario locally
+   make perf1-k8s
+```
 
 # Roadmap
 
@@ -146,7 +178,7 @@ https://github.com/users/andrescosta/projects/3/views/1
 - Improvements to the Wasm runtime
 
 ### Long Term
-- Distributed storage for the queue and control services
+- Quorum based replicated storage 
 - Durable computing exploration
 
 # Contact

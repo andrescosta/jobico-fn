@@ -1,5 +1,6 @@
 mkdir .\k8s\certs
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\ctl.key -out .\k8s\certs\ctl.crt -subj "/CN=ctl/O=ctl" -addext "subjectAltName = DNS:ctl"
+
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\repo.key -out .\k8s\certs\repo.crt -subj "/CN=repo/O=repo"  -addext "subjectAltName = DNS:repo"
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\recorder.key -out .\k8s\certs\recorder.crt -subj "/CN=recorder/O=recorder"  -addext "subjectAltName = DNS:recorder"
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\listener.key -out .\k8s\certs\listener.crt -subj "/CN=listener/O=listener"  -addext "subjectAltName = DNS:listener"

@@ -8,11 +8,12 @@ MKDIR_BIN_CMD = mkdir -p bin
 BUILD_CMD = ./build/build.sh
 ENV_CMD = ./build/env.sh
 LINT_INSTALL_CMD = curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b $(go env GOPATH)/bin v1.56.1
-X509 = ./hacks/c.sh
-X509Install = ./hacks/u.sh
+X509 = ./hacks/cert/create.sh
+X509Install = ./hacks/cert/add.sh
 DO_SLEEP = sleep 10
 GO_TEST_CMD = CGO_ENABLED=1 go test
-
+CERTS_DIR_CMD = mkdir -p .\k8s\certs
+CERTS_CMD = openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\$(SVC).key -out .\k8s\certs\$(SVC).crt -subj "/CN=$(SVC)/O=$(SVC)" -addext "subjectAltName = DNS:$(SVC)"
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
@@ -20,10 +21,12 @@ ifneq ($(MSYSTEM), MSYS)
 	BUILD_CMD = pwsh -noprofile -command ".\build\build.ps1"
 	ENV_CMD = pwsh -noprofile -command ".\build\env.ps1"
 	DO_SLEEP = pwsh -noprofile -command "Start-Sleep 10"
-	X509 = pwsh -noprofile -command "./hacks/c.ps1"
-	X509Install = pwsh -noprofile -command "./hacks/u.ps1"
+	X509 = pwsh -noprofile -command ".\hacks\cert\create.bat"
+	X509Install = pwsh -noprofile -command ".\hacks\cert\add.bat"
 	LINT_INSTALL_CMD = winget install golangci-lint
 	GO_TEST_CMD = go test
+	CERTS_DIR_CMD = @pwsh -noprofile -command "new-item .\k8s\certs -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
+	CERTS_CMD = pwsh -noprofile -command 'openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\$(SVC).key -out .\k8s\certs\$(SVC).crt -subj "/CN=$(SVC)/O=$(SVC)" -addext "subjectAltName = DNS:$(SVC)"'
 endif
 endif
 
@@ -159,7 +162,7 @@ docker-images/%:
 	@docker build -f compose/Dockerfile --target $(SVC) -t jobico/$(SVC) . 
 
 ### K8s manifests
-.PHONY: base
+.PHONY: base create-certs-dir
 
 deploy: base certs supportcerts supportmanifests manifests
 
@@ -201,8 +204,20 @@ rollback-support-manifests/%: SVC=$*
 rollback-support-manifests/%:
 	@kubectl delete -f ./k8s/config/$(SVC).yaml
 
-## Hacks
-.PHONY: x509
-x509:
-	@$(X509)
-	@$(X509Install)
+create-certs: create-certs-dir $(TARGETS:%=create-certs/%)
+create-certs/%: SVC=$*
+create-certs/%:
+	@$(CERTS_CMD)
+
+create-certs-dir:
+	@$(CERTS_DIR_CMD)
+
+upload-certs-linux:
+	sudo cp ./k8s/certs/*.crt /usr/local/share/ca-certificates
+	sudo update-ca-certificates
+
+# This target must be run as "admin" on windows
+upload-certs-windows/%: upload-certs-windows $(TARGETS:%=upload-certs-windows/%)
+upload-certs-windows/%: SVC=$*
+upload-certs-windows/%:
+	certutil -enterprise -f -v -AddStore "Root" .\k8s\certs\$(SVC)
