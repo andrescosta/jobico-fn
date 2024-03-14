@@ -38,7 +38,7 @@ endif
 dep:
 	go install mvdan.cc/gofumpt@latest
 	go install golang.org/x/vuln/cmd/govulncheck@latest
-	@$(LINT_INSTALL_CMD)
+	$(LINT_INSTALL_CMD)
 
 ## Release
 .PHONY: init-release

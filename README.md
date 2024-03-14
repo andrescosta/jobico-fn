@@ -73,10 +73,17 @@ make docker-stop
 ```
 
 ## Release
+To release(build, e2e tests and lints) Jobico locally, ensure you have the following dependencies installed:
 
-Requirements
+- [Gcc](https://gcc.gnu.org/install/)
+- [Go](https://go.dev/)
+- [Make](https://www.gnu.org/software/make/)
 
-for testinginstall gcc
+And execute:
+
+``` bash
+make release
+```
 
 ## Running Tests
 After compiling and starting the services locally, you can run a set of happy path scenarios:
@@ -125,10 +132,9 @@ To run Jobico locally using Kind, ensure you have the following dependencies ins
 - [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [Make](https://www.gnu.org/software/make/)
 
+1- Update the 'host' file. 
 
-**Update the 'host' file:**
-
-1- Add the following entries:
+add the following entries:
 
 ```
    127.0.0.1 ctl
