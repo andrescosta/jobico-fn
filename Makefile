@@ -226,3 +226,8 @@ remove-certs-windows: $(TARGETS:%=remove-certs-windows/%) $(SUPPORT_TARGETS:%=re
 remove-certs-windows/%: SVC=$*
 remove-certs-windows/%:
 	@pwsh -noprofile -command "Start-Process -FilePath \"pwsh\" -ArgumentList \"-noprofile\", \"-command\", 'certutil -enterprise -f -v -DelStore \"Root\" $(SVC)' -Verb RunAs"
+
+remove-certs-linux: $(TARGETS:%=remove-certs-linux/%) $(SUPPORT_TARGETS:%=remove-certs-linux/%)
+	@sudo update-ca-certificates
+remove-certs-linux/%: SVC=$*
+remove-certs-linux/%:

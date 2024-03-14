@@ -6,4 +6,4 @@ sudo rm  /etc/ssl/certs/queue.pem
 sudo rm  /etc/ssl/certs/jaeger.pem
 sudo rm  /etc/ssl/certs/prometheus.pem
 sudo rm  /etc/ssl/certs/exec.pem 
-sudo sudo update-ca-certificates
+sudo update-ca-certificates
