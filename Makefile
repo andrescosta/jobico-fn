@@ -10,23 +10,25 @@ ENV_CMD = ./build/env.sh
 LINT_INSTALL_CMD = curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b $(go env GOPATH)/bin v1.56.1
 X509 = ./hacks/cert/create.sh
 X509Install = ./hacks/cert/add.sh
-DO_SLEEP = sleep 10
+DO_SLEEP = sleep 1
 GO_TEST_CMD = CGO_ENABLED=1 go test
 CERTS_DIR_CMD = mkdir -p ./k8s/certs
 CERTS_CMD = openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout ./k8s/certs/$(SVC).key -out ./k8s/certs/$(SVC).crt -subj "/CN=$(SVC)/O=$(SVC)" -addext "subjectAltName = DNS:$(SVC)"
+WAITING_INGS_CMD = ./hacks/waiting.sh
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
 	MKDIR_BIN_CMD = pwsh -noprofile -command "new-item bin -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
 	BUILD_CMD = pwsh -noprofile -command ".\build\build.ps1"
 	ENV_CMD = pwsh -noprofile -command ".\build\env.ps1"
-	DO_SLEEP = pwsh -noprofile -command "Start-Sleep 10"
+	DO_SLEEP = pwsh -noprofile -command "Start-Sleep 1"
 	X509 = pwsh -noprofile -command ".\hacks\cert\create.bat"
 	X509Install = pwsh -noprofile -command ".\hacks\cert\add.bat"
 	LINT_INSTALL_CMD = winget install golangci-lint
 	GO_TEST_CMD = go test
 	CERTS_DIR_CMD = @pwsh -noprofile -command "new-item .\k8s\certs -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
 	CERTS_CMD = pwsh -noprofile -command 'openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\$(SVC).key -out .\k8s\certs\$(SVC).crt -subj "/CN=$(SVC)/O=$(SVC)" -addext "subjectAltName = DNS:$(SVC)"'
+	WAITING_INGS_CMD = pwsh -noprofile -command '.\hacks\waiting.ps1'
 endif
 endif
 
@@ -165,7 +167,7 @@ docker-images/%:
 	@docker build -f compose/Dockerfile --target $(SVC) -t jobico/$(SVC) . 
 
 ### K8s manifests
-.PHONY: base create-certs-dir
+.PHONY: base create-certs-dir wait-ings
 
 deploy-all: base kube-create-certs apply-supportmanifests apply-manifests
 
@@ -203,7 +205,6 @@ rollback-support-manifests/%: SVC=$*
 rollback-support-manifests/%:
 	@kubectl delete -f ./k8s/config/$(SVC).yaml
 
-
 create-certs: create-certs-dir $(TARGETS:%=create-certs/%) $(SUPPORT_TARGETS:%=create-certs/%)
 create-certs/%: SVC=$*
 create-certs/%:
@@ -211,6 +212,9 @@ create-certs/%:
 
 create-certs-dir:
 	@$(CERTS_DIR_CMD)
+
+wait-ings:
+	@$(WAITING_INGS_CMD)
 
 # Certificates management for the local store
 add-certs-linux:

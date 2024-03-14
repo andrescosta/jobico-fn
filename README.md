@@ -155,6 +155,9 @@ To run Jobico locally using Kind, ensure you have the following dependencies ins
    # 2- Creates the cluster and deploy the application
    make kind
    
+   # 2.1 - Wait until all ingresses are ready
+   make wait-ings
+
    # 3- Local Test
    ## Builds k6 in perf/
    make k6
