@@ -1,5 +1,6 @@
 TARGETS = ctl listener repo recorder queue exec 
 SUPPORT_TARGETS = jaeger prometheus
+ALL_TARGETS = $(TARGETS) $(SUPPORT_TARGETS)
 FORMAT_FILES = $(shell find . -type f -name '*.go' -not -path "*.pb.go")
 OUTBINS = $(foreach bin,$(TARGETS),bin/$(bin))
 
@@ -15,6 +16,8 @@ GO_TEST_CMD = CGO_ENABLED=1 go test
 CERTS_DIR_CMD = mkdir -p ./k8s/certs
 CERTS_CMD = openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout ./k8s/certs/$(SVC).key -out ./k8s/certs/$(SVC).crt -subj "/CN=$(SVC)/O=$(SVC)" -addext "subjectAltName = DNS:$(SVC)"
 WAITING_INGS_CMD = ./hacks/waiting.sh
+INSTALL_PODMAN_CMD = sudo apt-get update;sudo apt-get -y install podman
+GO_VERSION = "1.22.1"
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
@@ -26,11 +29,21 @@ ifneq ($(MSYSTEM), MSYS)
 	X509Install = pwsh -noprofile -command ".\hacks\cert\add.bat"
 	LINT_INSTALL_CMD = winget install golangci-lint
 	GO_TEST_CMD = go test
+	INSTALL_PODMAN_CMD = @winget install RedHat.Podman
 	CERTS_DIR_CMD = @pwsh -noprofile -command "new-item .\k8s\certs -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
 	CERTS_CMD = pwsh -noprofile -command 'openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout .\k8s\certs\$(SVC).key -out .\k8s\certs\$(SVC).crt -subj "/CN=$(SVC)/O=$(SVC)" -addext "subjectAltName = DNS:$(SVC)"'
 	WAITING_INGS_CMD = pwsh -noprofile -command '.\hacks\waiting.ps1'
 endif
 endif
+
+# Init machine
+.PHONY init-windows init-ubuntu
+
+init-windows:
+ 	winget install GoLang.Go
+
+init-ubuntu:
+	rm -rf /usr/local/go && tar -C /usr/local -xzf go$(GO_VERSION).linux-amd64.tar.gz
 
 ## Dependencies
 .PHONY: dep
@@ -108,7 +121,7 @@ perf2-k8s:
 format: $(FORMAT_FILES)  
 
 $(FORMAT_FILES):
-	@gofumpt -w $@
+	gofumpt -w $@
 
 ## Docker compose targets.
 .PONY: hadolint docker-build docker-up docker-up-obs docker-down docker-stop
@@ -134,15 +147,17 @@ docker-stop:
 ## kubernetes targets 
 
 ### Kind cluster
-.PHONY: kind-delete kind-cluster wait-ingress ingress kind-get-images
+.PHONY: kind kind-delete kind-cluster list-images
 
 kind: kind-cluster ingress docker-images load-images wait-ingress deploy-all
+
+kind-podman: kind-cluster ingress podman-images load-images tag-images wait-ingress deploy-all
 
 kind-cluster:
 	@kind create cluster -n jobico --config ./k8s/config/cluster.yaml
 
 kind-delete:
-	kind delete cluster -n jobico
+	@kind delete cluster -n jobico
 
 ingress:
 	@kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
@@ -154,20 +169,33 @@ wait-ingress:
 load-images: $(TARGETS:%=load-images/%)
 load-images/%: SVC=$*
 load-images/%:
-	@kind load docker-image jobico/$(SVC):latest -n jobico
+	@kind load docker-image jobico/$(SVC):latest --name jobico
 
-kind-get-images:
-	docker exec -it jobico-control-plane crictl images
+list-images:
+	@docker exec -it jobico-control-plane crictl images
+
+# podman needs the images tagged with docker.io/..., check:
+# https://github.com/containers/buildah/issues/1034
+tag-images: $(TARGETS:%=tag-images/%)
+tag-images/%: SVC=$*
+tag-images/%:
+		@docker exec -it jobico-control-plane ctr --namespace=k8s.io image tag localhost/jobico/$(SVC):latest docker.io/jobico/$(SVC):latest
 
 ### Container images
+.PHONY: docker-images podman-images
 
 docker-images: $(TARGETS:%=docker-images/%)
 docker-images/%: SVC=$*
 docker-images/%:
 	@docker build -f compose/Dockerfile --target $(SVC) -t jobico/$(SVC) . 
 
+podman-images: $(TARGETS:%=podman-images/%)
+podman-images/%: SVC=$*
+podman-images/%:
+	@podman build -f compose/Dockerfile --target $(SVC) -t jobico/$(SVC) . 
+
 ### K8s manifests
-.PHONY: base create-certs-dir wait-ings
+.PHONY: deploy-all deploy
 
 deploy-all: base kube-create-certs apply-supportmanifests apply-manifests
 
@@ -177,7 +205,7 @@ base:
 	@kubectl apply -f ./k8s/config/namespace.yaml
 	@kubectl apply -f ./k8s/config/configmap.yaml
 
-kube-create-certs: $(TARGETS:%=kube-create-certs/%) $(SUPPORT_TARGETS:%=kube-create-certs/%)
+kube-create-certs: $(ALL_TARGETS:%=kube-create-certs/%)
 kube-create-certs/%: SVC=$*
 kube-create-certs/%:
 	@kubectl delete secret $(SVC)-cert --namespace=jobico --ignore-not-found=true
@@ -205,7 +233,7 @@ rollback-support-manifests/%: SVC=$*
 rollback-support-manifests/%:
 	@kubectl delete -f ./k8s/config/$(SVC).yaml
 
-create-certs: create-certs-dir $(TARGETS:%=create-certs/%) $(SUPPORT_TARGETS:%=create-certs/%)
+create-certs: create-certs-dir $(ALL_TARGETS:%=create-certs/%)
 create-certs/%: SVC=$*
 create-certs/%:
 	@$(CERTS_CMD)
@@ -216,24 +244,54 @@ create-certs-dir:
 wait-ings:
 	@$(WAITING_INGS_CMD)
 
+# Podman
+.PHONY: podman-init podman-start podman-stop podman-ssh podman-install
+
+podman-install:
+	@$(INSTALL_PODMAN_CMD)
+
+podman-init: 
+	@podman machine init
+	@podman machine set --rootful
+
+podman-reset: podman-stop
+	@podman machine rm
+
+podman-start:
+	@podman machine start
+
+podman-stop: 
+	@podman machine stop
+
+podman-ssh:
+	@podman machine ssh
+
 # Certificates management for the local store
+.PHONY: add-certs-linux add-certs-windows remove-certs-windows remove-certs-linux
+
 add-certs-linux:
 	@sudo cp ./k8s/certs/*.crt /usr/local/share/ca-certificates
 	@sudo update-ca-certificates
 
-add-certs-windows: $(TARGETS:%=add-certs-windows/%) $(SUPPORT_TARGETS:%=add-certs-windows/%)
+add-certs-windows: $(ALL_TARGETS:%=add-certs-windows/%)
 add-certs-windows/%: SVC=$*
 add-certs-windows/%:
 	@pwsh -noprofile -command "Start-Process -FilePath \"pwsh\" -ArgumentList \"-noprofile\", \"-command\", 'certutil -enterprise -f -v -AddStore \"Root\" .\k8s\certs\$(SVC).crt' -Verb RunAs"
 
-remove-certs-windows: $(TARGETS:%=remove-certs-windows/%) $(SUPPORT_TARGETS:%=remove-certs-windows/%)
+remove-certs-windows: $(ALL_TARGETS:%=remove-certs-windows/%)
 remove-certs-windows/%: SVC=$*
 remove-certs-windows/%:
 	@pwsh -noprofile -command "Start-Process -FilePath \"pwsh\" -ArgumentList \"-noprofile\", \"-command\", 'certutil -enterprise -f -v -DelStore \"Root\" $(SVC)' -Verb RunAs"
 
-remove-certs-linux: $(TARGETS:%=remove-certs-linux/%) $(SUPPORT_TARGETS:%=remove-certs-linux/%)
+remove-certs-linux: $(ALL_TARGETS:%=remove-certs-linux/%)
 	@sudo update-ca-certificates
 remove-certs-linux/%: SVC=$*
 remove-certs-linux/%:
 	@sudo rm /etc/ssl/certs/$(SVC).pem
 	@sudo rm /usr/local/share/ca-certificates/$(SVC).crt
+
+
+debug: $(ALL_TARGETS:%=debug/%) 
+debug/%: SVC=$*
+debug/%:
+	@echo "$(SVC)"

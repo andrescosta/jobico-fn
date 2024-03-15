@@ -124,17 +124,16 @@ Running Jobico in Kubernetes marks the initial phase of a more ambitious project
 
 ## Getting started
 
-### Kind
+### Locally using Kind
 
-To run Jobico locally using Kind, ensure you have the following dependencies installed:
+**Requirements**
 
-- [Docker](https://docs.docker.com/engine/install/)
 - [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [Make](https://www.gnu.org/software/make/)
 
-1- Update the 'host' file. 
+**Update the 'host' file.** 
 
-add the following entries:
+Add the following entries:
 
 ```
    127.0.0.1 ctl
@@ -145,7 +144,8 @@ add the following entries:
    127.0.0.1 prometheus
    127.0.0.1 jaeger
 ```
-2- Create a cluster and test
+
+**Self signed certificates**
 
 ```bash
    git clone https://github.com/andrescosta/jobico
@@ -157,9 +157,58 @@ add the following entries:
    # Adds the certificates to the local storage
    make upload-certs-linux # Adds the certificates to the local store.
    #windows: make add-certs-windows (Warning: this command run as the admin user(opens the UAC dialog) and requires the user to accepts the changes.
-   
-   # 2- Creates the cluster and deploy the application
+```
+
+#### Docker
+
+**Requirements**
+
+- [Docker](https://docs.docker.com/engine/install/)
+
+**Create a cluster and test**
+
+```bash
+   # 1- Creates the cluster and deploy the application
    make kind
+   
+   # 1.1 - Wait until all ingresses are ready
+   make wait-ings
+
+   # 2- Local Test
+   ## Builds k6 in perf/
+   make k6
+   ## Runs a basic scenario locally
+   make perf1-k8s
+
+   # 3- Deletes the  cluster
+   make kind-delete
+```
+
+#### Podman
+
+**Set enviroment variable for Kind**
+If Docker and Kind are installed on the same machine, and Kind auto-detects Docker, set this environment variable to use Podman instead: 
+
+```bash
+
+KIND_EXPERIMENTAL_PROVIDER="podman"
+
+```
+
+**Create a cluster and test**
+
+```bash
+   # 0- Install Podman (only for Windows and Debian/Ubuntu, for others check: https://podman.io/docs/installation)
+   make podman-install
+
+   # 1- Init the Podman machine
+   make podman-init
+
+   # 1.1- Start the Podman machine
+   make podman-start
+
+   # 2- Creates a cluster and deploy the application
+   make kind-podman
    
    # 2.1 - Wait until all ingresses are ready
    make wait-ings
@@ -170,8 +219,11 @@ add the following entries:
    ## Runs a basic scenario locally
    make perf1-k8s
 
-   # 4- Deletes the  cluster
+   # 3- Deletes the cluster
    make kind-delete
+
+   # 4- Resets Podman
+   make podman-reset
 ```
 
 # Roadmap
