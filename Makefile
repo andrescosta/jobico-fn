@@ -37,7 +37,7 @@ endif
 endif
 
 # Init machine
-.PHONY init-windows init-ubuntu
+.PHONY: init-windows init-ubuntu
 
 init-windows:
  	winget install GoLang.Go
