@@ -18,6 +18,7 @@ CERTS_CMD = openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout 
 WAITING_INGS_CMD = ./hacks/waiting.sh
 INSTALL_PODMAN_CMD = sudo apt-get update;sudo apt-get -y install podman
 GO_VERSION = "1.22.1"
+
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM), MSYS)
 	MKDIR_REPO_CMD = pwsh -noprofile -command "new-item reports -ItemType Directory -Force -ErrorAction silentlycontinue | Out-Null"
@@ -40,18 +41,18 @@ endif
 .PHONY: init-windows init-ubuntu
 
 init-windows:
- 	winget install GoLang.Go
+	@winget install GoLang.Go
 
 init-ubuntu:
-	rm -rf /usr/local/go && tar -C /usr/local -xzf go$(GO_VERSION).linux-amd64.tar.gz
+	@sudo rm -rf /usr/local/go && tar -C /usr/local -xzf go$(GO_VERSION).linux-amd64.tar.gz
 
 ## Dependencies
 .PHONY: dep
 
 dep:
-	go install mvdan.cc/gofumpt@latest
-	go install golang.org/x/vuln/cmd/govulncheck@latest
-	$(LINT_INSTALL_CMD)
+	@go install mvdan.cc/gofumpt@latest
+	@go install golang.org/x/vuln/cmd/govulncheck@latest
+	@$(LINT_INSTALL_CMD)
 
 ## Release
 .PHONY: init-release
@@ -121,7 +122,7 @@ perf2-k8s:
 format: $(FORMAT_FILES)  
 
 $(FORMAT_FILES):
-	gofumpt -w $@
+	@gofumpt -w $@
 
 ## Docker compose targets.
 .PONY: hadolint docker-build docker-up docker-up-obs docker-down docker-stop
@@ -244,7 +245,7 @@ create-certs-dir:
 wait-ings:
 	@$(WAITING_INGS_CMD)
 
-# Podman
+# Podman (local environment)
 .PHONY: podman-init podman-start podman-stop podman-ssh podman-install
 
 podman-install:
@@ -289,9 +290,3 @@ remove-certs-linux/%: SVC=$*
 remove-certs-linux/%:
 	@sudo rm /etc/ssl/certs/$(SVC).pem
 	@sudo rm /usr/local/share/ca-certificates/$(SVC).crt
-
-
-debug: $(ALL_TARGETS:%=debug/%) 
-debug/%: SVC=$*
-debug/%:
-	@echo "$(SVC)"
