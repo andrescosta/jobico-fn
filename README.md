@@ -48,7 +48,7 @@ Alternatively, you can compile using [Docker](https://docs.docker.com/engine):
 ``` bash
 git clone https://github.com/andrescosta/jobico.git
 cd jobico
-make dckr_build
+make docker-build
 ```
 ## Service Management
 
@@ -56,27 +56,52 @@ make dckr_build
 ```bash
 # Starting the services
 scripts/startall.sh
-#powershell: startall.ps1
+#powershell: scripts\startall.ps1
 
 # Stopping the services
 scripts/stopall.sh
-#powershell: stopall.ps1
+#powershell: scripts\stopall.ps1
 ```
 
 2. Docker
 ``` bash
 # Starting the environment
-make dckr_up
+make docker-up
 
 # Stopping the environment
-make dckr_stop
+make docker-stop
+```
+
+## Release
+To release(build, e2e tests and lints) Jobico locally, ensure you have the following dependencies installed:
+
+- [Gcc](https://gcc.gnu.org/install/)
+- [Go](https://go.dev/)
+- [Make](https://www.gnu.org/software/make/)
+
+And execute:
+
+``` bash
+make release
 ```
 
 ## Running Tests
-After compiling and starting the services locally, you can run a set of end to end test cases:
+After compiling and starting the services locally, you can run a set of happy path scenarios:
+
+1. Install k6
 
 ``` bash
-make test
+make k6
+```
+
+2. Run the test cases
+   
+``` bash
+make perf1/local
+```
+
+``` bash
+make perf2/local
 ```
 
 [Learn more how testing works in Jobico](TESTING.md)
@@ -92,6 +117,114 @@ Explore how to work with the Jobico platform by checking out our comprehensive t
 Explore key aspects of managing and maintaining your Jobico deployment. From monitoring job execution to configuring environment variables and performing health checks, this section covers essential topics to ensure the smooth operation of your Jobico environment.
 
 [Learn More about Operating Jobico](OPERATING.md)
+
+# Kubernetes
+
+Running Jobico in Kubernetes marks the initial phase of a more ambitious project to develop a highly available WebAssembly-based serverless platform. This project includes implementing a quorum-replicated data store, enhancing caching components, fortifying GRPC communication for robustness, and exploring a deeper integration by creating a K8s operator. 
+
+## Getting started
+
+### Locally using Kind
+
+**Requirements**
+
+- [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+- [Make](https://www.gnu.org/software/make/)
+
+**Update the 'host' file.** 
+
+Add the following entries:
+
+```
+   127.0.0.1 ctl
+   127.0.0.1 recorder
+   127.0.0.1 repo
+   127.0.0.1 listener
+   127.0.0.1 queue
+   127.0.0.1 prometheus
+   127.0.0.1 jaeger
+```
+
+**Self signed certificates**
+
+```bash
+   git clone https://github.com/andrescosta/jobico
+   cd jobico
+
+   # 1- Self signed certificates
+   ## Creates the certifcates at k8s/certs
+   make create-certs
+   # Adds the certificates to the local storage
+   make upload-certs-linux # Adds the certificates to the local store.
+   #windows: make add-certs-windows (Warning: this command run as the admin user(opens the UAC dialog) and requires the user to accepts the changes.
+```
+
+#### Docker
+
+**Requirements**
+
+- [Docker](https://docs.docker.com/engine/install/)
+
+**Create a cluster and test**
+
+```bash
+   # 1- Creates the cluster and deploy the application
+   make kind
+   
+   # 1.1 - Wait until all ingresses are ready
+   make wait-ings
+
+   # 2- Local Test
+   ## Builds k6 in perf/
+   make k6
+   ## Runs a basic scenario locally
+   make perf1-k8s
+
+   # 3- Deletes the  cluster
+   make kind-delete
+```
+
+#### Podman
+
+**Set enviroment variable for Kind**
+If Docker and Kind are installed on the same machine, and Kind auto-detects Docker, set this environment variable to use Podman instead: 
+
+```bash
+
+KIND_EXPERIMENTAL_PROVIDER="podman"
+
+```
+
+**Create a cluster and test**
+
+```bash
+   # 0- Install Podman (only for Windows and Debian/Ubuntu, for others check: https://podman.io/docs/installation)
+   make podman-install
+
+   # 1- Init the Podman machine
+   make podman-init
+
+   # 1.1- Start the Podman machine
+   make podman-start
+
+   # 2- Creates a cluster and deploy the application
+   make kind-podman
+   
+   # 2.1 - Wait until all ingresses are ready
+   make wait-ings
+
+   # 3- Local Test
+   ## Builds k6 in perf/
+   make k6
+   ## Runs a basic scenario locally
+   make perf1-k8s
+
+   # 3- Deletes the cluster
+   make kind-delete
+
+   # 4- Resets Podman
+   make podman-reset
+```
 
 # Roadmap
 
@@ -109,7 +242,7 @@ https://github.com/users/andrescosta/projects/3/views/1
 - Improvements to the Wasm runtime
 
 ### Long Term
-- Distributed storage for the queue and control services
+- Quorum based replicated storage 
 - Durable computing exploration
 
 # Contact

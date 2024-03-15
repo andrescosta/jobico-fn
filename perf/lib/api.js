@@ -3,7 +3,8 @@ import * as YAML from "k6/x/yaml";
 import http from 'k6/http';
 import { b64encode } from 'k6/encoding';
 
-export function Api(hostCtl, hostListener, hostRepo) {
+export function Api(hostCtl, hostListener, hostRepo, tls) {
+  this.tls = tls
   this.hostCtl = hostCtl
   this.hostListener = hostListener
   this.hostRepo = hostRepo
@@ -17,10 +18,10 @@ export function Api(hostCtl, hostListener, hostRepo) {
 
 Api.prototype.Connect = function () {
   this.clientCtl.connect(this.hostCtl, {
-    plaintext: true
+    plaintext: !this.tls
   });
   this.clientRepo.connect(this.hostRepo, {
-    plaintext: true
+    plaintext: !this.tls
   });
 }
 
@@ -107,7 +108,7 @@ Api.prototype.InvokeAddPackage = function (pkg) {
 
 
 Api.prototype.SendEvent = function (tenant, evt, evtBody) {
-  const url = 'http://' + this.hostListener + '/events/' + tenant + '/' + evt;
+  const url = this.hostListener + '/events/' + tenant + '/' + evt;
 
   const response = http.post(url, JSON.stringify(evtBody), {
     headers: { 'Content-Type': 'application/json' },

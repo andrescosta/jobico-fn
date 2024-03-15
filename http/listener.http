@@ -1,13 +1,15 @@
+POST https://prometheus/api/v1/otlp/v1/metrics
 
+###
 
-POST http://localhost:8080/events/demogo/evgo HTTP/1.1
+POST https://listener/events/demogo/evgo HTTP/1.1
 Content-Type: application/json
 
 {
     "data": [
        {
-            "firstName": "Andres",
-            "lastName": "C"
+            "firstName": "Benita",
+            "lastName": "Costa"
         }
     ]
 }

@@ -20,14 +20,10 @@ T1                              T2
 
 import { Test } from './lib/test.js'
 import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import * as config from './configs.js'
 import { sleep } from 'k6'
 
-
-const HOST_CTL = 'localhost:50052'
-const HOST_REPO = 'localhost:50053'
-const HOST_LISTENER = 'localhost:8080'
-const TENANT = 'tenant_1'
-const test = new Test(TENANT, HOST_CTL, HOST_LISTENER, HOST_REPO)
+const test = new Test(config.TENANT, config.HOST_CTL, config.HOST_LISTENER, config.HOST_REPO, config.TLS)
 test.LoadFileBin('../internal/test/testdata/echo.wasm')
 test.LoadFileBin('../internal/test/testdata/schema.json')
 test.LoadFile('../internal/test/testdata/job.yml')
@@ -38,7 +34,7 @@ export const options = {
       executor: 'constant-vus',
       env: { WORKFLOW: 'sending_events' },
       vus: 10,
-      duration: '20s',
+      duration: '60s',
     },
     tenant_adding_pkg: {
       executor: 'per-vu-iterations',
@@ -47,7 +43,7 @@ export const options = {
       startTime: '1s',
       vus: 3,
       iterations: 5,
-      maxDuration: '10s',
+      maxDuration: '20s',
     },
   },
 };

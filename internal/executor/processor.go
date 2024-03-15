@@ -62,6 +62,11 @@ func (p *processor) processEvents(ctx context.Context, w *sync.WaitGroup) {
 }
 
 func (p *processor) makeDecisions(ctx context.Context, tenant string, code uint64, resultDef *pb.ResultDef) error {
+	if resultDef == nil ||
+		(code == NoError && resultDef.Ok == nil) ||
+		(code != NoError && resultDef.Error == nil) {
+		return nil
+	}
 	r := pb.JobResult{
 		Code: code,
 	}

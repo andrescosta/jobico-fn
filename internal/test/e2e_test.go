@@ -417,7 +417,7 @@ func chkExecError(t *testing.T, pkg *pb.JobPackage, evt *eventTenantV1, cli *tes
 	test.Nil(t, err)
 	test.Len(t, results, 2)
 	if evt != nil {
-		valResForEvtV1Error(t, evt, results)
+		valResForEvtV1Error(t, results)
 	}
 	valLogError(t, results)
 }
@@ -450,7 +450,7 @@ func valLogError(t *testing.T, rs []Result) {
 	test.NotEmpty(t, result.ResultString)
 }
 
-func valResForEvtV1Error(t *testing.T, evt *eventTenantV1, rs []Result) {
+func valResForEvtV1Error(t *testing.T, rs []Result) {
 	var result *Result
 	for _, r := range rs {
 		if r.TypeResult == strings.ToLower(pb.JobResult_Result.String()) {

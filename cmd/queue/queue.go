@@ -5,6 +5,7 @@ import (
 
 	"github.com/andrescosta/goico/pkg/context"
 	"github.com/andrescosta/jobico/cmd/queue/service"
+	_ "github.com/tprasadtp/go-autotune"
 )
 
 func main() {

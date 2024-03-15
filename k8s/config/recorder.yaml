@@ -1,0 +1,161 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: recorder
+  namespace: jobico
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recorder
+  template:
+    metadata:
+      labels:
+        app: recorder
+    spec:
+      containers:
+      - name: recorder
+        image: jobico/recorder:latest
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 50054
+            hostPort: 50054
+            protocol: TCP
+        volumeMounts:
+          - name: recorder-data
+            mountPath: /usr/share/jobico/recorder
+        env:
+        - name: recorder.addr
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: recorder.addr
+              optional: false
+        - name: recorder.dir.results
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: recorder.dir.results
+              optional: false
+        - name: prof.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: prof.enabled
+              optional: true
+        - name: pprof.addr
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: pprof.addr
+              optional: true
+        - name: log.level
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.level
+              optional: true
+        - name: log.console.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.console.enabled
+              optional: true
+        - name: log.file.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.file.enabled
+              optional: true
+        - name: obs.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.enabled
+              optional: true
+        - name: obs.exporter.trace.grpc.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.trace.grpc.host
+              optional: true
+        - name: obs.exporter.metrics.http.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.http.host
+              optional: true
+        - name: obs.exporter.metrics.host.path
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.host.path
+              optional: true
+        - name: jobs.metrics.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.metrics.host
+              optional: true
+        - name: jobs.metrics.runtime
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: jobs.metrics.runtime
+              optional: true        
+        - name: workdir
+          value: "/usr/share/jobico/recorder"
+  volumeClaimTemplates:
+    - metadata:
+        name: recorder-data
+        namespace: jobico
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: recorder
+  name: recorder
+  namespace: jobico
+spec:
+  selector:
+    app: recorder
+  ports:
+    - name: "50054"
+      port: 50054
+  type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+  name: recorder-ingress
+  namespace: jobico
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - recorder
+      secretName: recorder-cert
+  rules:
+    - host: recorder
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: recorder
+                port:
+                  number: 50054

@@ -1,0 +1,158 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: exec
+  namespace: jobico
+spec:
+  template:
+    metadata:
+      labels:
+        app: exec
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: exec
+        image: jobico/exec:latest
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 8585
+            hostPort: 8585
+            protocol: TCP
+        env:
+        - name: executor.addr
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: executor.addr
+              optional: false
+        - name: queue.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: queue.host
+              optional: false
+        - name: ctl.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: ctl.host
+              optional: false
+        - name: repo.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: repo.host
+              optional: false
+        - name: recorder.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: recorder.host
+              optional: false
+        - name: prof.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: prof.enabled
+              optional: true
+        - name: pprof.addr
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: pprof.addr
+              optional: true
+        - name: log.level
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.level
+              optional: true
+        - name: log.console.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.console.enabled
+              optional: true
+        - name: log.file.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.file.enabled
+              optional: true
+        - name: obs.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.enabled
+              optional: true
+        - name: obs.exporter.trace.grpc.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.trace.grpc.host
+              optional: true
+        - name: obs.exporter.metrics.http.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.http.host
+              optional: true
+        - name: obs.exporter.metrics.host.path
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.host.path
+              optional: true
+        - name: jobs.metrics.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.metrics.host
+              optional: true
+        - name: jobs.metrics.runtime
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: jobs.metrics.runtime
+              optional: true        
+        - name: executor.delay
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: executor.delay
+              optional: true        
+        - name: max.queue.errors
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: max.queue.errors
+              optional: true        
+        - name: executor.timeout
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: executor.timeout
+              optional: true        
+        - name: metadata.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: metadata.enabled
+              optional: true        
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: exec
+  name: exec
+  namespace: jobico
+spec:
+  selector:
+    app: exec
+  ports:
+    - port: 8585
+      protocol: TCP
+  type: ClusterIP
+
+---

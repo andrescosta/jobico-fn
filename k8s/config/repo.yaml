@@ -1,0 +1,157 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: repo
+  namespace: jobico
+  labels:
+    app: repo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: repo
+  template:
+    metadata:
+      labels:
+        app: repo
+    spec:
+      containers:
+        - name: repo
+          image: jobico/repo:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 50053
+              hostPort: 50053
+              protocol: TCP
+          volumeMounts:
+            - name: repo-data
+              mountPath: /usr/share/jobico/repo
+          env:
+          - name: repo.addr
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: repo.addr
+                optional: true
+          - name: prof.enabled
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: prof.enabled
+                optional: true
+          - name: pprof.addr
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: pprof.addr
+                optional: true
+          - name: log.level
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: log.level
+                optional: true
+          - name: log.console.enabled
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: log.console.enabled
+                optional: true
+          - name: log.file.enabled
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: log.file.enabled
+                optional: true
+          - name: obs.enabled
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: obs.enabled
+                optional: true
+          - name: obs.exporter.trace.grpc.host
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: obs.exporter.trace.grpc.host
+                optional: true
+          - name: obs.exporter.metrics.http.host
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: obs.exporter.metrics.http.host
+                optional: true
+          - name: obs.exporter.metrics.host.path
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: obs.exporter.metrics.host.path
+                optional: true
+          - name: jobs.metrics.host
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: obs.metrics.host
+                optional: true
+          - name: jobs.metrics.runtime
+            valueFrom:
+              configMapKeyRef:
+                name: jobico-config
+                key: jobs.metrics.runtime
+                optional: true        
+          - name: workdir
+            value: "/usr/share/jobico/repo"
+  volumeClaimTemplates:
+    - metadata:
+        name: repo-data
+        namespace: jobico
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: repo
+  name: repo
+  namespace: jobico
+spec:
+  selector:
+    app: repo
+  ports:
+    - port: 50053
+      protocol: TCP      
+  type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+  name: repo-ingress
+  namespace: jobico
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - repo
+      secretName: repo-cert
+  rules:
+    - host: repo
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: repo
+                port:
+                  number: 50053

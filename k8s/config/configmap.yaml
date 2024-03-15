@@ -1,0 +1,43 @@
+apiVersion:  v1
+kind: ConfigMap
+metadata: 
+  name: jobico-config
+  namespace: jobico
+data: 
+  ## listeners
+  ctl.addr: ":50052"
+  listener.addr: ":8080"
+  executor.addr: ":8585"
+  queue.addr: ":50051"
+  recorder.addr: ":50054"
+  repo.addr: ":50053"
+  ## dialers
+  queue.host: "queue:50051"
+  ctl.host: "ctl:50052"
+  repo.host: "repo:50053"
+  recorder.host: "recorder:50054"
+  ## metadata
+  metadata.enabled: "false"
+  ## profiling
+  pprof.addr: "localhost:6060"
+  prof.enabled: "false"
+  ## queue configs
+  max.queue.errors: "2"
+  ## executor configs
+  executor.timeout: "1s"
+  executor.delay: "3s"
+  ## recorder configs
+  recorder.dir.results: "res"
+  ## repo configs
+  repo.dir: "./files"
+  ## Obs configs
+  obs.enabled: "true"
+  obs.exporter.trace.grpc.host: "jaeger:4317"
+  obs.exporter.metrics.http.host: "prometheus:9090"
+  obs.exporter.metrics.host.path: "/api/v1/otlp/v1/metrics"
+  obs.metrics.host: "true"
+  obs.metrics.runtime: "true"
+  ## Logs configs
+  log.level: "0"
+  log.console.enabled: "true"
+  log.file.enabled: "false"

@@ -1,0 +1,154 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ctl
+  namespace: jobico
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ctl
+  template:
+    metadata:
+      labels:
+        app: ctl
+    spec:
+      containers:
+      - name: ctl
+        image: jobico/ctl:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 50052
+          hostPort: 50052
+          protocol: TCP
+        volumeMounts:
+        - name: ctl-data
+          mountPath: /usr/share/jobico/ctl
+        env:
+        - name: ctl.addr
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: ctl.addr
+              optional: false
+        - name: prof.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: prof.enabled
+              optional: true
+        - name: pprof.addr
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: pprof.addr
+              optional: true
+        - name: log.level
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.level
+              optional: true
+        - name: log.console.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.console.enabled
+              optional: true
+        - name: log.file.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: log.file.enabled
+              optional: true
+        - name: obs.enabled
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.enabled
+              optional: true
+        - name: obs.exporter.trace.grpc.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.trace.grpc.host
+              optional: true
+        - name: obs.exporter.metrics.http.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.http.host
+              optional: true
+        - name: obs.exporter.metrics.host.path
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.exporter.metrics.host.path
+              optional: true
+        - name: jobs.metrics.host
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: obs.metrics.host
+              optional: true
+        - name: jobs.metrics.runtime
+          valueFrom:
+            configMapKeyRef:
+              name: jobico-config
+              key: jobs.metrics.runtime
+              optional: true        
+        - name: workdir
+          value: "/usr/share/jobico/ctl"
+  volumeClaimTemplates:
+    - metadata:
+        name: ctl-data
+        namespace: jobico
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: ctl
+  name: ctl
+  namespace: jobico
+spec:
+  selector:
+    app: ctl
+  ports:
+  - port: 50052
+    protocol: TCP
+  type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+  name: ctl-ingress
+  namespace: jobico
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - ctl
+      secretName: ctl-cert
+  rules:
+    - host: ctl
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ctl
+                port:
+                  number: 50052
