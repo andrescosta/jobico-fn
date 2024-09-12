@@ -26,7 +26,7 @@ Jobico-fn is a multi-tenant compute service that enables the asynchronous execut
 
 ![alt](docs/img/architecture.svg?)
 
-For a detailed overview of the system design and key architectural components, please refer to the [ARCHITECTURE.md](./ARCHITECTURE.md) file.
+For a more detailed overview of the system design and key architectural components, please refer to the [ARCHITECTURE.md](./ARCHITECTURE.md) file.
 
 # Jobicolets
 
@@ -242,7 +242,7 @@ https://github.com/users/andrescosta/projects/3/views/1
 
 
 ### Short Term
-- More complex Jobicolet examples
+- More examples
 - Extend the capabilities of the Testing framework
 - Improve error management
 
