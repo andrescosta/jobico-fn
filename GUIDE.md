@@ -1,27 +1,26 @@
 # How to Use This Guide
 
-Navigate through the sections to discover step-by-step instructions for setting up new jobs, uploading wasm and schema files, and utilizing administrative tools within the Jobico platform. Click on each topic of interest to access detailed explanations and walkthroughs.
+These sections provide step-by-step instructions for setting up new jobs, uploading wasm and schema files, and utilizing administrative tools within the Jobico-fn platform. 
 
 ## Workflow Overview: Tenant Job Management
 
-This section provides an overview of the workflow involved in managing jobs within the Jobico platform. Learn how tenants define jobs, upload necessary files, monitor job execution, and more. Follow the steps outlined below to efficiently manage your jobs within the platform.
-
+This section provides an overview of the workflow involved in managing jobs within the Jobico-fn platform. 
 
 ## Jobs
 
-A job within the Jobico platform is a comprehensive specification that outlines the orchestration of computational tasks. It serves as a blueprint defining the following essential elements:
+A **job** within the Jobico-fn platform is a specification that outlines the orchestration of computational tasks. It serves as a blueprint defining the following essential elements:
 
 * Queues: The job specification includes the definition of queues, which act as intermediary storage mechanisms for facilitating the flow of events between producers and consumers within the ecosystem. 
 
-* Runtimes: Runtimes are Jobicolet programs programmed in any WebAssembly (WASM)-compatible language. These programs contain business logic for event processing, defining how incoming events are handled and specifying the resulting output.
+* Runtimes: Runtimes are Jobicolet functions programmed in any WebAssembly (WASM)-compatible language. These programs contain business logic for event processing, defining how incoming events are handled and specifying the resulting output.
 
-* Events: Events represent occurrences or happenings within external systems or applications that trigger the execution of job logic within Jobico. External systems or applications trigger REST calls to Jobico with information about the event. Each event specified in the job definition includes detailed information such as the event schema for validation, the designated runtime for execution, and instructions for handling the result. Events serve as the catalyst for job execution, providing the necessary context and parameters for processing tasks efficiently within the platform.
+* Events: Events represent occurrences or happenings within external systems or applications that trigger the execution of Jobico-fn functions. External systems or applications trigger REST calls to Jobico-fn with information about the event. Each event specified in the job definition includes detailed information such as the event schema for validation, the designated runtime for execution, and instructions for handling the result. Events serve as the catalyst for job execution, providing the necessary context and parameters for processing tasks efficiently within the platform.
 
 ![alt](docs/img/definition.svg?)
 
 ### Job Specification and Deployment
 
-The job specification, detailing the queues, runtimes, and events, is written in YAML format. Tenants utilize the Command Line Interface (CLI) tool to upload the specification to the platform, enabling seamless deployment and execution of the specified computational tasks.
+The job specification, detailing the queues, runtimes, and events, is written in YAML format. These specifications will be deployed to the pltaform using the Command Line Interface (CLI) tool.
 
 ### Anatomy of the spec:
 A Job Definition YAML file includes various attributes that define the job's characteristics:
@@ -48,7 +47,7 @@ name: Customer Event Processing Definitions
 
 #### `tenant`
 
-- **Description:** The "tenant" attribute represents the ID of the tenant associated with the job. It ensures that the job is attributed to a specific tenant within the multi-tenancy architecture of Jobico.
+- **Description:** The "tenant" attribute represents the ID of the tenant associated with the job. It ensures that the job is attributed to a specific tenant within the multi-tenancy architecture of Jobico-fn.
 
 - **Example:**
 
@@ -163,18 +162,17 @@ runtimes:
 
 ## What is a Jobicolet?
 
-A **Jobicolet** is a specialized WebAssembly (WASM) program designed to process an event and generate a result within the platform. It represents the executable logic that is dynamically loaded and executed by the Job Executors. 
+A **Jobicolet** is a specialized WebAssembly (WASM) function designed to process an event and generate a result within the platform. It represents the executable logic that is dynamically loaded and executed by the Job Executors. 
 
 ## Key Characteristics:
 
 1. **WASM Execution:**
-   - A Jobicolet is implemented as a WebAssembly module, allowing it to be written in any programming language that compiles to WebAssembly. This flexibility empowers users to express their event processing logic in a language of their choice.
+   - A Jobicolet is implemented as a WebAssembly module, allowing it to be written in any programming language that compiles to WebAssembly. 
 
 2. **Event Processing:**
-   - The primary function of a Jobicolet is to process events. It takes as input the event data, performs the specified logic defined within the WASM module, and produces a result based on the defined processing rules.
+   - The primary function of a Jobicolet is to process events. It takes as input a JSON string with the event data, performs the specified logic defined within the WASM module, and produces a result based on the defined processing rules.
+
 3. **Result Generation:**
-   - A Jobicolet receives a string parameter containing the JSON payload sent by the external service to Jobico via the listener endpoint.
-4. **Result Generation:**
    - Upon processing an event, a Jobicolet generates a result. The nature of the result depends on the specific logic implemented in the WASM module. It could be a computation outcome, a transformed dataset, or any other relevant output. However, it's important to note that a Jobicolet can only return one of the following values as output:
 
      * A numeric return value:
@@ -183,17 +181,23 @@ A **Jobicolet** is a specialized WebAssembly (WASM) program designed to process 
      * A string.
 
     These are the only values that a Jobicolet can produce as output.
-5. **Language Agnostic:**
-   - Jobicolets are language-agnostic in the sense that they can be written in any programming language that supports compilation to WebAssembly. This feature provides developers with the freedom to choose a language that aligns with their expertise and the requirements of their event processing tasks.
 
 ## Development
 
 ### SDK
-The Jobicolet SDK, currently available for Go and Rust, offers essential functionality for developing Jobicolets. While it currently focuses on providing log information, additional features are in development.
 
-### Logging
+The SDKs, currently available for Go, Rust and Python, offers essential functionality for developing Jobicolets.
 
-#### Levels
+- [Python](https://github.com/andrescosta/jobicolet-sdk-python)
+- [JavaScript](https://github.com/andrescosta/jobicolet-sdk-js)
+- [GO](https://github.com/andrescosta/jobicolet-sdk-go)
+- [Rust](https://github.com/andrescosta/jobicolet-sdk-rust)
+
+### Capabilities
+
+#### Logging
+
+##### Levels
 | Level | Description |
 | --- | --- |
 | 0 | Debug |
@@ -204,13 +208,13 @@ The Jobicolet SDK, currently available for Go and Rust, offers essential functio
 | 5 | Panic |
 | 6 | Disabled |
 
-#### Methods
+##### Methods
 
 ```
 Log (Level, Message)
 ```
 
-#### Examples
+##### Examples
 
 ***Go***
 ```go
@@ -277,11 +281,11 @@ fn mytest(data:&String)->(u64, String){
 
 ### Overview:
 
-The **Command Line Tool** is a management interface designed to facilitate the deployment, rollback, or redeployment of jobs within the system. It offers a range of commands for uploading WebAssembly (WASM) and schema files, as well as streaming information from the Executions Recorder. This tool is an indispensable component for administrators and tenants alike, providing a streamlined and efficient way to interact with the environment.
+The **Command Line Tool** is a management interface designed to facilitate the deployment, rollback, or redeployment of jobs within the system. It offers a range of commands for uploading WebAssembly (WASM) and schema files, as well as streaming information from the Executions Recorder. 
 
-### Key Features:
+### Commands:
 
-1. **Deployment Commands:**
+1. **Deployment:**
    - **Deploy:**
      - The `deploy` command is employed to add a job definition to the system.If the `-update` flag is provided and the job has already been deployed, the command will redeploy it.
  
@@ -296,7 +300,7 @@ The **Command Line Tool** is a management interface designed to facilitate the d
      cli rollback my-job-definition.yaml
      ```
 
-2. **File Upload Commands:**
+2. **File Upload:**
    - **Upload WASM:**
      - The `upload wasm` command enables the upload of a WebAssembly file to the Job Repository. A WASM file uploaded using the tool will be referenced in the Job definition specification as the file that contains the logic for processing the event. 
 
@@ -318,7 +322,7 @@ The **Command Line Tool** is a management interface designed to facilitate the d
      ```bash
      cli recorder [-lines NM]
      ```
-4. **Information Commands:**
+4. **Information:**
    - **Deployments**
      -  The `show deploy` command prints information about a Job Definition deployed previously. It offers details on the configuration, queues, runtimes, and associated schema of a deployed job. 
 
@@ -326,7 +330,7 @@ The **Command Line Tool** is a management interface designed to facilitate the d
      cli show deploy <tenant id> <definition id>
      ```
    - **Environment(experimental)** 
-     -  The `show env` command prints information about the nodes that composed a Jobico's cluster. This information provided is currently not used by the platform at this moment. 
+     -  The `show env` command prints information about the nodes that composed a Jobico-fn's cluster. This information provided is currently not used by the platform at this moment. 
 
      ```bash
      cli show env
@@ -338,7 +342,7 @@ The **Command Line Tool** is a management interface designed to facilitate the d
 
 The **Dashboard** is a terminal-based graphical user interface (GUI) designed to offer an interactive and visual representation of the system. This GUI allows users to seamlessly visualize deployed jobs, explore files in the repository, and stream real-time results produced by executed jobs, all within the convenience of the terminal.
 
-### Key Features:
+### Functionality:
 
 1. **Visualizing Deployed Jobs:**
    - The Dashboard GUI presents a visual overview of deployed jobs, displaying relevant details such as job names, configurations, and status indicators. Users can easily navigate and interact with job-related information.
@@ -475,13 +479,13 @@ The Prometheus console is reachable at: http://localhost:9090/, while the Jaeger
 3. **Verify the Output:**
    - After a successful build, you should find the compiled WebAssembly module in the `target/wasm32-unknown-unknown/release/` directory. The file will be named `greet.wasm`.
 
-4. **Upload the WASM file to Jobico:**
-   - Following the compilation of the file, it is imperative to upload it to Jobico by executing the following command:
+4. **Upload the WASM file to Jobico-fn:**
+   - Following the compilation of the file, it is imperative to upload it to Jobico-fn by executing the following command:
 
     ```bash
      cli upload wasm demorust greet-wasm-rust.wasm target\wasm32-unknown-unknown\release\greet.wasm
      ```
-5. **Upload the schema file to Jobico:**
+5. **Upload the schema file to Jobico-fn:**
    - Executing this command will upload the schema file, facilitating the validation of the associated event:
 
     ```bash
@@ -500,7 +504,7 @@ The Prometheus console is reachable at: http://localhost:9090/, while the Jaeger
      cli recorder
      ```
 8. **Send an event:**
-   - Executing this command will dispatch an event to Jobico:
+   - Executing this command will dispatch an event to Jobico-fn:
 
     ```bash
           curl --request POST \ 
@@ -524,8 +528,8 @@ The Prometheus console is reachable at: http://localhost:9090/, while the Jaeger
      git clone https://github.com/andrescosta/jobicolet-examples.git
      ```
 
-3. ** The Jobico platform is up and running **
-   - The Docker section taches you how to start Jobico
+3. ** The Jobico-fn platform is up and running **
+   - The Docker section taches you how to start Jobico-fn
 
 #### Build the Go Example:
 
@@ -548,13 +552,13 @@ The Prometheus console is reachable at: http://localhost:9090/, while the Jaeger
 3. **Verify the Output:**
    - After a successful build, you should see an executable file named `greet.wasm` in the same directory.
 
-4. **Upload the WASM file to Jobico:**
-   - Following the compilation of the file, it is imperative to upload it to Jobico by executing the following command:
+4. **Upload the WASM file to Jobico-fn:**
+   - Following the compilation of the file, it is imperative to upload it to Jobico-fn by executing the following command:
 
     ```bash
      cli upload wasm demogo greet-wasm-go.wasm greet.wasm
      ```
-5. **Upload the schema file to Jobico:**
+5. **Upload the schema file to Jobico-fn:**
    - Executing this command will upload the schema file, facilitating the validation of the associated event:
 
     ```bash
@@ -573,7 +577,7 @@ The Prometheus console is reachable at: http://localhost:9090/, while the Jaeger
      cli recorder
      ```
 8. **Send an event:**
-   - Executing this command will dispatch an event to Jobico:
+   - Executing this command will dispatch an event to Jobico-fn:
 
     ```bash
           curl --request POST \ 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-At the core of Jobico's architecture lies its ability to process events asynchronously. Events are queued up and processed by worker processes, allowing for efficient and scalable event handling. This architecture ensures that events are processed in a timely and reliable manner, even under heavy loads.
+At the core of Jobico-fn's architecture lies its ability to process events asynchronously. Events are queued up and processed by worker functions, allowing for efficient and scalable event handling. This architecture ensures that events are processed in a timely and reliable manner, even under heavy loads.
 
 ![alt](docs/img/architecture.svg?)
 
@@ -10,7 +10,7 @@ At the core of Jobico's architecture lies its ability to process events asynchro
 
 ### Listener (cmd/listener, internal/listener)
 
-The **Listener** service serves as the entry point for external events, providing a REST API that can function as a webhook. Its primary responsibilities include receiving events, validating them against pre-defined JSON schemas, and subsequently enqueueing them for further processing. This component acts as the bridge between external sources triggering events and the internal processing pipeline.
+The **Listener** service serves as the entry point for external events, providing a REST API that can function as a [webhook](https://en.wikipedia.org/wiki/Webhook). Its primary responsibilities include receiving events, validating them against pre-defined JSON schemas, and subsequently enqueueing them for further processing. This component acts as the bridge between external sources triggering events and the internal processing pipeline.
 
 ![alt](docs/img/listener.svg?)
 
@@ -29,7 +29,7 @@ The **Queue** component acts as a chronological buffer for events, temporarily s
 
 ### Job Executors (cmd/executor, internal/executor)
 
-**Job Executors** are responsible for consuming events from the Queue and providing a controlled environment for the execution of WebAssembly (WASM) programs that process these events. This component manages the execution context, ensuring isolation and security for running custom WASM programs written by tenants. It plays a key role in the dynamic and scalable execution of programmed jobs in response to events.
+**Job Executors** are responsible for consuming events from the Queue and providing a controlled environment for the execution of WebAssembly (WASM) functions that process these events. This component manages the execution context, ensuring isolation and security for running custom WASM programs written by tenants. It plays a key role in the dynamic and scalable execution of programmed jobs in response to events.
 
 ![alt](docs/img/executor.svg?)
 
@@ -47,13 +47,13 @@ The **Executions Recorder** is a service designed to store log information gener
 
 ## GRPC Streaming 
 
-The **GRPC Streaming** capability enables real-time monitoring and reaction to changes within the pltaform, facilitating dynamic adjustments, and enhancing the responsiveness of Jobico to evolving requirements.
+The **GRPC Streaming** capability enables real-time monitoring and reaction to changes within the pltaform, facilitating dynamic adjustments, and enhancing the responsiveness of Jobico-fn to evolving requirements.
 
 ![alt](docs/img/streaming.svg?)
 
 #### Job definitions streaming 
 
-The CTL service uses streaming to propogate job definition changes to dependent services. Through persistent bidirectional communication channels, this service continuously streams updates to subscribing services, ensuring timely synchronization and consistent execution across the Jobico ecosystem.
+The CTL service uses streaming to propogate job definition changes to dependent services. Through persistent bidirectional communication channels, this service continuously streams updates to subscribing services, ensuring timely synchronization and consistent execution across the Jobico-fn ecosystem.
 
 ![alt](docs/img/updates.svg?)
 
@@ -63,11 +63,11 @@ The Recorder service utilizes streaming to instantly relay execution results to 
 
 ![alt](docs/img/streamingresult.svg?)
 
-## Goico: The Jobico Framework
+## Goico: The Jobico-fn Framework
 
 ### Overview:
 
-**Goico** is a specialized [Go](https://go.dev/) framework crafted to support the development and evolution of Jobico. 
+**Goico** is a specialized [Go](https://go.dev/) framework crafted to support the development and evolution of Jobico initiatives. 
 
 ### Key Features:
 

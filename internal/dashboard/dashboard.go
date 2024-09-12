@@ -151,7 +151,7 @@ func (c *Dashboard) renderUI(ctx context.Context) *tview.Pages {
 		SetRows(3, 0, 3).
 		SetColumns(30, 30).
 		SetBorders(true).
-		AddItem(newTextView("Jobico Dashboard"), 0, 0, 1, 4, 0, 0, false).
+		AddItem(newTextView("Jobico-fn Dashboard"), 0, 0, 1, 4, 0, 0, false).
 		AddItem(f, 2, 0, 1, 4, 0, 0, false)
 	// Layout for screens narrower than 100 cells (menu and side bar are hidden).
 	grid.AddItem(menu, 1, 0, 1, 1, 0, 0, true).
