@@ -1,6 +1,6 @@
 # Configuration
 
-In Jobico, various features and behaviors are controlled through OS environment variables. This comprehensive section provides an in-depth exploration of the configuration options available, allowing users to customize Jobico to suit their specific requirements and preferences. This configuration variables can be set not only using standard OS mechanisms but also through command line parameters and .env
+In Jobico-fn, various features and behaviors are controlled through OS environment variables. This configuration variables can be set not only using standard OS mechanisms but also through command line parameters and .env files.
 
 ![alt](docs/img/config.svg?)
 
@@ -60,13 +60,13 @@ Configuration variables can also be supplied during service startup as command l
 
 # Observability
 
-The observability stack in Jobico is implemented on top the OpenTelemetry client libraries and the Zerolog framework. It enables comprehensive monitoring and tracing capabilities. Currently, metrics are sent to Prometheus, while traces are routed to Jaeger. Additionally, the roadmap includes plans to extend functionality by integrating with a log aggregation service like Toki, ensuring holistic visibility into system performance and behavior.
+The observability stack in Jobico is implemented on top the OpenTelemetry client libraries and the Zerolog framework.Currently, metrics are sent to Prometheus, while traces are routed to Jaeger. 
 
 ![alt](docs/img/observability.svg)
 
 ## Environment Variables Overview
 
-The observability stack in Jobico is managed through a set of configuration variables. Just like other capabilities, these variables allow fine-grained control over the behavior and functionality of the observability features.
+The observability stack is managed through a set of configuration variables. 
 
 ### Metrics and traces
 | Parameter | Description |

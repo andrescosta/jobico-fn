@@ -46,7 +46,7 @@ func (c Controller) Close() error {
 func (c Controller) ConfigureRoutes(_ context.Context, r *mux.Router) error {
 	r.HandleFunc("/",
 		func(w http.ResponseWriter, _ *http.Request) {
-			_, _ = w.Write([]byte("Jobico started."))
+			_, _ = w.Write([]byte("Jobico-fn started."))
 		}).Methods("GET", "POST")
 
 	s := r.PathPrefix("/events").Subrouter()

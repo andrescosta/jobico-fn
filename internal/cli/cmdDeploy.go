@@ -19,7 +19,7 @@ func newDeploy() *command {
 		usageLine: `cli deploy [-update] < deployment file >.yaml`,
 		short:     "deploy a Job",
 		long: `
-	The 'deploy' command is employed to add a job definition to the Jobico platform.
+	The 'deploy' command is employed to add a job definition to the Jobico-fn platform.
 	If the '-update' flag is provided and the job has already been deployed, the command will redeploy it.`,
 	}
 	cmdDeploy.flag = *flag.NewFlagSet("deploy", flag.ContinueOnError)

@@ -1,18 +1,16 @@
-# Jobico
+# Jobico-fn
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/andrescosta/jobico)](https://goreportcard.com/report/github.com/andrescosta/jobico)
 
 ## Introduction
 
-Jobico: Multitenant Job Processing with WebAssembly
-
-Jobico is an open-source platform designed for defining and processing jobs as a collection of events. Its core features revolve around multi-tenancy and language-agnostic execution via WebAssembly, making it suitable for various use cases requiring scalability and flexibility.
+Jobico-fn is a multi-tenant compute service that enables the asynchronous execution of WebAssembly (WASM) functions in response to event triggers, offering scalable and efficient event-driven processing.
 
 ## Key Characteristics
 
-- **Exploratory Nature**: Jobico serves as an exploratory project, providing a platform for investigating different approaches to asynchronous computing technologies.
+- **Exploratory Nature**: Jobico-fn serves as an exploratory project, providing a platform for investigating different approaches to asynchronous computing technologies.
 
-- **Multi-Tenancy Focus**: Jobico's architecture is specifically designed to facilitate multi-tenancy, enabling the simultaneous operation of multiple isolated tenants on the platform.
+- **Multi-Tenancy Focus**: Jobico-fn's architecture is specifically designed to facilitate multi-tenancy, enabling the simultaneous operation of multiple isolated tenants on the platform.
 
 - **Event-driven processing** : Break down jobs into smaller events for easier orchestration and control flow management.
 
@@ -25,17 +23,32 @@ Jobico is an open-source platform designed for defining and processing jobs as a
 ![alt](docs/img/stack.svg?)
 
 # Architecture
-Explore the architecture of Jobico to gain insights into its design principles and components. This section provides an overview of the system's structure and how its various elements interact to deliver powerful capabilities. plex workflows.
 
-[Learn More about Jobico's architecture](ARCHITECTURE.md)
+![alt](docs/img/architecture.svg?)
 
-# Getting Started with Jobico
+For a more detailed overview of the system design and key architectural components, please refer to the [ARCHITECTURE.md](./ARCHITECTURE.md) file.
 
-This guide provides instructions for compiling, starting, testing, and running.
+# Jobicolets
+
+A **Jobicolet** is a WebAssembly (WASM) function designed to process an event and generate a result within the platform. It represents the executable logic that is dynamically loaded and executed by the platform. 
+
+## SDK
+
+The SDKs for creating Jobicolets are currently available in Go, Rust, JavaScript, and Python. They provide essential tools and functionality for developing functions.
+
+- [Python](https://github.com/andrescosta/jobicolet-sdk-python)
+- [JavaScript](https://github.com/andrescosta/jobicolet-sdk-js)
+- [GO](https://github.com/andrescosta/jobicolet-sdk-go)
+- [Rust](https://github.com/andrescosta/jobicolet-sdk-rust)
+
+
+# Getting Started with Jobico-fn
+
+This section provides instructions for compiling, starting, testing, and running.
 
 ## Local Go Environment
 
-If you have [Go installed](https://go.dev/doc/install) on your machine, you can compile Jobico directly from the source code:
+If you have [Go installed](https://go.dev/doc/install) on your machine, you can compile Jobico-fn directly from the source code:
 
 ``` bash
 git clone 
@@ -46,7 +59,7 @@ make local
 Alternatively, you can compile using [Docker](https://docs.docker.com/engine):
 
 ``` bash
-git clone https://github.com/andrescosta/jobico.git
+git clone https://github.com/andrescosta/jobico-fn.git
 cd jobico
 make docker-build
 ```
@@ -73,7 +86,8 @@ make docker-stop
 ```
 
 ## Release
-To release(build, e2e tests and lints) Jobico locally, ensure you have the following dependencies installed:
+
+To release(build, e2e tests and lints) Jobico-fn locally, ensure you have the following dependencies installed:
 
 - [Gcc](https://gcc.gnu.org/install/)
 - [Go](https://go.dev/)
@@ -104,23 +118,17 @@ make perf1/local
 make perf2/local
 ```
 
-[Learn more how testing works in Jobico](TESTING.md)
+[Learn more how testing works in Jobico-fn](TESTING.md)
 
 # Platform Setup and Administration Guide
 
-Explore how to work with the Jobico platform by checking out our comprehensive tutotial. Learn how to set up new jobs, upload wasm and schema files, and utilize administrative tools. If you're interested in diving deeper, click the link below to open the manual.
+For instructions on platform setup and administration, please refer to the [GUIDE.md](./GUIDE.md) file.
 
-[Learn more with the In-Depth Guide](GUIDE.md)
+# Operating Jobico-fn: Managing Your Deployment
 
-# Operating Jobico: Managing Your Deployment
-
-Explore key aspects of managing and maintaining your Jobico deployment. From monitoring job execution to configuring environment variables and performing health checks, this section covers essential topics to ensure the smooth operation of your Jobico environment.
-
-[Learn More about Operating Jobico](OPERATING.md)
+For details on configuring and managing Jobico-fn, please refer to the [OPERATING.md](./OPERATING.md) file.
 
 # Kubernetes
-
-Running Jobico in Kubernetes marks the initial phase of a more ambitious project to develop a highly available WebAssembly-based serverless platform. This project includes implementing a quorum-replicated data store, enhancing caching components, fortifying GRPC communication for robustness, and exploring a deeper integration by creating a K8s operator. 
 
 ## Getting started
 
@@ -234,7 +242,7 @@ https://github.com/users/andrescosta/projects/3/views/1
 
 
 ### Short Term
-- More complex Jobicolet examples
+- More examples
 - Extend the capabilities of the Testing framework
 - Improve error management
 
@@ -242,9 +250,5 @@ https://github.com/users/andrescosta/projects/3/views/1
 - Improvements to the Wasm runtime
 
 ### Long Term
-- Quorum based replicated storage 
+- Quorum based replicated storage
 - Durable computing exploration
-
-# Contact
-
-For questions, feedback reach out to us at jobicowasm@gmail.com
